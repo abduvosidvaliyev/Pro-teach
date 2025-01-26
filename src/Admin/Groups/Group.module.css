@@ -1,0 +1,561 @@
+/* Sidebar Styling */
+.sidebar {
+  width: 250px;
+  height: 100%;
+  background: #EE8E46;
+  padding-top: 20px;
+  margin-right: 400px;
+  position: fixed;
+  transition: width 0.5s ease, background 0.3s ease;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  z-index: 5;
+}
+
+
+.sidebarHeader {
+  padding: 0 20px;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  color: #fff;
+}
+
+.brand i {
+  margin-right: 10px;
+  font-size: 28px;
+}
+
+.navLinks {
+  list-style-type: none;
+  padding: 0;
+  margin-top: 20px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.3s ease, padding-left 0.3s ease;
+  position: relative;
+}
+
+.navIcon {
+  font-size: 16px;
+  width: 35px;
+  min-width: 35px;
+  height: 35px;
+  line-height: 35px;
+  text-align: center;
+  display: inline-block;
+  /* margin-right: 10px; */
+  border-radius: 2px;
+  transition: transform 0.3s ease;
+}
+
+.navItem:hover {
+  background: #575b8a;
+  padding-left: 30px;
+}
+
+.navItem:hover i {
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-2px);
+  }
+
+  50% {
+    transform: translateX(2px);
+  }
+
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
+/* Dropdown Menu Styling */
+.dropdown {
+  position: relative;
+}
+
+.dropdownMenu {
+  display: none;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  justify-content: center;
+  background: #3a3a52;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  color: white;
+  width: 100%;
+  transition: opacity 0.3s ease;
+}
+
+.dropdownMenu .dropdown-item {
+  display: block;
+  padding: 10px 20px;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.3s ease;
+}
+
+.dropdownMenu li a {
+  color: white;
+  padding: 10px 20px;
+  text-decoration: none;
+}
+
+.dropdownMenu li {
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.dropdownMenu li:hover {
+  background-color: #6c63ff;
+}
+
+
+.dropdownMenu .dropdownIem:hover {
+  background: #575b8a;
+}
+
+.dropdownToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dropdownIcon {
+  font-size: 14px;
+  transition: transform 0.3s ease;
+}
+
+/* Show dropdown menu when active */
+.dropdown.active .dropdownMenu {
+  display: block;
+}
+
+/* Sidebar collapse styles */
+.sidebar.collapsed {
+  width: 6%;
+  background: linear-gradient(45deg, #2b2d42, #3a3a52);
+}
+
+.sidebar.collapsed .navItem span,
+.sidebar.collapsed .sidebarHeader h3 span,
+.sidebar.collapsed .navItem .dropdownIcon,
+.sidebar.collapsed .dropdownMenu {
+  display: none;
+}
+
+.sidebar.collapsed .navItem .navIcon {
+  display: block;
+}
+
+.sidebar.collapsed .sidebarHeader h3 {
+  justify-content: center;
+}
+
+.mainContent {
+  margin-left: 250px;
+  padding: 40px;
+  width: calc(100% - 250px);
+  transition: margin-left 0.5s ease;
+  background: #f3f4f6;
+}
+
+.sidebar.collapsed~.mainContent {
+  margin-left: 80px;
+  width: calc(100% - 80px);
+}
+
+.toggleBtn {
+  width: 20px;
+  height: 20px;
+  background: #6c63ff;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  position: absolute;
+  right: -10px;
+}
+
+.toggleBtn .toggleIcon {
+  font-size: 10px;
+  transition: transform 0.3s ease;
+}
+
+/* Smooth Hover Animation */
+.navItem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  background: #6c63ff;
+  transition: transform 0.3s ease;
+  transform: scaleY(0);
+  transform-origin: bottom;
+}
+
+.navItem:hover::before {
+  transform: scaleY(1);
+  transform-origin: top;
+}
+
+
+
+
+.main {
+  width: 80%;
+  height: 100vh;
+  background-color: #575b8a;
+  margin-left: 20%;
+  gap: 10px;
+  display: grid;
+  padding: 10px 25px;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+}
+
+.menu {
+  width: 100%;
+  grid-column: 1/11;
+  grid-row: 1/2;
+  border-radius: 5px;
+  padding: 0px 25px;
+  gap: 25px;
+  align-items: center;
+  background-color: #6c63ff;
+  display: flex;
+}
+
+.groups {
+  align-items: center;
+  width: max-content;
+  display: flex;
+  gap: 5px;
+}
+
+.groups span {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 3px solid white;
+  border-radius: 1px;
+  font-weight: bolder;
+  color: white;
+}
+
+.groupActive {
+  grid-row: 4/11;
+  grid-column: 1/4;
+  border-radius: 5px;
+  padding: 10px 25px;
+  background-color: white;
+}
+
+.groupUsers {
+  grid-row: 4/11;
+  border-radius: 5px;
+  grid-column: 4/11;
+  background-color: white;
+}
+
+.groupAdd {
+  width: 400px;
+  height: 100vh;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  right: 0;
+  top: 0;
+  padding: 0px 15px;
+  z-index: 5;
+  background-color: white;
+}
+
+.groupAdd span {
+  display: flex;
+  padding: 10px;
+  justify-content: space-between;
+}
+
+.groupAddButton {
+  padding: 20px 80px;
+  border-radius: 10px;
+  background-color: #6c63ff;
+  color: white;
+  cursor: pointer;
+  align-self: center;
+  font-weight: bolder;
+  border: none;
+}
+
+.groupAbout {
+  grid-row: 2/4;
+  padding: 0px 25px;
+  display: flex;
+  grid-column: 1/11;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 5px;
+  background-color: white;
+}
+
+.isAdd {
+  display: none;
+}
+
+.groupInfo h2 span {
+  font-size: 20px;
+  color: rgba(0, 0, 0, 0.902);
+  font-weight: 100;
+  font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+  text-transform: capitalize;
+  /* font-variant-caps: all-small-caps; */
+
+}
+
+.groupInfo h1 {
+  text-transform: capitalize;
+}
+
+.crud {
+  display: flex;
+  gap: 15px;
+}
+
+.crud i {
+  cursor: pointer;
+  padding: 8px 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s linear;
+}
+
+.crud i:nth-child(1) {
+  border: 1px solid #EE8E46;
+  color: #EE8E46;
+}
+
+.crud i:nth-child(1):hover {
+  background-color: #EE8E46;
+  color: white;
+}
+
+.crud i:nth-child(2) {
+  border: 1px solid red;
+  color: red;
+}
+
+.crud i:nth-child(2):hover {
+  background-color: red;
+  color: white;
+}
+
+.crud i:nth-child(3) {
+  border: 1px solid #EE8E46;
+  color: #EE8E46;
+}
+
+.crud i:nth-child(3):hover {
+  background-color: #EE8E46;
+  color: white;
+}
+
+
+
+
+
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0,0,0);
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modalContent {
+  background-color: #fefefe;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 500px;
+}
+
+
+
+
+
+
+
+
+/* Add these styles to your existing CSS */
+.davomat {
+  background-color: white;
+  grid-row: 4/11;
+  border-radius: 5px;
+  display: flex;
+  padding: 10px 25px;
+  overflow-x: auto;
+  grid-column: 4/11;
+  flex-direction: column;
+}
+
+.months {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.months span {
+  color: #666;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.months span.active {
+  background: #ff7f50;
+  color: white;
+}
+
+.attendanceGrid {
+  width: 100%;
+  overflow-x: auto;
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.studentCol {
+  display: flex;
+  padding: 10px 0;
+  background: #f9f9f9;
+  margin-bottom: 5px;
+  border-radius: 4px;
+}
+
+.nameCol {
+  width: 200px;
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+}
+
+.dateCol {
+  width: 80px;
+  text-align: center;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.attendanceCell {
+  width: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.circle {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.circle.present {
+  background: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.circle.absent {
+  background: #f44336;
+  border-color: #f44336;
+}
+
+.hoverButtons {
+  display: none;
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  white-space: nowrap;
+  padding: 4px;
+  gap: 4px;
+}
+
+.attendanceCell:hover .hoverButtons {
+  display: flex;
+}
+
+.yesBtn, .noBtn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.yesBtn {
+  background: #4CAF50;
+}
+
+.yesBtn:hover {
+  background: #45a049;
+}
+
+.noBtn {
+  background: #f44336;
+}
+
+.noBtn:hover {
+  background: #da190b;
+}
