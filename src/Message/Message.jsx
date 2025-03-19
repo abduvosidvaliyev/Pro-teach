@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import styles from './Message.module.css';
 import back from '../assets/bac.mp4';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
@@ -91,14 +90,14 @@ const Message = () => {
                     <div className={styles.chatHeader}>
                         <h3>Chat</h3>
                     </div>
-                    <div className={styles.chatBody}>
+                    <div className="flex-1 p-2.5 overflow-y-auto flex flex-col gap-3.5">
                         {messages.map((message, index) => (
                             <div 
                                 key={index} 
-                                className={`${styles.messageContainer} ${message.user === receivedData ? styles.sent : styles.received}`}
+                                className={`flex items-end gap-2.5 ${message.user === receivedData ? 'justify-end' : 'justify-start'}`}
                             >
-                                <img src="https://via.placeholder.com/40" alt="User" className={styles.avatar} />
-                                <div className={styles.message}>
+                                <img className="w-10 h-10 rounded-full object-cover" src="https://via.placeholder.com/40" alt="User" />
+                                <div className="max-w-[70%] p-2.5 rounded-lg relative text-sm leading-[1.4]">
                                     <p>{message.text}</p>
                                     <span className={styles.time}>{new Date(message.timestamp).toLocaleTimeString()}</span>
                                 </div>

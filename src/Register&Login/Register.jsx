@@ -9,7 +9,7 @@ import { faCircleUser, faKey, faUsersLine } from '@fortawesome/free-solid-svg-ic
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
-import bgVideo from '../assets/bg.mp4';
+import bgVideo from '../assets/class.mp4';
 
 // Firebase configuration
 const firebaseConfig = {

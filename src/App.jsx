@@ -10,7 +10,9 @@ import Dashboard from '../src/Admin/Dashboard/Dashboard.jsx'
 import Groups from '../src/Admin/Groups/Groups.jsx'
 import Students from '../src/Admin/Students/Students.jsx'
 import StudentDetail from '../src/Admin/Students/StudentDetail.jsx'; 
-import "./output.css";
+import GroupDetails from "../src/Admin/Groups/GroupDetails.jsx";
+import Leads from "../src/Panel/Leads.jsx"
+import "./index.css";
 
 function App() {
   return (
@@ -24,7 +26,10 @@ function App() {
             <Route path="/chat" element={<Message/>}></Route>
             <Route path="/groups" element={<Groups/>}></Route>
             <Route path="/students" element={<Students/>}></Route>
+            <Route path="/leads" element={<Leads/>}></Route>
             <Route path="/student/:id" element={<StudentDetail/>} />
+            <Route path="/group/:id" element={<GroupDetails />} />
+            
         </Routes>
     </Router>
   )
