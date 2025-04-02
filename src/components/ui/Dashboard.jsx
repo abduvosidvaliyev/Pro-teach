@@ -102,7 +102,7 @@ const isDayMatch = (selectedDays, day) => {
     sesh: ["se", "sesh", "seshanba"],
     chor: ["ch", "chor", "chorshanba"],
     pay: ["pa", "pay", "payshanba"],
-    jum: ["ju","jum", "juma"],
+    jum: ["ju", "jum", "juma"],
     shan: ["sh", "shan", "shanba"],
     yak: ["ya", "yak", "yakshanba"],
   };
@@ -118,7 +118,7 @@ const isDayMatch = (selectedDays, day) => {
   );
 };
 
-const filterGroupsByDay = (groupsArray, day) => {  
+const filterGroupsByDay = (groupsArray, day) => {
   return groupsArray.filter((group) => {
     if (!group.selectedDays) return false;
     return isDayMatch(group.selectedDays, day);
@@ -128,8 +128,22 @@ const filterGroupsByDay = (groupsArray, day) => {
 export default function Dashboard({ data }) {
   const [groupsData, setGroupsData] = useState([]);
   const [roomData, setRoomsData] = useState([]);
+  const [leadsData, setLeadsData] = useState([]);
   const [courseSchedule, setCourseSchedule] = useState([]); // Ertangi kun uchun jadval
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const leadsRef = ref(database, "leads");
+    onValue(leadsRef, (snapshot) => {
+      const data = snapshot.val
+      ();
+      const leadsArray = data ? Object.values(data) : 0;
+      setLeadsData(leadsArray);
+    });
+  }, [])
+
+  console.log(leadsData);
+
 
   useEffect(() => {
     const groupsRef = ref(database, "Groups");
@@ -140,7 +154,6 @@ export default function Dashboard({ data }) {
         groupName: key,
         ...data[key], // Includes selectedDays
       }));
-      console.log("Groups with selectedDays:", groupsArray); // Konsolda barcha guruhlarni ko'rsatish
       setGroupsData(groupsArray);
     });
   }, []);
@@ -154,21 +167,20 @@ export default function Dashboard({ data }) {
     return () => unsubscribe();
   }, []);
 
-  
-    useEffect(() => {
-      const roomsRef = ref(database, "Rooms");
-      onValue(roomsRef, (snapshot) => {
-        const data = snapshot.val();
-        const roomData = Object.keys(data).map((key) => ({
-          value: key,
-          label: data[key].name,
-        }));
-        setRoomsData(roomData);
-      });
-    }, []);
-    console.log(roomData);
-    
-  
+
+  useEffect(() => {
+    const roomsRef = ref(database, "Rooms");
+    onValue(roomsRef, (snapshot) => {
+      const data = snapshot.val();
+      const roomData = Object.keys(data).map((key) => ({
+        value: key,
+        label: data[key].name,
+      }));
+      setRoomsData(roomData);
+    });
+  }, []);
+
+
 
   const courseScheduleData = groupsData.map((group, index) => {
     if (!group.duration) {
@@ -199,7 +211,7 @@ export default function Dashboard({ data }) {
     }
   });
 
-  
+
 
   const revenueData = [
     { month: "Yan", revenue: 450000 },
@@ -278,19 +290,17 @@ export default function Dashboard({ data }) {
 
   const handleShowTodayGroups = () => {
     const todayDay = new Date().toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase(); // Bugungi kunni aniqlash
-    console.log("Bugungi kun:", todayDay); // Konsolda bugungi kunni ko'rsatish
-    console.log("Guruhlarning selectedDays qiymatlari:", groupsData.map(group => group.selectedDays)); // Konsolda selectedDays qiymatlarini ko'rsatish
-  
+
     const filteredGroups = filterGroupsByDay(groupsData, todayDay); // Bugungi kundagi guruhlarni filtrlash
-    console.log("Bugungi guruhlar:", filteredGroups); // Konsolda filtrlash natijasini ko'rsatish
-  
+    // console.log("Bugungi guruhlar:", filteredGroups); // Konsolda filtrlash natijasini ko'rsatish
+
     // Bugungi kun uchun courseSchedule ni yangilash
     const filteredSchedule = filteredGroups.map((group, index) => {
       if (!group.duration) {
         console.error(`Group ${group.groupName} has no duration defined.`);
         return null;
       }
-  
+
       const duration = calculateDuration(group.duration); // Calculate duration from group.duration
       const [startHour] = group.duration.split("-")[0].split(":").map(Number); // Extract start hour
       return {
@@ -304,22 +314,22 @@ export default function Dashboard({ data }) {
         selectedDays: group.selectedDays,
       };
     }).filter(Boolean); // Filter out null values
-  
+
     // Bugungi kun uchun jadvalni yangilash
     setCourseSchedule(filteredSchedule);
   };
-  
+
   const handleShowTomorrowGroups = () => {
     const tomorrowDay = getTomorrow(); // Ertangi kunni aniqlash
     const filteredGroups = filterGroupsByDay(groupsData, tomorrowDay); // Ertangi kundagi guruhlarni filtrlash
-  
+
     // Ertangi kun uchun courseSchedule ni yangilash
     const filteredSchedule = filteredGroups.map((group, index) => {
       if (!group.duration) {
         console.error(`Group ${group.groupName} has no duration defined.`);
         return null;
       }
-  
+
       const duration = calculateDuration(group.duration); // Calculate duration from group.duration
       const [startHour] = group.duration.split("-")[0].split(":").map(Number); // Extract start hour
       return {
@@ -332,17 +342,17 @@ export default function Dashboard({ data }) {
         startHour,
         selectedDays: group.selectedDays,
       };
-    }).filter(Boolean); // Filter out null values
-  
+    }).filter(Boolean); 
+
     // Ertangi kun uchun jadvalni yangilash
     setCourseSchedule(filteredSchedule);
   };
-  
+
   useEffect(() => {
     // Komponent yuklanganda bugungi guruhlarni ko'rsatish
     handleShowTodayGroups();
   }, [groupsData]);
-  
+
   return (
     <div className="space-y-5">
 
@@ -366,29 +376,24 @@ export default function Dashboard({ data }) {
       </div>
       {/* KPI Section */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card className="bg-gradient-to-br from-pink-50 to-pink-100">
+        <Card
+          className="bg-gradient-to-br cursor-pointer from-pink-50 to-pink-100"
+          onClick={() => navigate("/leads")}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Yangi Lidlar</CardTitle>
             <UserPlus className="h-4 w-4 text-pink-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-pink-700">38</div>
+            <div className="text-2xl font-bold text-pink-700">{leadsData === 0 ? 0 : leadsData.length}</div>
             <p className="text-xs text-pink-600 mt-1 flex items-center">
               <TrendingUp className="h-4 w-4 mr-1" />
               O'tgan haftaga nisbatan +15%
             </p>
-            <Link to="/leads" passHref>
-              <Button
-                variant="link"
-                className="p-0 h-auto font-normal text-pink-600 hover:text-pink-700"
-              >
-                Batafsil ma'lumot
-              </Button>
-            </Link>
           </CardContent>
         </Card>
         <Card
-          className="bg-gradient-to-br from-blue-50 to-blue-100"
+          className="bg-gradient-to-br cursor-pointer from-blue-50 to-blue-100"
           onClick={() => handleCardClick(groupsData[0]?.id)}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -407,7 +412,7 @@ export default function Dashboard({ data }) {
         </Card>
 
         <Card
-          className="bg-gradient-to-br from-green-50 to-green-100"
+          className="bg-gradient-to-br cursor-pointer from-green-50 to-green-100"
           onClick={() => handleCardClick(groupsData[1]?.id)}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -428,7 +433,7 @@ export default function Dashboard({ data }) {
         </Card>
 
         <Card
-          className="bg-gradient-to-br from-indigo-50 to-indigo-100"
+          className="bg-gradient-to-br cursor-pointer from-indigo-50 to-indigo-100"
           onClick={() => navigate("/groups")}
         >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -488,7 +493,7 @@ export default function Dashboard({ data }) {
                     Xona
                   </div>
                   {timeSlots.map((slot) => (
-                    <div  
+                    <div
                       key={slot.time}
                       className={cn(
                         "flex-none w-[100px] border-r border-gray-300 p-2 text-center",
@@ -528,8 +533,8 @@ export default function Dashboard({ data }) {
                                 isCoursePast(course)
                                   ? "bg-gray-300 border-gray-400 text-gray-600"
                                   : course.id % 2 === 0
-                                  ? "bg-blue-100 border-blue-200"
-                                  : "bg-green-100 border-green-200",
+                                    ? "bg-blue-100 border-blue-200"
+                                    : "bg-green-100 border-green-200",
                                 isToday && "bg-yellow-100 border-yellow-200"
                               )}
                               style={{
@@ -565,7 +570,7 @@ export default function Dashboard({ data }) {
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
-          
+
         </CardContent>
       </Card>
 
