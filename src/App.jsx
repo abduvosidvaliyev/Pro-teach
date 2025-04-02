@@ -13,6 +13,7 @@ import StudentDetail from '../src/Admin/Students/StudentDetail.jsx';
 import GroupDetails from "../src/Admin/Groups/GroupDetails.jsx";
 import Leads from "../src/Panel/Leads.jsx"
 import "./index.css";
+import Course from "./components/ui/Course.jsx";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             <Route path="/panel" element={<Panel/>}></Route>
             <Route path="/dashboard" element={<Dashboard/>}></Route>
             <Route path="/control" element={<Control/>}></Route>
+            <Route path="/course" element={<Course/>}></Route>
             <Route path="/chat" element={<Message/>}></Route>
             <Route path="/groups" element={<Groups/>}></Route>
             <Route path="/students" element={<Students/>}></Route>
