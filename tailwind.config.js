@@ -81,6 +81,7 @@ module.exports = {
         "slide-in-from-right": "slide-in-from-right 0.3s ease-out",
         "slide-out-to-right": "slide-out-to-right 0.3s ease-out",
       },
+
     },
   },
   plugins: [require("tailwindcss-animate")],

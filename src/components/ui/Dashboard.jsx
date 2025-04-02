@@ -96,75 +96,54 @@ const getCurrentTimeSlot = () => {
     .padStart(2, "0")}`;
 };
 
-const getTomorrow = () => {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase(); // Masalan: "du", "se", "ch"
-};
-
 const isDayMatch = (selectedDays, day) => {
   const synonyms = {
-    du: ["du", "dush", "dushanba"],
-    se: ["se", "sesh", "seshanba"],
-    ch: ["ch", "chor", "chorshanba"],
-    pa: ["pa", "pay", "payshanba"],
-    ju: ["ju", "juma"],
-    sh: ["sh", "shan", "shanba"],
-    ya: ["ya", "yak", "yakshanba"],
+    dush: ["du", "dush", "dushanba"],
+    sesh: ["se", "sesh", "seshanba"],
+    chor: ["ch", "chor", "chorshanba"],
+    pay: ["pa", "pay", "payshanba"],
+    jum: ["ju","jum", "juma"],
+    shan: ["sh", "shan", "shanba"],
+    yak: ["ya", "yak", "yakshanba"],
   };
 
-  if (synonyms[day]) {
-    return synonyms[day].some((synonym) => selectedDays.includes(synonym));
+  if (!selectedDays || !Array.isArray(selectedDays)) {
+    console.error("Xatolik: selectedDays noto‘g‘ri yoki mavjud emas", selectedDays);
+    return false;
   }
 
-  return false;
+  // Sinonimlar qiymatlari ichidan mos keladigan kunni qidirish
+  return Object.values(synonyms).some((synonymList) =>
+    synonymList.includes(day) && selectedDays.some((selected) => synonymList.includes(selected.toLowerCase()))
+  );
 };
 
-const filterGroupsByDay = (groupsArray, day) => {
+const filterGroupsByDay = (groupsArray, day) => {  
   return groupsArray.filter((group) => {
     if (!group.selectedDays) return false;
-
-    // Haftaning kuniga mos keladigan guruhlarni tekshirish
     return isDayMatch(group.selectedDays, day);
   });
 };
 
 export default function Dashboard({ data }) {
   const [groupsData, setGroupsData] = useState([]);
-  const [courseAbout, setCourseAbout] = useState([]);
-  const [tomorrowGroups, setTomorrowGroups] = useState([]);
+  const [roomData, setRoomsData] = useState([]);
+  const [courseSchedule, setCourseSchedule] = useState([]); // Ertangi kun uchun jadval
   const navigate = useNavigate();
 
-useEffect(() => {
-  const groupsRef = ref(database, "Groups");
-  onValue(groupsRef, (snapshot) => {
-    const data = snapshot.val();
-    const today = new Date().toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase(); // Bugungi kun
-    const tomorrow = getTomorrow(); // Ertangi kun
-
-    const groupsArray = Object.keys(data).map((key) => ({
-      id: key,
-      groupName: key,
-      ...data[key],
-    }));
-
-    console.log("Barcha guruhlar:", groupsArray);
-    console.log("Bugungi kun:", today);
-    console.log("Ertangi kun:", tomorrow);
-
-    // Bugungi guruhlarni filtrlash
-    const filteredTodayGroups = filterGroupsByDay(groupsArray, today);
-
-    // Ertangi guruhlarni filtrlash
-    const filteredTomorrowGroups = filterGroupsByDay(groupsArray, tomorrow);
-
-    console.log("Bugungi guruhlar:", filteredTodayGroups);
-    console.log("Ertangi guruhlar:", filteredTomorrowGroups);
-
-    setGroupsData(filteredTodayGroups); // Bugungi guruhlarni saqlash
-    setTomorrowGroups(filteredTomorrowGroups); // Ertangi guruhlarni saqlash
-  });
-}, []);
+  useEffect(() => {
+    const groupsRef = ref(database, "Groups");
+    onValue(groupsRef, (snapshot) => {
+      const data = snapshot.val();
+      const groupsArray = Object.keys(data || {}).map((key) => ({
+        id: key,
+        groupName: key,
+        ...data[key], // Includes selectedDays
+      }));
+      console.log("Groups with selectedDays:", groupsArray); // Konsolda barcha guruhlarni ko'rsatish
+      setGroupsData(groupsArray);
+    });
+  }, []);
 
   useEffect(() => {
     const coursesRef = ref(database, "Courses");
@@ -172,11 +151,26 @@ useEffect(() => {
       const data = snapshot.val();
       setCourseAbout(data ? Object.values(data) : []);
     });
-
     return () => unsubscribe();
   }, []);
 
-  const courseSchedule = groupsData.map((group, index) => {
+  
+    useEffect(() => {
+      const roomsRef = ref(database, "Rooms");
+      onValue(roomsRef, (snapshot) => {
+        const data = snapshot.val();
+        const roomData = Object.keys(data).map((key) => ({
+          value: key,
+          label: data[key].name,
+        }));
+        setRoomsData(roomData);
+      });
+    }, []);
+    console.log(roomData);
+    
+  
+
+  const courseScheduleData = groupsData.map((group, index) => {
     if (!group.duration) {
       console.error(`Group ${group.groupName} has no duration defined.`);
       return null;
@@ -192,17 +186,20 @@ useEffect(() => {
       groupId: index,
       duration,
       startHour,
+      selectedDays: group.selectedDays,
     };
     return schedule;
   }).filter(Boolean); // Filter out null values
 
   // Populate time slots with courses
-  courseSchedule.forEach((course) => {
+  courseScheduleData.forEach((course) => {
     const slotIndex = course.startHour - 8;
     if (timeSlots[slotIndex]) {
       timeSlots[slotIndex].courses.push(course);
     }
   });
+
+  
 
   const revenueData = [
     { month: "Yan", revenue: 450000 },
@@ -273,11 +270,79 @@ useEffect(() => {
   const handleCardClick = (groupId) => {
     navigate(`/group/${groupId}`);
   };
+  const getTomorrow = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase();
+  };
 
-  console.log("Ertangi kun:", getTomorrow());
-  console.log("Ertangi guruhlar:", tomorrowGroups);
-  console.log("Barcha guruhlar:", groupsData);
-
+  const handleShowTodayGroups = () => {
+    const todayDay = new Date().toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase(); // Bugungi kunni aniqlash
+    console.log("Bugungi kun:", todayDay); // Konsolda bugungi kunni ko'rsatish
+    console.log("Guruhlarning selectedDays qiymatlari:", groupsData.map(group => group.selectedDays)); // Konsolda selectedDays qiymatlarini ko'rsatish
+  
+    const filteredGroups = filterGroupsByDay(groupsData, todayDay); // Bugungi kundagi guruhlarni filtrlash
+    console.log("Bugungi guruhlar:", filteredGroups); // Konsolda filtrlash natijasini ko'rsatish
+  
+    // Bugungi kun uchun courseSchedule ni yangilash
+    const filteredSchedule = filteredGroups.map((group, index) => {
+      if (!group.duration) {
+        console.error(`Group ${group.groupName} has no duration defined.`);
+        return null;
+      }
+  
+      const duration = calculateDuration(group.duration); // Calculate duration from group.duration
+      const [startHour] = group.duration.split("-")[0].split(":").map(Number); // Extract start hour
+      return {
+        id: group.id,
+        name: group.groupName,
+        instructor: group.teachers,
+        room: group.rooms,
+        groupId: index,
+        duration,
+        startHour,
+        selectedDays: group.selectedDays,
+      };
+    }).filter(Boolean); // Filter out null values
+  
+    // Bugungi kun uchun jadvalni yangilash
+    setCourseSchedule(filteredSchedule);
+  };
+  
+  const handleShowTomorrowGroups = () => {
+    const tomorrowDay = getTomorrow(); // Ertangi kunni aniqlash
+    const filteredGroups = filterGroupsByDay(groupsData, tomorrowDay); // Ertangi kundagi guruhlarni filtrlash
+  
+    // Ertangi kun uchun courseSchedule ni yangilash
+    const filteredSchedule = filteredGroups.map((group, index) => {
+      if (!group.duration) {
+        console.error(`Group ${group.groupName} has no duration defined.`);
+        return null;
+      }
+  
+      const duration = calculateDuration(group.duration); // Calculate duration from group.duration
+      const [startHour] = group.duration.split("-")[0].split(":").map(Number); // Extract start hour
+      return {
+        id: group.id,
+        name: group.groupName,
+        instructor: group.teachers,
+        room: group.rooms,
+        groupId: index,
+        duration,
+        startHour,
+        selectedDays: group.selectedDays,
+      };
+    }).filter(Boolean); // Filter out null values
+  
+    // Ertangi kun uchun jadvalni yangilash
+    setCourseSchedule(filteredSchedule);
+  };
+  
+  useEffect(() => {
+    // Komponent yuklanganda bugungi guruhlarni ko'rsatish
+    handleShowTodayGroups();
+  }, [groupsData]);
+  
   return (
     <div className="space-y-5">
 
@@ -423,7 +488,7 @@ useEffect(() => {
                     Xona
                   </div>
                   {timeSlots.map((slot) => (
-                    <div
+                    <div  
                       key={slot.time}
                       className={cn(
                         "flex-none w-[100px] border-r border-gray-300 p-2 text-center",
@@ -442,24 +507,24 @@ useEffect(() => {
 
               {/* Schedule grid */}
               <div className="flex flex-col">
-                {["1-xona", "2-xona", "3-xona"].map((room) => (
+                {roomData.map((room) => (
                   <div
-                    key={room}
+                    key={room.value} // Use a unique property like `room.value` as the key
                     className="flex min-h-[100px] border-b border-gray-300"
                   >
                     <div className="flex-none w-[100px] border-r border-gray-300 bg-muted/20 p-2">
-                      {room}
+                      {room.label}
                     </div>
                     <div className="relative flex flex-1">
                       {courseSchedule
-                        .filter((course) => course.room === room)
+                        .filter((course) => course.room === room.label)
                         .map((course) => {
                           const isToday = new Date().toDateString() === new Date(course.date).toDateString();
                           return (
                             <div
-                              key={course.id}
+                              key={course.id} // Ensure each course also has a unique key
                               className={cn(
-                                "absolute flex flex-col rounded-lg border p-2 text-sm",
+                                " group absolute flex flex-col transition-all duration-300 cursor-pointer rounded-lg border p-2 text-sm hover:shadow-md",
                                 isCoursePast(course)
                                   ? "bg-gray-300 border-gray-400 text-gray-600"
                                   : course.id % 2 === 0
@@ -475,12 +540,15 @@ useEffect(() => {
                               }}
                               onClick={() => handleCardClick(course.id)}
                             >
+                              {/* Yon chiziq */}
+                              <div className="absolute left-0 top-0 bottom-0 w-1  bg-transparent group-hover:bg-blue-500 transition-all duration-300"></div>
+
+                              {/* Kontent */}
                               <div className="font-semibold">{course.name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {course.instructor}
-                              </div>
-                              <div className="text-xs font-medium text-primary">
-                                Guruh: {course.groupId}
+                              <div className="text-xs text-muted-foreground">{course.instructor}</div>
+                              <div className="text-xs font-medium text-primary">Guruh: {course.groupId}</div>
+                              <div className="text-xs p-0 m-0 text-gray-800 mt-1">
+                                {course.selectedDays ? course.selectedDays.join(", ") : "Noma'lum"}
                               </div>
                               {isCoursePast(course) && (
                                 <div className="absolute top-0 right-0 bg-red-500 text-white text-xs px-1 rounded-bl rounded-tr-[inherit]">
@@ -497,37 +565,25 @@ useEffect(() => {
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
-          <div className="flex justify-center gap-4 mt-4">
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setGroupsData(tomorrowGroups)}
-            >
-              Ertangi Guruhlar
-            </Button>
-            <Button
-              className="bg-gray-600 hover:bg-gray-700 text-white"
-              onClick={() => {
-                const groupsRef = ref(database, "Groups");
-                onValue(groupsRef, (snapshot) => {
-                  const data = snapshot.val();
-                  const today = new Date().toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase();
-
-                  const groupsArray = Object.keys(data).map((key) => ({
-                    id: key,
-                    groupName: key,
-                    ...data[key],
-                  }));
-
-                  const filteredGroups = filterGroupsByDay(groupsArray, today);
-                  setGroupsData(filteredGroups);
-                });
-              }}
-            >
-              Bugungi Guruhlar
-            </Button>
-          </div>
+          
         </CardContent>
       </Card>
+
+      {/* Ertangi kun tugmasi */}
+      <div className="flex justify-end mb-4 gap-2">
+        <Button
+          className="bg-green-600 hover:bg-green-700 text-white"
+          onClick={handleShowTodayGroups}
+        >
+          Bugungi Guruhlarni Ko'rsat
+        </Button>
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+          onClick={handleShowTomorrowGroups}
+        >
+          Ertangi Guruhlarni Ko'rsat
+        </Button>
+      </div>
 
       {/* Revenue and Performance Analytics */}
       <div className="grid gap-4 md:grid-cols-2">

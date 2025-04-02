@@ -47,17 +47,61 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const database = getDatabase(app);
 
+const getCurrentMonthDates = (selectedDays) => {
+  const dates = [];
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Haftaning kunlari uchun mos keladigan IDlar
+  const dayMapping = {
+    du: 1, // Dushanba
+    se: 2, // Seshanba
+    chor: 3, // Chorshanba
+    pay: 4, // Payshanba
+    ju: 5, // Juma
+    shan: 6, // Shanba
+    yak: 0, // Yakshanba
+  };
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+
+    // Agar `selectedDays`da kun mavjud bo'lsa, uni qo'shamiz
+    if (selectedDays.some((selectedDay) => dayMapping[selectedDay] === dayOfWeek)) {
+      dates.push(`${day} ${date.toLocaleString("en-US", { month: "short" })}`);
+    }
+  }
+
+  return dates;
+};
+
+const calculateRemainingBalance = (student, coursePrice, currentMonth) => {
+  if (!student || !student.attendance || !student.attendance[currentMonth]) {
+    return student.balance; // Agar attendance ma'lumotlari mavjud bo'lmasa, balansni o'zgartirmaymiz
+  }
+
+  const attendanceData = student.attendance[currentMonth];
+  const totalClasses = Object.keys(attendanceData).length; // Oyning jami dars kunlari
+  const attendedClasses = Object.values(attendanceData).filter((attended) => attended).length; // Kelgan darslar soni
+
+  const perClassPrice = coursePrice / totalClasses; // Har bir darsning narxi
+  const totalDeduction = attendedClasses * perClassPrice; // Kelgan darslar uchun yechib olinadigan summa
+  const remainingBalance = student.balance - totalDeduction; // Qolgan balans
+
+  return remainingBalance.toFixed(2); // Qoldiq balansni qaytarish
+};
+
+const getCurrentMonth = () => {
+  const now = new Date();
+  return now.toLocaleString("en-US", { month: "long", year: "numeric" }); // Masalan: "April 2025"
+};
+
 const StudentDetail = () => {
   const location = useLocation();
   const courseData = location.state?.student;
-  const getCurrentMonth = () => {
-    const now = new Date();
-    const currentMonthAndYear = now.toLocaleString("en-US", {
-      month: "long",
-      year: "numeric",
-    });
-    return currentMonthAndYear;
-  };
 
   const getCurrentDate = () => {
     const today = new Date();
@@ -72,6 +116,7 @@ const StudentDetail = () => {
   const [students, setStudents] = useState(courseData);
   const [isAdd, setIsAdd] = useState(true);
   const [studentsData, setStudentsData] = useState([]);
+  const [dates, setDates] = useState(getCurrentDate());
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentNumber, setNewStudentNumber] = useState("");
   const [editingStudent, setEditingStudent] = useState(null);
@@ -87,6 +132,8 @@ const StudentDetail = () => {
   const [groupName, setGroupName] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Added state
   const [paymentDates, setPaymentDates] = useState([]); // Added state
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false); // To'lov modalining holati
+  const [paymentAmount, setPaymentAmount] = useState(""); // To'lov miqdori
 
   const toggleIsAdd = (student = null) => {
     setIsAdd(!isAdd);
@@ -193,6 +240,32 @@ const StudentDetail = () => {
     setPaymentDates([...paymentDates, dateValue]);
   };
 
+  const handlePayment = () => {
+    if (!paymentAmount || isNaN(paymentAmount)) {
+      alert("To'lov miqdorini to'g'ri kiriting!");
+      return;
+    }
+  
+    const paymentData = {
+      studentName: student.studentName,
+      studentNumber: student.studentNumber,
+      paymentAmount: parseFloat(paymentAmount),
+      paymentDate: getCurrentDate(),
+    };
+  
+    // To'lovni Firebase ma'lumotlar bazasiga yozish
+    const paymentRef = ref(database, `Payments/${currentMonth}/${student.studentName}`);
+    set(paymentRef, paymentData)
+      .then(() => {
+        alert("To'lov muvaffaqiyatli amalga oshirildi!");
+        setIsPaymentModalOpen(false);
+        setPaymentAmount(""); // To'lov miqdorini tozalash
+      })
+      .catch((error) => {
+        console.error("To'lovni amalga oshirishda xatolik yuz berdi:", error);
+      });
+  };
+
   useEffect(() => {
     const studentRef = ref(database, `Students`);
     onValue(studentRef, (snapshot) => {
@@ -206,26 +279,50 @@ const StudentDetail = () => {
       setGroupsData(data ? Object.keys(data) : []);
     });
   }, []);
-
+  console.log(currentMonth);
+  
   const addStudentToGroup = () => {
-    const newStudent = {
-      group: groupName,
-    };
-
-    const userRef = ref(database, `Students/${student.studentName}`);
-    update(userRef, newStudent)
-      .then(() => {
-        alert("Ma'lumot muvaffaqiyatli yangilandi!");
-        setStudents((prevStudents) => ({
-          ...prevStudents,
-          ...newStudent,
-        }));
-      })
-      .catch((error) => {
-        console.error("Xatolik yuz berdi: ", error);
+    // Guruhdagi kunlarni olish
+    const groupRef = ref(database, `Groups/${groupName}`);
+    onValue(groupRef, (snapshot) => {
+      const groupData = snapshot.val();
+      if (!groupData) {
+        alert("Guruh ma'lumotlari topilmadi!");
+        return;
+      }
+  
+      // Talabaning mavjud ma'lumotlarini olish
+      const userRef = ref(database, `Students/${student.studentName}`);
+      get(userRef).then((studentSnapshot) => {
+        const studentData = studentSnapshot.val() || {};
+  
+        // Talaba uchun yangi ma'lumotlar
+        const newStudentData = {
+          ...studentData,
+          attendance: {
+            [currentMonth]: { _empty: true }, // Maxsus kalit bilan bo'sh obyektni saqlash
+          },
+          group: groupName,
+        };
+  
+        // Firebase ma'lumotlar bazasiga yozish
+        update(userRef, newStudentData)
+          .then(() => {
+            alert("Talaba guruhga muvaffaqiyatli qo'shildi!");
+            setStudents((prevStudents) => ({
+              ...prevStudents,
+              ...newStudentData,
+            }));
+          })
+          .catch((error) => {
+            console.error("Xatolik yuz berdi: ", error);
+          });
+  
+        setIsOpen(false);
       });
-    setIsOpen(false);
+    });
   };
+  
 
   const student = studentsData.find((s) => s.id === Number.parseInt(id));
 
@@ -242,6 +339,9 @@ const StudentDetail = () => {
       return () => unsubscribe();
     }
   }, [student, currentMonth]);
+
+
+
 
   if (!student) return <h2>Student not found</h2>;
 
@@ -285,7 +385,7 @@ const StudentDetail = () => {
             {/* Balance Header */}
             <div className="bg-[#6366F1] p-4 rounded-t-lg flex justify-end">
               <span className="bg-white text-green-500 px-3 py-1 rounded-full text-sm">
-                {student.balance} so'm
+                {calculateRemainingBalance(student, 400000, currentMonth)} so'm {/* Kurs narxi 400,000 */}
               </span>
             </div>
 
@@ -328,6 +428,7 @@ const StudentDetail = () => {
                   <Button
                     variant="outline"
                     className="w-full hover:bg-[#6365f11f] hover:border-[#393cf6] border-[#9193f5] text-[#6366F1]"
+                    onClick={() => setIsPaymentModalOpen(true)} // Modalni ochish
                   >
                     TO'LOV QILISH
                   </Button>
@@ -363,7 +464,7 @@ const StudentDetail = () => {
         <div className={style.students}>
           <main className="w-full col-[1/4]">
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
-            {activeTab === "groups" && <CourseGrid student={students} />}
+            {activeTab === "groups" && student && <CourseGrid student={student} />}
             {activeTab === "notes" && <Comments />}
           </main>
         </div>
@@ -549,6 +650,38 @@ const StudentDetail = () => {
             <Button
               variant="outline"
               onClick={() => setIsEditModalOpen(false)}
+              className="px-8"
+            >
+              BEKOR QILISH
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        title="To'lov qilish"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm text-gray-500">To'lov miqdori</label>
+            <Input
+              type="text"
+              value={paymentAmount}
+              onChange={(e) => setPaymentAmount(e.target.value)}
+            />
+          </div>
+          <div className="mt-6 flex gap-3 justify-center">
+            <Button
+              className="bg-[#6366F1] hover:bg-[#5558DD] text-white px-8"
+              onClick={handlePayment}
+            >
+              TO'LOV QILISH
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsPaymentModalOpen(false)}
               className="px-8"
             >
               BEKOR QILISH

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
+import SelectReact from "react-select";
 import { data, Link, useNavigate } from "react-router-dom";
-import Select from "react-select";
-import style from "./Group.module.css";
+ import style from "./Group.module.css";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 import {
@@ -13,9 +13,22 @@ import {
   push,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 import { SidebarPanel } from "../../Sidebar";
-
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarProvider,
+} from "../../components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Edit, Plus, Trash2, Check, ChevronsUpDown } from "lucide-react"
+import {
+  Edit,
+  Plus,
+  Trash2,
+  Check,
+  ChevronsUpDown,
+  X,
+  Clock,
+} from "lucide-react";
 import { Button } from "../../components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../../components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -72,7 +85,15 @@ const weekDays = [
   { id: "saturday", label: "Shan" },
   { id: "sunday", label: "Yak" },
 ]
-
+const daysOfWeek = [
+  { id: "du", label: "Du" },
+  { id: "se", label: "Se" },
+  { id: "chor", label: "Chor" },
+  { id: "pay", label: "Pay" },
+  { id: "ju", label: "Ju" },
+  { id: "shan", label: "Shan" },
+  { id: "yak", label: "Yak" },
+];
 
 function Groups(){
   const navigate = useNavigate(); 
@@ -80,7 +101,10 @@ function Groups(){
   const [groups, setGroups] = useState(["Web 1", "Web 2", "Web 3"]); // Initial groups
   const [openTeacher, setOpenTeacher] = React.useState(false)
   const [valueTeacher, setValueTeacher] = React.useState("")
-
+  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [openRoom, setOpenRoom] = React.useState(false)
   const [valueRoom, setValueRoom] = React.useState("")
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -94,11 +118,13 @@ function Groups(){
   const [groupsData, setGroupsData] = useState([]);
   const [studentsData, setStudentsData] = useState([]);
   const [newGroupName, setNewGroupName] = useState("");
-
+  const [newPrice, setNewPrice] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentNumber, setNewStudentNumber] = useState("");
   const [students, setStudents] = useState([]);
+  const [selectedDays, setSelectedDays] = useState([]);
+  const [editGroupData, setEditGroupData] = useState(null);
 
 
   
@@ -168,10 +194,9 @@ function Groups(){
   const handleSelectChange = (selectedOption, actionMeta) => {
     setSelectedOptions((prevState) => ({
       ...prevState,
-      [actionMeta.name]: selectedOption.label,
+      [actionMeta.name]: selectedOption,
     }));
   };
-
   const handleInputChange = (event) => {
     const value = event.target.value;
     setNewGroupName(value); // Update new group name state
@@ -181,22 +206,75 @@ function Groups(){
     }));
   };
 
+  const handleDayChange = (day) => {
+    if (selectedDays.includes(day)) {
+      setSelectedDays((prev) => prev.filter((d) => d !== day));
+      return;
+    }
+  
+    const updatedDays = [...selectedDays, day];
+    setSelectedDays(updatedDays);
+  };
+
   const handleInputChangeNum = (event) =>
     setNewStudentNumber(event.target.value || "");
-
+  
   const addGroup = () => {
     if (newGroupName.trim() !== "") {
       const newGroup = {
-        ...selectedOptions,
-        id: newGroupName,
         groupName: newGroupName,
+        price: newPrice,
+        duration: `${startTime}-${endTime}`,
+        courses: selectedOptions.courses ? selectedOptions.courses.label : null,
+        teachers: selectedOptions.teachers ? selectedOptions.teachers.label : null,
+        rooms: selectedOptions.rooms ? selectedOptions.rooms.label : null,
+        selectedDays: selectedDays, // Yangi guruhning kunlari
       };
-
-      // Add the new group to the local state
-      setGroups([...groups, newGroupName]);
+  
+      // Yangi guruhning boshlanish va tugash vaqtini aniqlash
+      const newGroupStartTime = parseInt(startTime.split(":")[0], 10) * 60 +
+                                parseInt(startTime.split(":")[1], 10);
+      const newGroupEndTime = parseInt(endTime.split(":")[0], 10) * 60 +
+                              parseInt(endTime.split(":")[1], 10);
+  
+      // Vaqtlar mantiqiyligini tekshirish
+      if (newGroupStartTime >= newGroupEndTime) {
+        alert("Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak.");
+        return;
+      }
+  
+      // To'qnashuvni tekshirish
+      const isConflict = groupsData.some((group) => {
+        if (!group.duration || !group.rooms || !group.selectedDays) {
+          return false; // Guruhda kerakli ma'lumotlar bo'lmasa, to'qnashuv yo'q
+        }
+  
+        const groupStartTime = parseInt(group.duration.split("-")[0].split(":")[0], 10) * 60 +
+                               parseInt(group.duration.split("-")[0].split(":")[1], 10);
+        const groupEndTime = parseInt(group.duration.split("-")[1].split(":")[0], 10) * 60 +
+                             parseInt(group.duration.split("-")[1].split(":")[1], 10);
+  
+        // Kunlar to'qnashuvini tekshirish
+        const hasDayConflict = group.selectedDays.some((day) =>
+          newGroup.selectedDays.includes(day)
+        );
+  
+        // Vaqt to'qnashuvini tekshirish
+        const hasTimeConflict =
+          (newGroupStartTime < groupEndTime && newGroupEndTime > groupStartTime);
+  
+        // Xona, vaqt va kunlar to'qnashuvini birgalikda tekshirish
+        return group.rooms === newGroup.rooms && hasDayConflict && hasTimeConflict;
+      });
+  
+      if (isConflict) {
+        alert("Yangi guruhning dars vaqti va xonasi mavjud guruhlar bilan to'qnash keladi.");
+        return;
+      }
+  
+      // Guruhni qo'shish
       setGroupsData([...groupsData, newGroup]);
-
-      // Add the new group to Firebase
+  
       const newGroupRef = ref(database, `Groups/${newGroupName}`);
       set(newGroupRef, newGroup)
         .then(() => {
@@ -205,11 +283,16 @@ function Groups(){
         .catch((error) => {
           console.error("Error adding group to Firebase:", error);
         });
-
+  
+      // Formani tozalash
       setNewGroupName("");
+      setStartTime("");
+      setEndTime("");
+      setNewPrice("");
+      setSelectedDays([]); // Kunlarni tozalash
     }
-    console.log(groupsData);
   };
+  
 
   const addStudentToGroup = () => {
     if (newStudentName.trim() === "" || newStudentNumber.trim() === "") {
@@ -238,6 +321,15 @@ function Groups(){
     setNewStudentName("");
     setNewStudentNumber("");
     toggleModal();
+  };
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Form submitted");
+    setOpen(false);
+  };
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
   };
 
   function handleGroupClick(groupName, id) {
@@ -354,6 +446,9 @@ function Groups(){
     });
   }, []);
 
+
+  
+
   return (
     <div>
       <SidebarPanel />
@@ -381,77 +476,172 @@ function Groups(){
         </div>
         <div className={style.groupAbout}>
           <h2>Guruhlar soni: {groupsData.length}</h2>
-          <div className={`${style.groupAdd} ${isAdd ? style.isAdd : ""}`}>
-            <span>
-              <h2>Yangi guruh qo'shish</h2>
-              <button onClick={toggleIsAdd}>❌</button>
-            </span>
-            <hr />
-            <label htmlFor="">Nomi</label>
-            <input
-              type="text"
-              value={newGroupName} // Controlled input
-              onChange={handleInputChange}
-            />
-            <label htmlFor="">Kurs tanlash</label>
-            <Select
-              name="courses"
-              options={coursesData}
-              className="basic-multi-select"
-              classNamePrefix="select"
-              onChange={handleSelectChange}
-            />
-            <label htmlFor="">O'qituvchini tanlang</label>
-            <Select
-              name="teachers"
-              options={teachersData}
-              className="basic-multi-select"
-              classNamePrefix="select"
-              onChange={handleSelectChange}
-            />
-            <label htmlFor="">Kunlar</label>
-            <Select
-              name="days"
-              options={days}
-              className="basic-multi-select"
-              classNamePrefix="select"
-              onChange={handleSelectChange}
-            />
-            <label htmlFor="">Xonani tanlang</label>
-            <Select
-              name="rooms"
-              options={roomsData}
-              className="basic-multi-select"
-              classNamePrefix="select"
-              onChange={handleSelectChange}
-            />
-            <label htmlFor="">Darsning boshlanish vaqti</label>
-            <select
-              className={style.selectData}
-              name=""
-              id=""
-              style={{ maxHeight: "100px", overflowY: "auto" }}
+          <SidebarProvider>
+            {isOpen && (
+              <div
+                className="fixed w-full  h-[100vh] z-30  inset-0 backdrop-blur-sm transition-all duration-900 ease-in-out"
+                onClick={() => {
+                  setOpen(false);
+                  toggleSidebar();
+                }}
+              ></div>
+            )}
+            <Sidebar
+              className={cn(
+                "fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out",
+                open ? "translate-x-0" : "translate-x-full"
+              )}
+              side="right"
+              collapsible="none"
             >
-              <option value="09:00">09:00</option>
-              <option value="09:30">09:30</option>
-              <option value="10:00">10:00</option>
-              <option value="10:30">10:30</option>
-              <option value="11:00">11:00</option>
-              <option value="11:30">11:30</option>
-              <option value="12:00">12:00</option>
-              <option value="12:30">12:30</option>
-              <option value="13:00">13:00</option>
-              <option value="13:30">13:30</option>
-              <option value="14:30">14:30</option>
-              <option value="15:00">15:00</option>
-              <option value="15:30">15:30</option>
-              <option value="16:00">16:00</option>
-              <option value="16:30">16:30</option>
-              <option value="17:00">17:00</option>
-            </select>
-            <button onClick={addGroup}>Saqlash</button>
-          </div>
-          <button className={style.groupAddButton} onClick={toggleIsAdd}>
+              <SidebarHeader className="flex  items-center justify-between border border-gray-300 p-4">
+                <h2 className="text-xl font-semibold">Yangi kurs qo'shish</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setOpen(false);
+                    toggleSidebar();
+                  }}
+                  className="rounded-full hover:bg-gray-100"
+                >
+                  <X className="h-5 w-5  " />
+                  <span className="sr-only">Yopish</span>
+                </Button>
+              </SidebarHeader>
+
+              <SidebarContent>
+                <form
+                  onSubmit={handleSubmit}
+                  className="space-y-6 p-6 text-left "
+                >
+                  <div className="space-y-6">
+                    <Label htmlFor="courseName">Kurs nomi</Label>
+                    <Input
+                      id="courseName"
+                      placeholder="Kurs nomini kiriting"
+                      className="w-full"
+                      value={newGroupName} // Controlled input
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="courseSelect">Kursni tanlash</Label>
+                    <SelectReact
+                      value={selectedOptions.courses}
+                      onChange={(selectedOption) =>
+                        handleSelectChange(selectedOption, { name: "courses" })
+                      }
+                      options={coursesData}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="teacher">O'qituvchi</Label>
+                    <SelectReact
+                      value={selectedOptions.teachers}
+                      onChange={(selectedOption) =>
+                        handleSelectChange(selectedOption, { name: "teachers" })
+                      }
+                      options={teachersData}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Narxi</Label>
+                    <Input
+                      id="price"
+                      placeholder="Narxini kiriting"
+                      className="w-full"
+                      value={newPrice}
+                      onChange={(e) => setNewPrice(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Dars kunlari</Label>
+                    <div className="flex flex-wrap gap-3">
+                      {daysOfWeek.map((day) => (
+                        <div
+                          key={day.id}
+                          className="flex items-center space-x-2"
+                        >
+                          <Checkbox
+                            id={day.id}
+                            checked={selectedDays.includes(day.id)}
+                            onCheckedChange={() => handleDayChange(day.id)}
+                          />
+                          <Label
+                            htmlFor={day.id}
+                            className="text-sm font-normal cursor-pointer"
+                          >
+                            {day.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Dars vaqti</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="relative">
+                        <Input
+                          type="time"
+                          className="w-full pl-10"
+                          value={startTime}
+                          onChange={(e) => setStartTime(e.target.value)}
+                          required
+                        />
+                        <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                      </div>
+                      <div className="relative">
+                        <Input
+                          type="time"
+                          className="w-full pl-10"
+                          value={endTime}
+                          onChange={(e) => setEndTime(e.target.value)}
+                          required
+                        />
+                        <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="room">Xona</Label>
+                    <SelectReact
+                      value={selectedOptions.rooms}
+                      onChange={(selectedOption) =>
+                        handleSelectChange(selectedOption, { name: "rooms" })
+                      }
+                      options={roomsData}
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-black hover:opacity-80 text-white"
+                    onClick={() => {
+                      setOpen(false);
+                      toggleSidebar();
+                      addGroup();
+                    }}
+                  >
+                    Saqlash
+                  </Button>
+                </form>
+              </SidebarContent>
+            </Sidebar>
+          </SidebarProvider>
+          <button className={style.groupAddButton}     
+           onClick={() => {
+              setOpen(true);
+              toggleSidebar();
+            }}>
             Add Group
           </button>
         </div>
@@ -522,60 +712,6 @@ function Groups(){
 </Card>
     
 
-
-        {/* <div className={style.groupActive}>
-          {groupInfo && (
-            <div className={style.groupInfo}>
-              <h1>{groupInfo.groupName}</h1>
-              <hr />
-              <div className={style.groupInfoContent}>
-                <div className={style.groupInfoContentItem}>
-                  <h2>
-                    Kurs:{" "}
-                    <span>
-                      {groupInfo ? groupInfo.courses : "No course selected"}
-                    </span>
-                  </h2>
-                  <h2>
-                    O'qituvchi:{" "}
-                    <span>
-                      {groupInfo ? groupInfo.teachers : "No teacher selected"}
-                    </span>
-                  </h2>
-                  <h2>
-                    Narx:
-                    <span>
-                      {coursesData.find(
-                        (course) => course.label === groupInfo?.courses
-                      )?.price || "N/A"}{" "}
-                      UZS
-                    </span>
-                  </h2>
-               
-                  <h2>
-                    Davomiyligi:{" "}
-                    <span>
-                      {`${groupInfo.days}`} • {coursesData.find(
-                        (course) => course.label === groupInfo?.courses 
-                      )?.duration || "N/A"}
-                    </span>
-                  </h2>
-                  <h2>
-                    Room:{" "}
-                    <span>
-                      {groupInfo ? groupInfo.rooms : "No room selected"}
-                    </span>
-                  </h2>
-                </div>
-              </div>
-              <div className={style.crud}>
-                <i className="fa-solid fa-pen"></i>
-                <i className="fa-regular fa-trash-can"></i>
-                <i className="fa-solid fa-plus" onClick={toggleModal}></i>
-              </div>
-            </div>
-          )}
-        </div> */}
 
         <div className={style.davomat}>
           <h1>Davomat</h1>

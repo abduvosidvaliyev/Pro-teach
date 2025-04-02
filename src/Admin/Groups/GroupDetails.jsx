@@ -33,13 +33,6 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/Label";
 import { Checkbox } from "../../components/ui/checkbox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
@@ -81,21 +74,6 @@ const daysOfWeek = [
   { id: "shan", label: "Shan" },
   { id: "yak", label: "Yak" },
 ];
-
-const teachers = [
-  { value: "shokir", label: "Shokir" },
-  { value: "abror", label: "Abror" },
-  { value: "sardor", label: "Sardor" },
-  { value: "dilshod", label: "Dilshod" },
-];
-
-const rooms = [
-  { value: "1", label: "1-xona" },
-  { value: "2", label: "2-xona" },
-  { value: "3", label: "3-xona" },
-  { value: "4", label: "4-xona" },
-];
-
 function GroupDetails() {
   const { id } = useParams(); // URLdan id ni olish
   const navigate = useNavigate(); // useHistory dan foydalaning
@@ -103,27 +81,20 @@ function GroupDetails() {
   const groupInfoo = JSON.parse(
     decodeURIComponent(queryParams.get("groupInfo"))
   );
-  const [groups, setGroups] = useState(["Web 1", "Web 2", "Web 3"]); // Initial groups
 
   const [open, setOpen] = useState(false);
-  const [open2, setOpen2] = useState(false)
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [isAdd, setIsAdd] = useState(true);
-  const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [coursesData, setCoursesData] = useState([]);
   const [teachersData, setTeachersData] = useState([]);
   const [roomsData, setRoomsData] = useState([]);
   const [groupInfo, setGroupInfo] = useState(groupInfoo);
   const [groupsData, setGroupsData] = useState([]);
-  const [studentsData, setStudentsData] = useState([]);
   const [newGroupName, setNewGroupName] = useState("");
   const [newPrice, setNewPrice] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newStudentName, setNewStudentName] = useState("");
-  const [newStudentNumber, setNewStudentNumber] = useState("");
   const [students, setStudents] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -141,6 +112,9 @@ function GroupDetails() {
   };
 
   const getCurrentMonthDates = () => {
+    console.log(groupInfo);
+    
+    const selectedDays = groupInfo?.selectedDays || []; // Agar `selectedDays` mavjud bo'lmasa, bo'sh massivni ishlatamiz
     const dates = [];
     const pastMonths = [];
     const months = [];
@@ -148,30 +122,41 @@ function GroupDetails() {
     const year = now.getFullYear();
     const month = now.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
+  
+    // Haftaning kunlari uchun mos keladigan IDlar
+    const dayMapping = {
+      du: 1, // Dushanba
+      se: 2, // Seshanba
+      chor: 3, // Chorshanba
+      pay: 4, // Payshanba
+      ju: 5, // Juma
+      shan: 6, // Shanba
+      yak: 0, // Yakshanba
+    };
+  
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const dayOfWeek = date.getDay();
-      if (dayOfWeek === 2 || dayOfWeek === 4 || dayOfWeek === 6) {
-        dates.push(
-          `${day} ${date.toLocaleString("en-US", { month: "short" })}`
-        );
+  
+      // Agar `selectedDays`da kun mavjud bo'lsa, uni qo'shamiz
+      if (selectedDays.some((selectedDay) => dayMapping[selectedDay] === dayOfWeek)) {
+        dates.push(`${day} ${date.toLocaleString("en-US", { month: "short" })}`);
       }
     }
-
+  
     for (let i = 5; i >= 0; i--) {
       const pastMonth = new Date(year, month - i);
       pastMonths.push(
         pastMonth.toLocaleString("en-US", { month: "long", year: "numeric" })
       );
     }
-
+  
     months.push(
       now.toLocaleString("en-US", { month: "long", year: "numeric" })
     );
-
+  
     return { dates, months, pastMonths };
-  };
+  };  
 
   const { dates, months, pastMonths } = getCurrentMonthDates();
 
@@ -190,28 +175,31 @@ function GroupDetails() {
   }, [id]);
 
   const handleAttendance = (studentIndex, dateIndex, student, status) => {
-    const newStudents = [...students, dateIndex];
-    newStudents[studentIndex][`attendance`][months][dateIndex] = status;
-
-    const studentCell = ref(database, `Students/${student.studentName}`);
-
-    update(studentCell, {
-      [`attendance/${months}/${dateIndex}`]: status,
+    const newStudents = [...students];
+    const date = dates[dateIndex]; // Indeksdan sanani olamiz
+  
+    // `attendance`ni yangilash
+    if (!newStudents[studentIndex][`attendance`][selectedMonth]) {
+      newStudents[studentIndex][`attendance`][selectedMonth] = {};
+    }
+    newStudents[studentIndex][`attendance`][selectedMonth][date] = status;
+  
+    // Firebase'da yangilash
+    const studentRef = ref(database, `Students/${student.studentName}`);
+    update(studentRef, {
+      [`attendance/${selectedMonth}/${date}`]: status,
     }).catch((error) => {
-      console.error("Error adding group to Firebase:", error);
+      console.error("Error updating attendance in Firebase:", error);
     });
-
-    setStudents(students);
-    console.log(students);
+  
+    setStudents(newStudents);
   };
+  
 
   const handleMonthClick = (month) => {
     setSelectedMonth(month);
   };
 
-  const toggleIsAdd = () => {
-    setIsAdd(!isAdd);
-  };
 
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
@@ -222,14 +210,6 @@ function GroupDetails() {
     }));
   };
 
-  // const handleInputChange = (event) => {
-  //   const value = event.target.value;
-  //   setNewGroupName(value); // Update new group name state
-  //   setSelectedOptions((prevState) => ({
-  //     ...prevState,
-  //     groupName: value,
-  //   }));
-  // };
   const handleInputChange = (event) => {
     const value = event.target.value;
     setNewGroupName(value); // Update new group name state
@@ -238,9 +218,6 @@ function GroupDetails() {
       groupName: value,
     }));
   };
-
-  const handleInputChangeNum = (event) =>
-    setNewStudentNumber(event.target.value || "");
 
   const addGroup = () => {
     if (newGroupName.trim() !== "") {
@@ -251,25 +228,43 @@ function GroupDetails() {
         courses: selectedOptions.courses ? selectedOptions.courses.label : null,
         teachers: selectedOptions.teachers ? selectedOptions.teachers.label : null,
         rooms: selectedOptions.rooms ? selectedOptions.rooms.label : null,
-        // Add selected days to the group object
-        selectedDays: selectedDays
+        selectedDays: selectedDays, // Yangi guruhning kunlari
       };
   
-      // Check for time conflicts
-      const newGroupStartHour = parseInt(startTime.split(":")[0], 10);
-      const newGroupEndHour = parseInt(endTime.split(":")[0], 10);
+      // Yangi guruhning boshlanish va tugash vaqtini aniqlash
+      const newGroupStartTime = parseInt(startTime.split(":")[0], 10) * 60 +
+                                parseInt(startTime.split(":")[1], 10);
+      const newGroupEndTime = parseInt(endTime.split(":")[0], 10) * 60 +
+                              parseInt(endTime.split(":")[1], 10);
   
+      // Vaqtlar mantiqiyligini tekshirish
+      if (newGroupStartTime >= newGroupEndTime) {
+        alert("Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak.");
+        return;
+      }
+  
+      // To'qnashuvni tekshirish
       const isConflict = groupsData.some((group) => {
-        if (!group.duration || !group.rooms) {  
-          return false;
+        if (!group.duration || !group.rooms || !group.selectedDays) {
+          return false; // Guruhda kerakli ma'lumotlar bo'lmasa, to'qnashuv yo'q
         }
-        const groupStartHour = parseInt(group.duration.split("-")[0].split(":")[0], 10);
-        const groupEndHour = parseInt(group.duration.split("-")[1].split(":")[0], 10);
-        return (
-          group.rooms === newGroup.rooms &&
-          ((newGroupStartHour >= groupStartHour && newGroupStartHour < groupEndHour) ||
-            (newGroupEndHour > groupStartHour && newGroupEndHour <= groupEndHour))
+  
+        const groupStartTime = parseInt(group.duration.split("-")[0].split(":")[0], 10) * 60 +
+                               parseInt(group.duration.split("-")[0].split(":")[1], 10);
+        const groupEndTime = parseInt(group.duration.split("-")[1].split(":")[0], 10) * 60 +
+                             parseInt(group.duration.split("-")[1].split(":")[1], 10);
+  
+        // Kunlar to'qnashuvini tekshirish
+        const hasDayConflict = group.selectedDays.some((day) =>
+          newGroup.selectedDays.includes(day)
         );
+  
+        // Vaqt to'qnashuvini tekshirish
+        const hasTimeConflict =
+          (newGroupStartTime < groupEndTime && newGroupEndTime > groupStartTime);
+  
+        // Xona, vaqt va kunlar to'qnashuvini birgalikda tekshirish
+        return group.rooms === newGroup.rooms && hasDayConflict && hasTimeConflict;
       });
   
       if (isConflict) {
@@ -277,8 +272,7 @@ function GroupDetails() {
         return;
       }
   
-      // Add group to local state and Firebase
-      setGroups([...groups, newGroupName]);
+      // Guruhni qo'shish
       setGroupsData([...groupsData, newGroup]);
   
       const newGroupRef = ref(database, `Groups/${newGroupName}`);
@@ -290,44 +284,16 @@ function GroupDetails() {
           console.error("Error adding group to Firebase:", error);
         });
   
-      // Reset form
+      // Formani tozalash
       setNewGroupName("");
       setStartTime("");
       setEndTime("");
       setNewPrice("");
-      setSelectedDays([]); // Reset selected days
+      setSelectedDays([]); // Kunlarni tozalash
     }
   };
   
 
-  const addStudentToGroup = () => {
-    if (newStudentName.trim() === "" || newStudentNumber.trim() === "") {
-      console.log("Student name and number are required");
-      return;
-    }
-
-    const newStudent = {
-      studentName: newStudentName,
-      studentNumber: newStudentNumber,
-      group: groupInfo.groupName,
-      attendance: {
-        [months]: Array(dates.length).fill(false),
-      },
-    };
-
-    const userRef = ref(database, `Students/${newStudentName}`);
-    update(userRef, newStudent)
-      .then(() => {
-        alert("Ma'lumot muvaffaqiyatli yangilandi!");
-      })
-      .catch((error) => {
-        console.error("Xatolik yuz berdi: ", error);
-      });
-
-    setNewStudentName("");
-    setNewStudentNumber("");
-    toggleModal();
-  };
 
   function handleGroupClick(groupName, id) {
     const groupData = groupsData.find((group) => group.groupName === groupName);
@@ -347,32 +313,19 @@ function GroupDetails() {
     }
   }
 
-  const attendance = (studentName) => {
-    const attendanceRef = ref(database, `Students/${studentName}/attendance`);
 
-    // Get the current date
-    const currentDate = new Date();
+  // Sana bo'yicha `attendance` ma'lumotlarini indeks bo'yicha qayta ishlash
+const getAttendanceByIndex = (attendance, dates) => {
+  const attendanceByIndex = Array(dates.length).fill(null); // Barcha indekslarni `null` bilan to'ldiramiz
 
-    // Format the key as "YYYY-MM-DD"
-    const dateKey = `${currentDate.getFullYear()}-${String(
-      currentDate.getMonth() + 1
-    ).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
+  dates.forEach((date, index) => {
+    if (attendance[date]) {
+      attendanceByIndex[index] = attendance[date]; // Sanaga mos keladigan qiymatni indeksga qo'yamiz
+    }
+  });
 
-    const attendanceData = {
-      [dateKey]: { status: true },
-    };
-
-    update(attendanceRef, attendanceData)
-      .then(() => {
-        console.log("Attendance recorded for:", studentName);
-        console.log(studentsData[0].attendance);
-      })
-      .catch((error) => {
-        console.error("Error adding attendance to Firebase:", error);
-      });
-  };
-
-  // ... existing code ...
+  return attendanceByIndex;
+};
 
   useEffect(() => {
     const coursesRef = ref(database, "Teachers");
@@ -485,20 +438,19 @@ function GroupDetails() {
       return;
     }
   
-    // Otherwise, just add the selected day
     setSelectedDays(updatedDays);
   };
   
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission logic here
     console.log("Form submitted");
     setOpen(false);
   };
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
+
 
   if (!groupInfo) {
     return <div>Loading...</div>; // Ma'lumotlar yuklanayotganida yuklanishni ko'rsatish
@@ -594,7 +546,7 @@ function GroupDetails() {
 
                   <div className="space-y-2">
                     <Label htmlFor="teacher">O'qituvchi</Label>
-                    <SelectReact
+                    <SelectReact  
                       value={selectedOptions.teachers}
                       onChange={(selectedOption) =>
                         handleSelectChange(selectedOption, { name: "teachers" })
@@ -789,70 +741,83 @@ function GroupDetails() {
           </div>
 
           <div className={style.attendanceGrid}>
-            <div className={style.header}>
-              <div className={style.nameCol}>Ism</div>
-              {dates.map((date, index) => (
-                <div key={index} className={style.dateCol}>
-                  {date}
-                </div>
-              ))}
-            </div>
+  <div className={style.header}>
+    <div className={style.nameCol}>Ism</div>
+    {dates.map((date, index) => (
+      <div key={index} className={style.dateCol}>
+        {date}
+      </div>
+    ))}
+  </div>
 
-            {students.map((student, studentIndex) => (
-              <div key={studentIndex} className={style.studentCol}>
-                <div className={style.nameCol}>{student.studentName}</div>
-                {student[`attendance`][selectedMonth] &&
-                Array.isArray(student[`attendance`][selectedMonth]) ? (
-                  student[`attendance`][selectedMonth].map(
-                    (attendance, dateIndex) => (
-                      <div key={dateIndex} className={style.attendanceCell} x>
-                        <div
-                          className={`${style.circle} ${
-                            attendance === true
-                              ? style.present
-                              : attendance === false
-                              ? style.absent
-                              : ""
-                          }`}
-                        >
-                          <div className={style.hoverButtons}>
-                            <button
-                              className={style.yesBtn}
-                              onClick={() =>
-                                handleAttendance(
-                                  studentIndex,
-                                  dateIndex,
-                                  student,
-                                  true
-                                )
-                              }
-                            >
-                              Ha
-                            </button>
-                            <button
-                              className={style.noBtn}
-                              onClick={() =>
-                                handleAttendance(
-                                  studentIndex,
-                                  dateIndex,
-                                  student,
-                                  false
-                                )
-                              }
-                            >
-                              Yo'q
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  )
-                ) : (
-                  <div>No attendance data available</div>
-                )}
-              </div>
-            ))}
+  {students.map((student, studentIndex) => {
+    // Tanlangan oy uchun `attendance` ma'lumotlarini tekshirish
+    const attendanceData = student[`attendance`]?.[selectedMonth];
+    if (!attendanceData) {
+      return (
+        <div key={studentIndex} className={style.studentCol}>
+          <div className={style.nameCol}>{student.studentName}</div>
+          <div className={style.dateCol} colSpan={dates.length}>
+            <span className="text-red-500">Not Found</span>
           </div>
+        </div>
+      );
+    }
+
+    const attendanceByIndex = getAttendanceByIndex(attendanceData, dates);
+
+    return (
+      <div key={studentIndex} className={style.studentCol}>
+        <div className={style.nameCol}>{student.studentName}</div>
+
+        {attendanceByIndex.map((attendance, dateIndex) => {
+          const currentDate = dates[dateIndex];
+          const today = `${new Date().getDate()} ${new Date().toLocaleString("en-US", {
+            month: "short",
+          })}`;
+          const isPastDate = new Date(currentDate) < new Date(today);
+          const isNotToday = currentDate !== today;
+
+          return (
+            <div key={dateIndex} className={style.attendanceCell}>
+              <div
+                className={`${style.circle} ${
+                  attendance === true
+                    ? style.present
+                    : attendance === false
+                    ? style.absent
+                    : ""
+                }`}
+              >
+                <div className={style.hoverButtons}>
+                  <button
+                    className={style.yesBtn}
+                    onClick={() =>
+                      handleAttendance(studentIndex, dateIndex, student, true)
+                    }
+                    disabled={isPastDate || isNotToday}
+                  >
+                    Ha
+                  </button>
+                  <button
+                    className={style.noBtn}
+                    onClick={() =>
+                      handleAttendance(studentIndex, dateIndex, student, false)
+                    }
+                    disabled={isPastDate || isNotToday}
+                  >
+                    Yo'q
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  })}
+</div>
+
         </div>
       </div>
         <div>
@@ -892,6 +857,7 @@ function GroupDetails() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
+
             const updatedGroup = {
               ...editGroupData,
               groupName: newGroupName || editGroupData.groupName,
@@ -913,15 +879,53 @@ function GroupDetails() {
                 : editGroupData.selectedDays,
             };
 
-            const groupRef = ref(database, `Groups/${editGroupData.groupName}`);
-            update(groupRef, updatedGroup)
-              .then(() => {
-                console.log("Group updated successfully");
-                closeEditModal();
-              })
-              .catch((error) => {
-                console.error("Error updating group:", error);
-              });
+            // Yangi guruhning boshlanish va tugash vaqtini aniqlash
+            const newGroupStartTime = parseInt(updatedGroup.duration.split("-")[0].split(":")[0], 10) * 60 +
+                                      parseInt(updatedGroup.duration.split("-")[0].split(":")[1], 10);
+            const newGroupEndTime = parseInt(updatedGroup.duration.split("-")[1].split(":")[0], 10) * 60 +
+                                    parseInt(updatedGroup.duration.split("-")[1].split(":")[1], 10);
+
+            // Vaqtlar mantiqiyligini tekshirish
+            if (newGroupStartTime >= newGroupEndTime) {
+              alert("Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak.");
+              return;
+            }
+
+            // To'qnashuvni tekshirish
+            const isConflict = groupsData.some((group) => {
+              if (group.groupName === editGroupData.groupName) {
+                return false; // O'zi bilan to'qnashuvni tekshirmaslik
+              }
+
+              if (!group.duration || !group.rooms || !group.selectedDays) {
+                return false; // Guruhda kerakli ma'lumotlar bo'lmasa, to'qnashuv yo'q
+              }
+
+              const groupStartTime = parseInt(group.duration.split("-")[0].split(":")[0], 10) * 60 +
+                                     parseInt(group.duration.split("-")[0].split(":")[1], 10);
+              const groupEndTime = parseInt(group.duration.split("-")[1].split(":")[0], 10) * 60 +
+                                   parseInt(group.duration.split("-")[1].split(":")[1], 10);
+
+              // Kunlar to'qnashuvini tekshirish
+              const hasDayConflict = group.selectedDays.some((day) =>
+                updatedGroup.selectedDays.includes(day)
+              );
+
+              // Vaqt to'qnashuvini tekshirish
+              const hasTimeConflict =
+                (newGroupStartTime < groupEndTime && newGroupEndTime > groupStartTime);
+
+              // Xona, vaqt va kunlar to'qnashuvini birgalikda tekshirish
+              return group.rooms === updatedGroup.rooms && hasDayConflict && hasTimeConflict;
+            });
+
+            if (isConflict) {
+              alert("Guruhning dars vaqti va xonasi boshqa guruhlar bilan to'qnash keladi.");
+              return;
+            }
+
+            // Firebase'da guruhni yangilash
+            handleGroupUpdate(updatedGroup);
           }}
           className="space-y-6 p-6 text-left"
         >
@@ -944,7 +948,6 @@ function GroupDetails() {
                 onChange={(e) => setNewPrice(e.target.value)}
               />
             </div>
-            
             <div>
               <Label htmlFor="editCourse">Kursni tanlash</Label>
               <SelectReact
@@ -958,7 +961,6 @@ function GroupDetails() {
                 }
                 options={coursesData}
               />
-          
             </div>
             <div>
               <Label htmlFor="editTeacher">O'qituvchi</Label>
@@ -974,11 +976,10 @@ function GroupDetails() {
                 options={teachersData}
               />
             </div>
-     
             <div>
               <Label htmlFor="editRoom">Xona</Label>
               <SelectReact
-                 value={
+                value={
                   selectedOptions.rooms ||
                   roomsData.find((room) => room.label === editGroupData?.rooms) ||
                   null
@@ -1043,6 +1044,68 @@ function GroupDetails() {
     </div>
   );
 }
+
+const updateStudentAttendance = (groupName, selectedDays) => {
+  const studentsRef = ref(database, "Students");
+
+  onValue(studentsRef, (snapshot) => {
+    const studentsData = snapshot.val();
+
+    if (!studentsData) return;
+
+    Object.keys(studentsData).forEach((studentKey) => {
+      const student = studentsData[studentKey];
+
+      // Faqat ushbu guruhga tegishli talabalarni yangilash
+      if (student.group === groupName) {
+        const currentMonth = new Date().toLocaleString("en-US", {
+          month: "long",
+          year: "numeric",
+        });
+
+        // Guruhdagi yangi kunlar
+        const newDates = getCurrentMonthDates(selectedDays);
+
+        // Yangi attendance ma'lumotlarini yaratish
+        const updatedAttendance = {};
+        newDates.forEach((date) => {
+          updatedAttendance[date] = false; // Barcha yangi kunlar uchun `false` qiymat qo'shamiz
+        });
+
+        // Firebase ma'lumotlar bazasiga yozish
+        const studentRef = ref(database, `Students/${studentKey}`);
+        update(studentRef, {
+          [`attendance/${currentMonth}`]: updatedAttendance, // Eski ma'lumotlarni o'chirib, yangi ma'lumotlarni yozamiz
+        })
+          .then(() => {
+            console.log(
+              `Attendance updated for student: ${student.studentName}`
+            );
+          })
+          .catch((error) => {
+            console.error(
+              `Error updating attendance for student: ${student.studentName}`,
+              error
+            );
+          });
+      }
+    });
+  });
+};
+
+const handleGroupUpdate = (updatedGroup) => {
+  const groupRef = ref(database, `Groups/${updatedGroup.groupName}`);
+  update(groupRef, updatedGroup)
+    .then(() => {
+      alert("Group updated successfully!");
+
+      // Talabalar `attendance` ma'lumotlarini yangilash
+      updateStudentAttendance(updatedGroup.groupName, updatedGroup.selectedDays);
+    })
+    .catch((error) => {
+      console.error("Error updating group:", error);
+    });
+};
 
 export default GroupDetails;
 

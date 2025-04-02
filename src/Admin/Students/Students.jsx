@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import style from "./Students.module.css";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
@@ -70,6 +70,37 @@ function Students() {
     const month = String(today.getMonth() + 1).padStart(2, "0");
     const day = String(today.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+  };
+
+  const getCurrentMonthDates = (selectedDays) => {
+    const dates = [];
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+    // Haftaning kunlari uchun mos keladigan IDlar
+    const dayMapping = {
+      du: 1, // Dushanba
+      se: 2, // Seshanba
+      chor: 3, // Chorshanba
+      pay: 4, // Payshanba
+      ju: 5, // Juma
+      shan: 6, // Shanba
+      yak: 0, // Yakshanba
+    };
+  
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      const dayOfWeek = date.getDay();
+  
+      // Agar `selectedDays`da kun mavjud bo'lsa, uni qo'shamiz
+      if (selectedDays.some((selectedDay) => dayMapping[selectedDay] === dayOfWeek)) {
+        dates.push(`${day} ${date.toLocaleString("en-US", { month: "short" })}`);
+      }
+    }
+  
+    return dates;
   };
 
   const [isAdd, setIsAdd] = useState(true);
@@ -175,23 +206,47 @@ function Students() {
     return () => unsubscribe();
   }, []);
 
+  const updatedStudents = useMemo(() => {
+    if (groupsData && studentsData.length > 0) {
+      return studentsData.map((student) => {
+        if (!groupsData[student.group]) {
+          return { ...student, group: "" };
+        }
+        return student;
+      });
+    }
+    return studentsData;
+  }, [groupsData, studentsData]);
+
+  useEffect(() => {
+    updatedStudents.forEach((student) => {
+      const studentRef = ref(database, `Students/${student.studentName}`);
+      update(studentRef, { group: student.group });
+    });
+  }, [updatedStudents]);
+
+
   function addStudent() {
     if (newStudentName.trim() !== "") {
+      const selectedDays = ["du", "se", "pay"]; // Guruhning tanlangan kunlari
+      const dates = getCurrentMonthDates(selectedDays); // Kunlarni hisoblash
+  
       const newStudent = {
         ...selectedOptions,
         studentName: newStudentName,
         id: studentsData.length + 1,
         group: "",
         attendance: {
-          [currentMonth]: Array(dates.length).fill(false),
+          [currentMonth]: { _empty: true }, // Maxsus kalit bilan bo'sh obyektni saqlash
         },
-        balance: ""
+        balance: "0.00",
+        status: ""
       };
-
-      setStudents([...students, newStudentName]);
-      setStudents([...students, newStudentNumber]);
+  
+      // Mahalliy holatni yangilash
       setStudentsData([...studentsData, newStudent]);
-
+  
+      // Firebase'ga yozish
       const newStudentRef = ref(database, `Students/${newStudentName}`);
       set(newStudentRef, newStudent)
         .then(() => {
@@ -200,11 +255,11 @@ function Students() {
         .catch((error) => {
           console.error("Error adding student to Firebase:", error);
         });
-
+  
+      // Formani tozalash
       setNewStudentName("");
       setNewStudentNumber("");
     }
-    console.log(studentsData);
   }
 
   const handleRowClick = (student) => {
@@ -225,9 +280,12 @@ function Students() {
   };
 
   const filteredStudents = studentsData.filter((student) => {
-    // Talabaning guruhini olish
+    // Ensure studentName exists before calling toLowerCase
+    const studentName = student.studentName || ""; // Default to an empty string if undefined
+  
+    // Talabaning guruhini olish                    
     const group = student.group;
-    
+  
     // Guruhning kursini olish
     const course =
       groupsData && group && groupsData[group]?.courses
@@ -235,7 +293,7 @@ function Students() {
         : "";
   
     return (
-      student.studentName.toLowerCase().includes(filters.search.toLowerCase()) &&
+      studentName.toLowerCase().includes(filters.search.toLowerCase()) &&
       (filters.course === "" || (Array.isArray(course) ? course.includes(filters.course) : course === filters.course)) &&
       (filters.groupStatus === "" || student.groupStatus === filters.groupStatus) &&
       (filters.paymentStatus === "" || student.paymentStatus === filters.paymentStatus) &&
@@ -360,8 +418,8 @@ function Students() {
                     }
                   >
                     Nofaol
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
               </DropdownMenu>
 
               {/* Payment Status Dropdown */}
@@ -458,38 +516,33 @@ function Students() {
                   <TableHead>O'qituvchi</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {filteredStudents.map((student) => (
-                  <TableRow
-                    onClick={(event) =>
-                      handleLinkClick(
-                        event,
-                        student,
-                        student.id,
-                        student.studentName
-                      )
-                    }
-                    key={student.id}
-                  >
-                    <TableCell>{student.id}</TableCell>
-                    <TableCell>{student.studentName}</TableCell>
-                    <TableCell>{student.grade}</TableCell>
-                    <TableCell>{student.studentNumber}</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                        {student.group}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {groupsData &&
-                      student.group &&
-                      groupsData[student.group]?.teachers
-                        ? groupsData[student.group].teachers
-                        : "Ma'lumot yo'q"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+          <TableBody>
+  {updatedStudents.map((student) => (
+    <TableRow
+      onClick={(event) =>
+        handleLinkClick(event, student, student.id, student.studentName)
+      }
+      key={student.id}
+    >
+      <TableCell>{student.id}</TableCell>
+      <TableCell>{student.studentName}</TableCell>
+      <TableCell>{student.grade}</TableCell>
+      <TableCell>{student.studentNumber}</TableCell>
+      <TableCell>
+        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+          {student.group}
+        </span>
+      </TableCell>
+      <TableCell>
+        {groupsData &&
+        student.group &&
+        groupsData[student.group]?.teachers
+          ? groupsData[student.group].teachers
+          : "Ma'lumot yo'q"}
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
             </Table>
           </div>
         </div>

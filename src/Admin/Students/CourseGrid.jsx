@@ -67,7 +67,7 @@ const CourseGrid = ({ student }) => {
       endDate: "2025-01-25",
       nextPayment: "2025-02-01",
       paymentAmount: courseAbout.price,
-    };
+    };  
   
     setCourses([newStudent]);
   }, [groupsData, courseAbout, student]);
