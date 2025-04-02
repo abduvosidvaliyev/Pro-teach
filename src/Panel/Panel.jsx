@@ -145,7 +145,6 @@ function Panel() {
 
         Promise.all(promises)
             .then(values => {
-                console.log(values);
                 setIncome(values);
                 setUData(values);
 
