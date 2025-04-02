@@ -4,5 +4,5 @@
     "editor.wordWrapColumn": 80,
     "editor.wordWrap": "on",
     "editor.cursorSurroundingLines": 0,
-    "editor.cursorWidth": 1
+    "editor.cursorWidth": 3
 }

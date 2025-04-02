@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import style from './Sidebar.module.css'
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -26,9 +26,8 @@ export function SidebarPanel() {
         </h3>
         <div className={style.toggleBtn} onClick={toggleSidebar}>
           <i
-            className={`fas ${
-              isCollapsed ? "fa-chevron-right" : "fa-chevron-left"
-            } ${style.toggleIcon}`}
+            className={`fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-left"
+              } ${style.toggleIcon}`}
           ></i>
         </div>
       </div>
@@ -74,9 +73,8 @@ export function SidebarPanel() {
           </Link>
         </li>
         <li
-          className={`${style.dropdown} ${
-            activeDropdown === 0 ? style.active : ""
-          }`}
+          className={`${style.dropdown} ${activeDropdown === 0 ? style.active : ""
+            }`}
         >
           <a
             href="#"
@@ -90,29 +88,34 @@ export function SidebarPanel() {
               <span>Settings</span>
             </div>
             <i
-              className={`fas ${
-                activeDropdown === 0 ? "fa-chevron-down" : "fa-chevron-right"
-              } ${style.dropdownIcon}`}
+              className={`fas ${activeDropdown === 0 ? "fa-chevron-down" : "fa-chevron-right"
+                } ${style.dropdownIcon}`}
             ></i>
           </a>
           <ul className={style.dropdownMenu}>
             <li>
-              <i class="fa-regular fa-gem"></i>
-              <a href="#" className={style.dropdownItem}>
-                Kurslar
-              </a>
+              <Link to="/course">
+                <i class="fa-regular fa-gem"></i>
+                <a href="#" className={style.dropdownItem}>
+                  Kurslar
+                </a>
+              </Link>
             </li>
             <li>
-              <i class="fa-solid fa-table-cells-large"></i>
-              <a href="#" className={style.dropdownItem}>
-                Xonalar
-              </a>
+              <Link>
+                <i class="fa-solid fa-table-cells-large"></i>
+                <a href="#" className={style.dropdownItem}>
+                  Xonalar
+                </a>
+              </Link>
             </li>
             <li>
-              <i class="fa-solid fa-user-group"></i>
-              <a href="#" className={style.dropdownItem}>
-                Xodimlar
-              </a>
+              <Link>
+                <i class="fa-solid fa-user-group"></i>
+                <a href="#" className={style.dropdownItem}>
+                  Xodimlar
+                </a>
+              </Link>
             </li>
           </ul>
         </li>
