@@ -33,7 +33,7 @@ const Course = () => {
             setCourseData(courseArray);
         });
     }, [])
-    
+
 
     return (
         <div>

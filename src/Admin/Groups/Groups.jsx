@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import SelectReact from "react-select";
 import { data, Link, useNavigate } from "react-router-dom";
- import style from "./Group.module.css";
+import style from "./Group.module.css";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 import {
@@ -95,8 +95,8 @@ const daysOfWeek = [
   { id: "yak", label: "Yak" },
 ];
 
-function Groups(){
-  const navigate = useNavigate(); 
+function Groups() {
+  const navigate = useNavigate();
 
   const [groups, setGroups] = useState(["Web 1", "Web 2", "Web 3"]); // Initial groups
   const [openTeacher, setOpenTeacher] = React.useState(false)
@@ -127,7 +127,7 @@ function Groups(){
   const [editGroupData, setEditGroupData] = useState(null);
 
 
-  
+
   const getCurrentMonthDates = () => {
     const dates = [];
     const pastMonths = [];
@@ -211,14 +211,14 @@ function Groups(){
       setSelectedDays((prev) => prev.filter((d) => d !== day));
       return;
     }
-  
+
     const updatedDays = [...selectedDays, day];
     setSelectedDays(updatedDays);
   };
 
   const handleInputChangeNum = (event) =>
     setNewStudentNumber(event.target.value || "");
-  
+
   const addGroup = () => {
     if (newGroupName.trim() !== "") {
       const newGroup = {
@@ -230,51 +230,51 @@ function Groups(){
         rooms: selectedOptions.rooms ? selectedOptions.rooms.label : null,
         selectedDays: selectedDays, // Yangi guruhning kunlari
       };
-  
+
       // Yangi guruhning boshlanish va tugash vaqtini aniqlash
       const newGroupStartTime = parseInt(startTime.split(":")[0], 10) * 60 +
-                                parseInt(startTime.split(":")[1], 10);
+        parseInt(startTime.split(":")[1], 10);
       const newGroupEndTime = parseInt(endTime.split(":")[0], 10) * 60 +
-                              parseInt(endTime.split(":")[1], 10);
-  
+        parseInt(endTime.split(":")[1], 10);
+
       // Vaqtlar mantiqiyligini tekshirish
       if (newGroupStartTime >= newGroupEndTime) {
         alert("Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak.");
         return;
       }
-  
+
       // To'qnashuvni tekshirish
       const isConflict = groupsData.some((group) => {
         if (!group.duration || !group.rooms || !group.selectedDays) {
           return false; // Guruhda kerakli ma'lumotlar bo'lmasa, to'qnashuv yo'q
         }
-  
+
         const groupStartTime = parseInt(group.duration.split("-")[0].split(":")[0], 10) * 60 +
-                               parseInt(group.duration.split("-")[0].split(":")[1], 10);
+          parseInt(group.duration.split("-")[0].split(":")[1], 10);
         const groupEndTime = parseInt(group.duration.split("-")[1].split(":")[0], 10) * 60 +
-                             parseInt(group.duration.split("-")[1].split(":")[1], 10);
-  
+          parseInt(group.duration.split("-")[1].split(":")[1], 10);
+
         // Kunlar to'qnashuvini tekshirish
         const hasDayConflict = group.selectedDays.some((day) =>
           newGroup.selectedDays.includes(day)
         );
-  
+
         // Vaqt to'qnashuvini tekshirish
         const hasTimeConflict =
           (newGroupStartTime < groupEndTime && newGroupEndTime > groupStartTime);
-  
+
         // Xona, vaqt va kunlar to'qnashuvini birgalikda tekshirish
         return group.rooms === newGroup.rooms && hasDayConflict && hasTimeConflict;
       });
-  
+
       if (isConflict) {
         alert("Yangi guruhning dars vaqti va xonasi mavjud guruhlar bilan to'qnash keladi.");
         return;
       }
-  
+
       // Guruhni qo'shish
       setGroupsData([...groupsData, newGroup]);
-  
+
       const newGroupRef = ref(database, `Groups/${newGroupName}`);
       set(newGroupRef, newGroup)
         .then(() => {
@@ -283,7 +283,7 @@ function Groups(){
         .catch((error) => {
           console.error("Error adding group to Firebase:", error);
         });
-  
+
       // Formani tozalash
       setNewGroupName("");
       setStartTime("");
@@ -292,7 +292,7 @@ function Groups(){
       setSelectedDays([]); // Kunlarni tozalash
     }
   };
-  
+
 
   const addStudentToGroup = () => {
     if (newStudentName.trim() === "" || newStudentNumber.trim() === "") {
@@ -322,7 +322,7 @@ function Groups(){
     setNewStudentNumber("");
     toggleModal();
   };
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Form submitted");
@@ -447,7 +447,7 @@ function Groups(){
   }, []);
 
 
-  
+
 
   return (
     <div>
@@ -637,8 +637,8 @@ function Groups(){
               </SidebarContent>
             </Sidebar>
           </SidebarProvider>
-          <button className={style.groupAddButton}     
-           onClick={() => {
+          <button className={style.groupAddButton}
+            onClick={() => {
               setOpen(true);
               toggleSidebar();
             }}>
@@ -648,69 +648,69 @@ function Groups(){
 
 
         <Card className="col-[1/4] row-[4/11] border-slate-200 rounded-[5px]">
-  {groupInfo && (
-    <>
-      <CardHeader className="border-b pb-4">
-        <CardTitle>{groupInfo.groupName}</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <div className="space-y-4">
-          <div className="grid gap-1">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Kurs:</span>
-              <span className="font-medium">{groupInfo.courseName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">O'qituvchi:</span>
-              <span className="font-medium">{groupInfo.teacherName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Narx:</span>
-              <span className="font-medium">{groupInfo.price} UZS</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Davomiyligi:</span>
-              <span className="font-medium">{groupInfo.schedule}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Room:</span>
-              <span className="font-medium">{groupInfo.room}</span>
-            </div>
-          </div>
+          {groupInfo && (
+            <>
+              <CardHeader className="border-b pb-4">
+                <CardTitle>{groupInfo.groupName}</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="grid gap-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Kurs:</span>
+                      <span className="font-medium">{groupInfo.courseName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">O'qituvchi:</span>
+                      <span className="font-medium">{groupInfo.teacherName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Narx:</span>
+                      <span className="font-medium">{groupInfo.price} UZS</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Davomiyligi:</span>
+                      <span className="font-medium">{groupInfo.schedule}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Room:</span>
+                      <span className="font-medium">{groupInfo.room}</span>
+                    </div>
+                  </div>
 
-          <div className="flex gap-2 pt-4">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full text-orange-500 border-orange-500 hover:bg-orange-50"
-            >
-              <Edit className="h-4 w-4" />
-              <span className="sr-only">Edit</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full text-red-500 border-red-500 hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="sr-only">Delete</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleModal}
-              className="rounded-full text-blue-500 border-blue-500 hover:bg-blue-50"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="sr-only">Add</span>
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </>
-  )}
-</Card>
-    
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full text-orange-500 border-orange-500 hover:bg-orange-50"
+                    >
+                      <Edit className="h-4 w-4" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full text-red-500 border-red-500 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={toggleModal}
+                      className="rounded-full text-blue-500 border-blue-500 hover:bg-blue-50"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span className="sr-only">Add</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </>
+          )}
+        </Card>
+
 
 
         <div className={style.davomat}>
@@ -733,7 +733,7 @@ function Groups(){
               {dates.map((date, index) => (
                 <div key={index} className={style.dateCol}>
                   {date}
-                </div>  
+                </div>
               ))}
             </div>
 
@@ -741,18 +741,17 @@ function Groups(){
               <div key={studentIndex} className={style.studentCol}>
                 <div className={style.nameCol}>{student.studentName}</div>
                 {student[`attendance`][selectedMonth] &&
-                Array.isArray(student[`attendance`][selectedMonth]) ? (
+                  Array.isArray(student[`attendance`][selectedMonth]) ? (
                   student[`attendance`][selectedMonth].map(
                     (attendance, dateIndex) => (
                       <div key={dateIndex} className={style.attendanceCell} x>
                         <div
-                          className={`${style.circle} ${
-                            attendance === true
+                          className={`${style.circle} ${attendance === true
                               ? style.present
                               : attendance === false
-                              ? style.absent
-                              : ""
-                          }`}
+                                ? style.absent
+                                : ""
+                            }`}
                         >
                           <div className={style.hoverButtons}>
                             <button
@@ -795,117 +794,117 @@ function Groups(){
         </div>
       </div>
       <Sheet>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-        <SheetHeader>
-          <SheetTitle>Yangi kurs qo'shish</SheetTitle>
-        </SheetHeader>
-        <form className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title">Kurs nomi</Label>
-            <Input id="title" placeholder="Kurs nomini kiriting" />
-          </div>
-          <div className="grid gap-2">
-            <Label>O'qituvchi</Label>
-            <Popover open={openTeacher} onOpenChange={setOpenTeacher}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={openTeacher} className="justify-between">
-                  {valueTeacher
-                    ? teachers.find((teacher) => teacher.value === valueTeacher)?.label
-                    : "O'qituvchini tanlang..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0">
-                <Command>
-                  <CommandInput placeholder="O'qituvchi qidirish..." />
-                  <CommandList>
-                    <CommandEmpty>O'qituvchi topilmadi.</CommandEmpty>
-                    <CommandGroup>
-                      {teachers.map((teacher) => (
-                        <CommandItem
-                          key={teacher.value}
-                          value={teacher.value}
-                          onSelect={(currentValue) => {
-                            setValueTeacher(currentValue === valueTeacher ? "" : currentValue)
-                            setOpenTeacher(false)
-                          }}
-                        >
-                          <Check
-                            className={cn("mr-2 h-4 w-4", valueTeacher === teacher.value ? "opacity-100" : "opacity-0")}
-                          />
-                          {teacher.label}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="price">Narxi</Label>
-            <Input id="price" placeholder="Narxini kiriting" type="number" />
-          </div>
-          <div className="grid gap-2">
-            <Label>Dars kunlari</Label>
-            <div className="flex flex-wrap gap-2">
-              {weekDays.map((day) => (
-                <div key={day.id} className="flex items-center space-x-2">
-                  <Checkbox id={day.id} />
-                  <Label htmlFor={day.id}>{day.label}</Label>
-                </div>
-              ))}
+        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle>Yangi kurs qo'shish</SheetTitle>
+          </SheetHeader>
+          <form className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">Kurs nomi</Label>
+              <Input id="title" placeholder="Kurs nomini kiriting" />
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label>Dars vaqti</Label>
-            <div className="flex gap-2">
-              <Input type="time" placeholder="Boshlanish vaqti" />
-              <Input type="time" placeholder="Tugash vaqti" />
+            <div className="grid gap-2">
+              <Label>O'qituvchi</Label>
+              <Popover open={openTeacher} onOpenChange={setOpenTeacher}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={openTeacher} className="justify-between">
+                    {valueTeacher
+                      ? teachers.find((teacher) => teacher.value === valueTeacher)?.label
+                      : "O'qituvchini tanlang..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0">
+                  <Command>
+                    <CommandInput placeholder="O'qituvchi qidirish..." />
+                    <CommandList>
+                      <CommandEmpty>O'qituvchi topilmadi.</CommandEmpty>
+                      <CommandGroup>
+                        {teachers.map((teacher) => (
+                          <CommandItem
+                            key={teacher.value}
+                            value={teacher.value}
+                            onSelect={(currentValue) => {
+                              setValueTeacher(currentValue === valueTeacher ? "" : currentValue)
+                              setOpenTeacher(false)
+                            }}
+                          >
+                            <Check
+                              className={cn("mr-2 h-4 w-4", valueTeacher === teacher.value ? "opacity-100" : "opacity-0")}
+                            />
+                            {teacher.label}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label>Xona</Label>
-            <Popover open={openRoom} onOpenChange={setOpenRoom}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={openRoom} className="justify-between">
-                  {valueRoom ? rooms.find((room) => room.value === valueRoom)?.label : "Xonani tanlang..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0">
-                <Command>
-                  <CommandInput placeholder="Xona qidirish..." />
-                  <CommandList>
-                    <CommandEmpty>Xona topilmadi.</CommandEmpty>
-                    <CommandGroup>
-                      {rooms.map((room) => (
-                        <CommandItem
-                          key={room.value}
-                          value={room.value}
-                          onSelect={(currentValue) => {
-                            setValueRoom(currentValue === valueRoom ? "" : currentValue)
-                            setOpenRoom(false)
-                          }}
-                        >
-                          <Check
-                            className={cn("mr-2 h-4 w-4", valueRoom === room.value ? "opacity-100" : "opacity-0")}
-                          />
-                          {room.label}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <Button type="submit" className="mt-2">
-            Saqlash
-          </Button>
-        </form>
-      </SheetContent>
-    </Sheet>
+            <div className="grid gap-2">
+              <Label htmlFor="price">Narxi</Label>
+              <Input id="price" placeholder="Narxini kiriting" type="number" />
+            </div>
+            <div className="grid gap-2">
+              <Label>Dars kunlari</Label>
+              <div className="flex flex-wrap gap-2">
+                {weekDays.map((day) => (
+                  <div key={day.id} className="flex items-center space-x-2">
+                    <Checkbox id={day.id} />
+                    <Label htmlFor={day.id}>{day.label}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Dars vaqti</Label>
+              <div className="flex gap-2">
+                <Input type="time" placeholder="Boshlanish vaqti" />
+                <Input type="time" placeholder="Tugash vaqti" />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Xona</Label>
+              <Popover open={openRoom} onOpenChange={setOpenRoom}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={openRoom} className="justify-between">
+                    {valueRoom ? rooms.find((room) => room.value === valueRoom)?.label : "Xonani tanlang..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Xona qidirish..." />
+                    <CommandList>
+                      <CommandEmpty>Xona topilmadi.</CommandEmpty>
+                      <CommandGroup>
+                        {rooms.map((room) => (
+                          <CommandItem
+                            key={room.value}
+                            value={room.value}
+                            onSelect={(currentValue) => {
+                              setValueRoom(currentValue === valueRoom ? "" : currentValue)
+                              setOpenRoom(false)
+                            }}
+                          >
+                            <Check
+                              className={cn("mr-2 h-4 w-4", valueRoom === room.value ? "opacity-100" : "opacity-0")}
+                            />
+                            {room.label}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Button type="submit" className="mt-2">
+              Saqlash
+            </Button>
+          </form>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
