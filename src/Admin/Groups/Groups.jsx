@@ -255,7 +255,7 @@ function Groups() {
           parseInt(group.duration.split("-")[1].split(":")[1], 10);
 
         // Kunlar to'qnashuvini tekshirish
-        const hasDayConflict = group.selectedDays.some((day) =>
+        const hasDayConflict = group.selectedDays.some((day) => 
           newGroup.selectedDays.includes(day)
         );
 

@@ -13,7 +13,8 @@ import StudentDetail from '../src/Admin/Students/StudentDetail.jsx';
 import GroupDetails from "../src/Admin/Groups/GroupDetails.jsx";
 import Leads from "../src/Panel/Leads.jsx"
 import "./index.css";
-import Course from "./components/ui/Course.jsx";
+import Course from "./Admin/Course/Course.jsx";
+import CourseInfo from "./Admin/Course/CourseInfo.jsx";
 
 function App() {
   return (
@@ -31,7 +32,7 @@ function App() {
             <Route path="/leads" element={<Leads/>}></Route>
             <Route path="/student/:id" element={<StudentDetail/>} />
             <Route path="/group/:id" element={<GroupDetails />} />
-            
+            <Route path="/course/:id" element={<CourseInfo />} />
         </Routes>
     </Router>
   )

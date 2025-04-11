@@ -142,8 +142,6 @@ export default function Dashboard({ data }) {
     });
   }, [])
 
-  console.log(leadsData);
-
 
   useEffect(() => {
     const groupsRef = ref(database, "Groups");
