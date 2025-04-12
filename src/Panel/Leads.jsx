@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../co
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
-import { Label } from "../components/ui/Label"
+import { Label } from "../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
 import { Badge } from "../components/ui/badge"
@@ -80,6 +80,8 @@ export default function LeadsPage() {
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth())
   const [newUser, setnewUser] = useState({})
   const [selectedOptions, setSelectedOptions] = useState([]);
+
+  const [tabs, setTabs] = useState("add")
 
   // read leads from firebase
   useEffect(() => {
@@ -309,6 +311,7 @@ export default function LeadsPage() {
       {openModal ? <Modal
         isOpen={openModal}
         onClose={CloseModal}
+        positionTop={"top-[20%]"}
         title={`${firstInformation.name}ning ma'lmotlari`}
         children={
           <div className="flex flex-col space-y-2">
@@ -467,10 +470,33 @@ export default function LeadsPage() {
           </Card>
         </div>
 
-        <Tabs defaultValue="add" className="w-full">
+        <Tabs
+          defaultValue="add"
+          value={tabs}
+          onValueChange={(value) => setTabs(value)}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="list">Lidlar ro'yxati</TabsTrigger>
-            <TabsTrigger value="add">Yangi lid qo'shish</TabsTrigger>
+            <TabsTrigger
+              className={`${
+                tabs === "list"
+                  ? "bg-black text-white rounded-md h-full flex items-center justify-center"
+                  : "h-full flex items-center justify-center"
+              }`}
+              value="list"
+            >
+              Lidlar ro'yxati
+            </TabsTrigger>
+            <TabsTrigger
+              className={`${
+                tabs === "add"
+                  ? "bg-black text-white rounded-md h-full flex items-center justify-center"
+                  : "h-full flex items-center justify-center"
+              }`}
+              value="add"
+            >
+              Yangi lid qo'shish
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="list">
             <Card>
