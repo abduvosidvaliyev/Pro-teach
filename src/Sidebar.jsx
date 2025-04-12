@@ -102,7 +102,7 @@ export function SidebarPanel() {
               </Link>
             </li>
             <li>
-              <Link>
+              <Link to="/rooms">
                 <i class="fa-solid fa-table-cells-large"></i>
                 <a href="#" className={style.dropdownItem}>
                   Xonalar
