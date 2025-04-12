@@ -19,7 +19,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const database = getDatabase(app);
+const database = getDatabase(app);  
 
 const Course = () => {
     const [CourseData, setCourseData] = useState([])
@@ -29,7 +29,7 @@ const Course = () => {
         onValue(courseRef, (snapshot) => {
             const data = snapshot.val();
             const courseArray = Object.values(data);
-
+            
             setCourseData(courseArray);
         });
     }, [])
@@ -42,7 +42,7 @@ const Course = () => {
                 <div className="flex items-center gap-2">
                     <span className="font-semibold">Courses:</span>
                     {CourseData.map((course, index) => (
-                        <span key={index} className="text-gray-600">{course.name}</span>
+                        <span key={index} className="text-gray-600">{course.name}</span>    
                     ))}
                 </div>
                 <div className="flex items-center gap-2">

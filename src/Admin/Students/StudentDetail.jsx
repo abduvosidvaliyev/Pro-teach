@@ -78,21 +78,6 @@ const getCurrentMonthDates = (selectedDays) => {
   return dates;
 };
 
-const calculateRemainingBalance = (student, coursePrice, currentMonth) => {
-  if (!student || !student.attendance || !student.attendance[currentMonth]) {
-    return student.balance; // Agar attendance ma'lumotlari mavjud bo'lmasa, balansni o'zgartirmaymiz
-  }
-
-  const attendanceData = student.attendance[currentMonth];
-  const totalClasses = Object.keys(attendanceData).length; // Oyning jami dars kunlari
-  const attendedClasses = Object.values(attendanceData).filter((attended) => attended).length; // Kelgan darslar soni
-
-  const perClassPrice = coursePrice / totalClasses; // Har bir darsning narxi
-  const totalDeduction = attendedClasses * perClassPrice; // Kelgan darslar uchun yechib olinadigan summa
-  const remainingBalance = student.balance - totalDeduction; // Qolgan balans
-
-  return remainingBalance.toFixed(2); // Qoldiq balansni qaytarish
-};
 
 const getCurrentMonth = () => {
   const now = new Date();
@@ -170,8 +155,8 @@ const StudentDetail = () => {
         setStudentsData(
           editingStudent
             ? studentsData.map((s) =>
-                s.id === editingStudent.id ? newStudent : s
-              )
+              s.id === editingStudent.id ? newStudent : s
+            )
             : [...studentsData, newStudent]
         );
         setNewStudentName("");
@@ -204,67 +189,58 @@ const StudentDetail = () => {
       );
   };
 
-  const addPayment = () => {
-    const newPayment = {
-      studentName: student.studentName,
-      studentNumber: student.studentNumber,
-      studentPayment: paymentPrice,
-      paymentDate: dateValue,
-    };
 
-    const newPaymentRef = ref(
-      database,
-      `Payments/${currentMonth}/${student.studentName}`
-    );
-    set(newPaymentRef, newPayment)
-      .then(() => {
-        console.log("Payment added to Firebase:", newPayment);
-      })
-      .catch((error) => {
-        console.error("Error adding payment to Firebase:", error);
-      });
-
-    const newPaymentRef2 = ref(
-      database,
-      `Students/${student.studentName}/balance`
-    );
-    set(newPaymentRef2, newPayment.studentPayment)
-      .then(() => {
-        console.log("Payment added to Firebase:", newPayment);
-      })
-      .catch((error) => {
-        console.error("Error adding payment to Firebase:", error);
-      });
-
-    setPaymentPrice("");
-    setPaymentDates([...paymentDates, dateValue]);
-  };
 
   const handlePayment = () => {
     if (!paymentAmount || isNaN(paymentAmount)) {
       alert("To'lov miqdorini to'g'ri kiriting!");
       return;
     }
-  
+
+    const paymentDate = getCurrentDate(); // Hozirgi sanani olish
+    const paymentTime = new Date().toLocaleTimeString("en-US", { hour12: false }); // To'lov vaqti
     const paymentData = {
       studentName: student.studentName,
       studentNumber: student.studentNumber,
       paymentAmount: parseFloat(paymentAmount),
-      paymentDate: getCurrentDate(),
+      paymentTime: paymentTime, // To'lov vaqti
     };
-  
+
     // To'lovni Firebase ma'lumotlar bazasiga yozish
-    const paymentRef = ref(database, `Payments/${currentMonth}/${student.studentName}`);
-    set(paymentRef, paymentData)
+    const paymentRef = ref(database, `Payments/${currentMonth}/${student.studentName}/${paymentDate}`);
+    get(paymentRef)
+      .then((snapshot) => {
+        const existingPayments = snapshot.val() || {}; // Mavjud to'lovlarni olish
+        const newPaymentKey = `payment_${Object.keys(existingPayments).length + 1}`; // Yangi to'lov uchun kalit
+        const updatedPayments = {
+          ...existingPayments,
+          [newPaymentKey]: paymentData, // Yangi to'lovni qo'shish
+        };
+
+        return update(paymentRef, updatedPayments); // Mavjud to'lovlarni yangilash
+      })
       .then(() => {
         alert("To'lov muvaffaqiyatli amalga oshirildi!");
         setIsPaymentModalOpen(false);
         setPaymentAmount(""); // To'lov miqdorini tozalash
+
+        // Studentning balansini yangilash
+        const balanceRef = ref(database, `Students/${student.studentName}/balance`);
+        get(balanceRef)
+          .then((snapshot) => {
+            const currentBalance = parseFloat(snapshot.val()) || 0; // Hozirgi balansni olish yoki 0 ga o'rnatish
+            const newBalance = currentBalance + parseFloat(paymentAmount); // Yangi balansni hisoblash
+            update(ref(database, `Students/${student.studentName}`), { balance: newBalance }) // Balansni yangilash
+              .then(() => console.log("Student balance updated successfully"))
+              .catch((error) => console.error("Error updating student balance:", error));
+          })
+          .catch((error) => console.error("Error fetching student balance:", error));
       })
       .catch((error) => {
         console.error("To'lovni amalga oshirishda xatolik yuz berdi:", error);
       });
   };
+
 
   useEffect(() => {
     const studentRef = ref(database, `Students`);
@@ -280,7 +256,7 @@ const StudentDetail = () => {
     });
   }, []);
   console.log(currentMonth);
-  
+
   const addStudentToGroup = () => {
     // Guruhdagi kunlarni olish
     const groupRef = ref(database, `Groups/${groupName}`);
@@ -290,12 +266,12 @@ const StudentDetail = () => {
         alert("Guruh ma'lumotlari topilmadi!");
         return;
       }
-  
+
       // Talabaning mavjud ma'lumotlarini olish
       const userRef = ref(database, `Students/${student.studentName}`);
       get(userRef).then((studentSnapshot) => {
         const studentData = studentSnapshot.val() || {};
-  
+
         // Talaba uchun yangi ma'lumotlar
         const newStudentData = {
           ...studentData,
@@ -304,7 +280,7 @@ const StudentDetail = () => {
           },
           group: groupName,
         };
-  
+
         // Firebase ma'lumotlar bazasiga yozish
         update(userRef, newStudentData)
           .then(() => {
@@ -317,12 +293,12 @@ const StudentDetail = () => {
           .catch((error) => {
             console.error("Xatolik yuz berdi: ", error);
           });
-  
+
         setIsOpen(false);
       });
     });
   };
-  
+
 
   const student = studentsData.find((s) => s.id === Number.parseInt(id));
 
@@ -385,7 +361,7 @@ const StudentDetail = () => {
             {/* Balance Header */}
             <div className="bg-[#6366F1] p-4 rounded-t-lg flex justify-end">
               <span className="bg-white text-green-500 px-3 py-1 rounded-full text-sm">
-                {calculateRemainingBalance(student, 400000, currentMonth)} so'm {/* Kurs narxi 400,000 */}
+                {student.balance} so'm
               </span>
             </div>
 
@@ -414,6 +390,13 @@ const StudentDetail = () => {
                   {student.studentNumber}
                 </p>
               </div>
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500">Qo'shilgan sana :</p>
+                <p className="text-gray-900 text-[18px]">
+                  {student.addedDate || "Ma'lumot mavjud emas"}
+                </p>
+              </div>
+
 
               {/* Action Buttons */}
               <div className="space-y-3">
@@ -499,9 +482,9 @@ const StudentDetail = () => {
               defaultValue={
                 groupsData.length > 0
                   ? {
-                      value: groupsData[0],
-                      label: `[${groupsData[0]}]-Frontend-(Umarxon Muxtorov)`,
-                    }
+                    value: groupsData[0],
+                    label: `[${groupsData[0]}]-Frontend-(Umarxon Muxtorov)`,
+                  }
                   : null
               }
             />

@@ -23,6 +23,7 @@ const CourseGrid = ({ student }) => {
   const [courses, setCourses] = useState([]);
   const [groupsData, setGroupsData] = useState([])
   const [courseAbout, setCourseAbout] = useState([])
+  
   const oddDays = ["Dushanba", "Chorshanba", "Juma"];
   const evenDays = ["Seshanba", "Payshanba", "Shanba"];
 
@@ -50,11 +51,13 @@ const CourseGrid = ({ student }) => {
     return () => unsubscribe();
   }, [groupsData]);
 
+  
 
   useEffect(() => {
     if (!groupsData || !courseAbout) return;
   
     const newStudent = {
+      studentName: student.studentName,
       name: student.group,
       balance: "307,692.31",
       dateRange: "2025-01-25/2025-09-25",
@@ -66,7 +69,7 @@ const CourseGrid = ({ student }) => {
       startDate: "2025-01-25",
       endDate: "2025-01-25",
       nextPayment: "2025-02-01",
-      paymentAmount: courseAbout.price,
+      paymentAmount: student.balance,
     };  
   
     setCourses([newStudent]);

@@ -1,5 +1,6 @@
 import { GraduationCap } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+import { useState, useEffect } from "react";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
@@ -28,68 +29,309 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const database = getDatabase(app);
 
-export function CourseCard({ course }) {
-  console.log(course);
-  
-  const isNegativeBalance = course.balance.startsWith("-");
+const countWeekdaysInMonth = (selectedDays) => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const lastDay = new Date(year, month + 1, 0).getDate();
 
-  const handleStatusChange = async (value) => {
-    if (value === "Faol") {
-      // Firebase'dagi student ma'lumotlarini yangilash
-      console.log(course);
-      
-      const studentRef = ref(database, `Students/${course.studentName}`);
-      const groupRef = ref(database, `Groups/${course.groupName}`);
+  const dayMapping = {
+    yak: 0, // Yakshanba
+    du: 1,  // Dushanba
+    se: 2,  // Seshanba
+    chor: 3, // Chorshanba
+    pay: 4, // Payshanba
+    ju: 5,  // Juma
+    sha: 6, // Shanba
+  };
 
-      try {
-        // Guruh ma'lumotlarini olish
-        const groupSnapshot = await get(groupRef);
-        const groupData = groupSnapshot.val();
+  let count = {};
+  selectedDays.forEach((day) => {
+    count[day] = 0; // Har bir kun uchun boshlang'ich qiymat
+  });
 
-        if (!groupData) {
-          alert("Guruh ma'lumotlari topilmadi!");
-          return;
-        }
+  for (let day = 1; day <= lastDay; day++) {
+    const date = new Date(year, month, day);
+    const weekday = date.getDay();
 
-        // Guruh kunlari va narxini olish
-        const selectedDays = groupData.days; // Guruh kunlari
-        const coursePrice = groupData.price; // Kurs narxi
-
-        // Qolgan dars kunlarini hisoblash
-        const now = new Date();
-        const remainingDays = selectedDays.filter((day) => {
-          const dayDate = new Date(day);
-          return dayDate >= now; // Faqat kelajakdagi kunlarni hisoblash
-        });
-
-        // Qolgan darslar uchun to'lov summasini hisoblash
-        const perClassPrice = coursePrice / selectedDays.length; // Har bir dars narxi
-        const totalDeduction = remainingDays.length * perClassPrice; // Qolgan darslar uchun umumiy to'lov
-
-        // Firebase'dagi student ma'lumotlarini yangilash
-        await update(studentRef, {
-          status: "Faol",
-          balance: parseFloat(course.balance) - totalDeduction, // Balansdan yechish
-        });
-
-        alert("Status Faol holatga o'tkazildi va balans yangilandi!");
-      } catch (error) {
-        console.error("Xatolik yuz berdi:", error);
+    // Agar kun `selectedDays` ichida bo'lsa, hisoblash
+    for (const [key, value] of Object.entries(dayMapping)) {
+      if (selectedDays.includes(key) && weekday === value) {
+        count[key]++;
       }
     }
+  }
+
+  return count;
+};
+
+const countWeekdaysToEndOfMonth = (selectedDays) => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const lastDay = new Date(year, month + 1, 0).getDate();
+
+  const dayMapping = {
+    yak: 0, // Yakshanba
+    du: 1,  // Dushanba
+    se: 2,  // Seshanba
+    chor: 3, // Chorshanba
+    pay: 4, // Payshanba
+    ju: 5,  // Juma
+    sha: 6, // Shanba
   };
+
+  let count = {};
+  selectedDays.forEach((day) => {
+    count[day] = 0; // Har bir kun uchun boshlang'ich qiymat
+  });
+
+  for (let day = today.getDate(); day <= lastDay; day++) {
+    const date = new Date(year, month, day);
+    const weekday = date.getDay();
+
+    // Agar kun `selectedDays` ichida bo'lsa, hisoblash
+    for (const [key, value] of Object.entries(dayMapping)) {
+      if (selectedDays.includes(key) && weekday === value) {
+        count[key]++;
+      }
+    }
+  }
+
+  return count;
+};
+
+export function CourseCard({ course }) {
+  const [status, setStatus] = useState("Nofaol" ); // Default qiymat
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // Hozirgi oy
+
+  useEffect(() => {
+    const studentRef = ref(database, `Students/${course.studentName}`);
+    get(studentRef)
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          const studentData = snapshot.val();
+          console.log("Fetched status from Firebase:", studentData.status); // Qo'shimcha log
+          setStatus(studentData.status || "Nofaol"); // Firebase-dan statusni olish
+        } else {
+          console.error("Student data not found in Firebase.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching student status:", error);
+      });
+  }, [course.studentName]);
+  console.log(course);
+
+  // Safely determine the balance value
+  const balanceValue = course.balance; // To'g'ridan-to'g'ri balance qiymatini ishlatamiz
+
+  const isNegativeBalance =
+    typeof balanceValue === "string"
+      ? balanceValue.startsWith("-")
+      : balanceValue < 0; // Raqam yoki string bo'lsa, salbiyligini tekshiring
+
+  // Yangi oyga o'tganda avtomatik to'lovni amalga oshirish
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date(); // Hozirgi vaqtni olish
+      const newMonth = now.getMonth(); // Hozirgi oyni olish
+
+      if (newMonth !== currentMonth) {
+        setCurrentMonth(newMonth); // Oyni yangilash
+
+        // Barcha o'quvchilarni tekshirish
+        const studentsRef = ref(database, `Students`);
+        get(studentsRef)
+          .then((snapshot) => {
+            if (snapshot.exists()) {
+              const studentsData = snapshot.val();
+
+              // Har bir o'quvchini tekshirish
+              Object.entries(studentsData).forEach(([studentName, studentData]) => {
+                if (studentData.status === "Faol") {
+                  const currentBalance = studentData.balance || 0;
+                  const groupName = studentData.group;
+
+                  if (!groupName) {
+                    console.error(`Group name not found for student: ${studentName}`);
+                    return;
+                  }
+
+                  // Guruh ma'lumotlarini olish
+                  const groupRef = ref(database, `Groups/${groupName}`);
+                  get(groupRef)
+                    .then((groupSnapshot) => {
+                      if (groupSnapshot.exists()) {
+                        const groupData = groupSnapshot.val();
+                        const courseFee = groupData.price || 0;
+
+                        const updatedBalance = currentBalance - courseFee;
+                        console.log(
+                          `Auto-deduction for ${studentName}: ${courseFee}`
+                        );
+                        console.log(
+                          `Updated Balance for ${studentName}: ${updatedBalance}`
+                        );
+
+                        // Firebase-ni yangilash
+                        const studentRef = ref(
+                          database,
+                          `Students/${studentName}`
+                        );
+                        update(studentRef, { balance: updatedBalance })
+                          .then(() => {
+                            console.log(
+                              `Balance updated for ${studentName} for new month.`
+                            );
+                          })
+                          .catch((error) => {
+                            console.error(
+                              `Error updating balance for ${studentName}:`,
+                              error
+                            );
+                          });
+                      } else {
+                        console.error(
+                          `Group data not found for group: ${groupName}`
+                        );
+                      }
+                    })
+                    .catch((error) => {
+                      console.error(
+                        `Error fetching group data for group: ${groupName}`,
+                        error
+                      );
+                    });
+                }
+              });
+            } else {
+              console.error("No students found in Firebase.");
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching students data:", error);
+          });
+      }
+    }, 1000 * 60 * 60); // Har bir soatda tekshirish
+
+    return () => clearInterval(interval); // Komponent unmount bo'lganda intervalni tozalash
+  }, [currentMonth]);
+
+  const handleStatusChange = (value) => {
+    const studentRef = ref(database, `Students/${course.studentName}`);
+  
+    if (value === "Faol") {
+      // Studentning statusini Firebase-da yangilash
+      update(studentRef, { status: "Faol" })
+        .then(() => {
+          console.log("Student status updated to Faol in Firebase.");
+          setStatus("Faol"); // Mahalliy state-ni ham yangilash
+        })
+        .catch((error) => {
+          console.error("Error updating student status in Firebase:", error);
+        });
+  
+      // Qo'shimcha hisob-kitoblar (agar kerak bo'lsa)
+      get(studentRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const studentData = snapshot.val();
+            const currentBalance = studentData.balance;
+            const groupName = studentData.group;
+  
+            if (!groupName) {
+              console.error("Group name not found for the student.");
+              return;
+            }
+  
+            // Guruh ma'lumotlarini olish
+            const groupRef = ref(database, `Groups/${groupName}`);
+            get(groupRef)
+              .then((groupSnapshot) => {
+                if (groupSnapshot.exists()) {
+                  const groupData = groupSnapshot.val();
+                  const selectedDays = groupData.selectedDays || [];
+  
+                  console.log("Selected Days from Group:", selectedDays);
+                  console.log("Current Balance:", currentBalance);
+  
+                  // Hisob-kitoblar
+                  const totalLessonDays = countWeekdaysInMonth(selectedDays);
+                  const totalLessonDaysCount = Object.values(totalLessonDays).reduce(
+                    (sum, count) => sum + count,
+                    0
+                  );
+  
+                  const perLessonCost = 400000 / totalLessonDaysCount;
+                  const remainingLessonDays = countWeekdaysToEndOfMonth(selectedDays);
+                  const remainingLessonDaysCount = Object.values(remainingLessonDays).reduce(
+                    (sum, count) => sum + count,
+                    0
+                  );
+  
+                  const totalDeduction = Math.round(
+                    perLessonCost * remainingLessonDaysCount
+                  );
+                  const updatedBalance = currentBalance - totalDeduction;
+  
+                  console.log("Total Deduction:", totalDeduction);
+                  console.log("Updated Balance:", updatedBalance);
+  
+                  // Balansni yangilash
+                  update(studentRef, { balance: updatedBalance })
+                    .then(() =>
+                      console.log(
+                        `Balance updated successfully. Deducted: ${totalDeduction}, Remaining Balance: ${updatedBalance}`
+                      )
+                    )
+                    .catch((error) =>
+                      console.error("Error updating balance:", error)
+                    );
+                } else {
+                  console.error("Group data not found in Firebase.");
+                }
+              })
+              .catch((error) => {
+                console.error("Error fetching group data:", error);
+              });
+          } else {
+            console.error("Student data not found in Firebase.");
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching student data:", error);
+        });
+    } else {
+      // Agar boshqa status tanlansa, faqat statusni yangilash
+      update(studentRef, { status: value })
+        .then(() => {
+          console.log(`Student status updated to ${value} in Firebase.`);
+          setStatus(value); // Mahalliy state-ni ham yangilash
+        })
+        .catch((error) => {
+          console.error("Error updating student status in Firebase:", error);
+        });
+    }
+  };
+  
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
       <div className="flex justify-between items-center">
         <span
-          className={`flex items-center gap-1 ${isNegativeBalance ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
-            } px-2 py-1 rounded-md`}
+          className={`flex items-center gap-1 ${
+            isNegativeBalance ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
+          } px-2 py-1 rounded-md`}
         >
           <span className="text-lg">E</span>
-          <span>{course.balance} so'm</span>
+          <span>{balanceValue} so'm</span> {/* Bu yerda faqat string yoki raqam render qilinadi */}
         </span>
-        <Select defaultValue="faol" className="w-[120px]" onValueChange={handleStatusChange}>
+        <Select
+          value={status} // `defaultValue` o'rniga `value` ishlatamiz
+          className="w-[120px]"
+          onValueChange={handleStatusChange}
+        >
           <SelectTrigger className="w-[120px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
