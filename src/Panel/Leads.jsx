@@ -80,6 +80,11 @@ export default function LeadsPage() {
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth())
   const [newUser, setnewUser] = useState({})
   const [selectedOptions, setSelectedOptions] = useState([]);
+  const [openModal, setopenModal] = useState(false)
+  const [firstInformation, setfirstInformation] = useState({})
+  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+
 
   const [tabs, setTabs] = useState("add")
 
@@ -263,9 +268,6 @@ export default function LeadsPage() {
     handleDeleteLead(newUser.name);
   };
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [open, setOpen] = useState(false);
-
   const handleSelectChange = (selectedOption, actionMeta) => {
     setSelectedOptions((prevState) => ({
       ...prevState,
@@ -279,9 +281,6 @@ export default function LeadsPage() {
 
     setnewUser(newUser)
   };
-
-  const [openModal, setopenModal] = useState(false)
-  const [firstInformation, setfirstInformation] = useState({})
 
   const OpenModal = (id) => {
     const FindStudents = leads.find(firstStudent => firstStudent.id === id)
@@ -345,10 +344,11 @@ export default function LeadsPage() {
           </div>
         }
       /> : ""}
+
       <SidebarProvider>
         {isOpen && (
           <div
-            className="fixed w-full  h-[100vh] z-30  inset-0 backdrop-blur-sm transition-all duration-900 ease-in-out"
+            className="fixed w-full h-[100vh] z-30  inset-0 backdrop-blur-[2px] bg-black/50 transition-all duration-900 ease-in-out"
             onClick={() => {
               setOpen(false);
               toggleSidebar();
@@ -356,10 +356,8 @@ export default function LeadsPage() {
           ></div>
         )}
         <Sidebar
-          className={cn(
-            "fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out",
-            open ? "translate-x-0" : "translate-x-full"
-          )}
+          className={`fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out
+            ${isOpen ? "translate-x-0" : "translate-x-full"}`}
           side="right"
           collapsible="none"
         >
@@ -478,21 +476,19 @@ export default function LeadsPage() {
         >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger
-              className={`${
-                tabs === "list"
+              className={`${tabs === "list"
                   ? "bg-black text-white rounded-md h-full flex items-center justify-center"
                   : "h-full flex items-center justify-center"
-              }`}
+                }`}
               value="list"
             >
               Lidlar ro'yxati
             </TabsTrigger>
             <TabsTrigger
-              className={`${
-                tabs === "add"
+              className={`${tabs === "add"
                   ? "bg-black text-white rounded-md h-full flex items-center justify-center"
                   : "h-full flex items-center justify-center"
-              }`}
+                }`}
               value="add"
             >
               Yangi lid qo'shish
