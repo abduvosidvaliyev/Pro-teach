@@ -78,7 +78,7 @@ function Students() {
     const year = now.getFullYear();
     const month = now.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
+
     // Haftaning kunlari uchun mos keladigan IDlar
     const dayMapping = {
       du: 1, // Dushanba
@@ -89,17 +89,17 @@ function Students() {
       shan: 6, // Shanba
       yak: 0, // Yakshanba
     };
-  
+
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const dayOfWeek = date.getDay();
-  
+
       // Agar `selectedDays`da kun mavjud bo'lsa, uni qo'shamiz
       if (selectedDays.some((selectedDay) => dayMapping[selectedDay] === dayOfWeek)) {
         dates.push(`${day} ${date.toLocaleString("en-US", { month: "short" })}`);
       }
     }
-  
+
     return dates;
   };
 
@@ -230,7 +230,7 @@ function Students() {
     if (newStudentName.trim() !== "") {
       const selectedDays = ["du", "se", "pay"]; // Guruhning tanlangan kunlari
       const dates = getCurrentMonthDates(selectedDays); // Kunlarni hisoblash
-  
+
       const newStudent = {
         ...selectedOptions,
         studentName: newStudentName,
@@ -242,10 +242,10 @@ function Students() {
         balance: "0.00",
         status: ""
       };
-  
+
       // Mahalliy holatni yangilash
       setStudentsData([...studentsData, newStudent]);
-  
+
       // Firebase'ga yozish
       const newStudentRef = ref(database, `Students/${newStudentName}`);
       set(newStudentRef, newStudent)
@@ -255,7 +255,7 @@ function Students() {
         .catch((error) => {
           console.error("Error adding student to Firebase:", error);
         });
-  
+
       // Formani tozalash
       setNewStudentName("");
       setNewStudentNumber("");
@@ -282,29 +282,29 @@ function Students() {
   const filteredStudents = studentsData.filter((student) => {
     // Ensure studentName exists before calling toLowerCase
     const studentName = student.studentName || ""; // Default to an empty string if undefined
-  
+
     // Talabaning guruhini olish                    
     const group = student.group;
-  
+
     // Guruhning kursini olish
     const course =
       groupsData && group && groupsData[group]?.courses
         ? groupsData[group].courses
         : "";
-  
+
     return (
       studentName.toLowerCase().includes(filters.search.toLowerCase()) &&
       (filters.course === "" || (Array.isArray(course) ? course.includes(filters.course) : course === filters.course)) &&
       (filters.groupStatus === "" || student.groupStatus === filters.groupStatus) &&
       (filters.paymentStatus === "" || student.paymentStatus === filters.paymentStatus) &&
       (filters.group === "" || student.group === filters.group) &&
-      (filters.teacher === "" || 
+      (filters.teacher === "" ||
         (groupsData && group && groupsData[group]?.teachers === filters.teacher))
     );
   });
-  
 
-  
+
+
 
   return (
     <div>
@@ -418,8 +418,8 @@ function Students() {
                     }
                   >
                     Nofaol
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
               </DropdownMenu>
 
               {/* Payment Status Dropdown */}
@@ -516,33 +516,33 @@ function Students() {
                   <TableHead>O'qituvchi</TableHead>
                 </TableRow>
               </TableHeader>
-          <TableBody>
-  {updatedStudents.map((student) => (
-    <TableRow
-      onClick={(event) =>
-        handleLinkClick(event, student, student.id, student.studentName)
-      }
-      key={student.id}
-    >
-      <TableCell>{student.id}</TableCell>
-      <TableCell>{student.studentName}</TableCell>
-      <TableCell>{student.grade}</TableCell>
-      <TableCell>{student.studentNumber}</TableCell>
-      <TableCell>
-        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-          {student.group}
-        </span>
-      </TableCell>
-      <TableCell>
-        {groupsData &&
-        student.group &&
-        groupsData[student.group]?.teachers
-          ? groupsData[student.group].teachers
-          : "Ma'lumot yo'q"}
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+              <TableBody>
+                {updatedStudents.map((student) => (
+                  <TableRow
+                    onClick={(event) =>
+                      handleLinkClick(event, student, student.id, student.studentName)
+                    }
+                    key={student.id}
+                  >
+                    <TableCell>{student.id}</TableCell>
+                    <TableCell>{student.studentName}</TableCell>
+                    <TableCell>{student.grade}</TableCell>
+                    <TableCell>{student.studentNumber}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                        {student.group}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {groupsData &&
+                        student.group &&
+                        groupsData[student.group]?.teachers
+                        ? groupsData[student.group].teachers
+                        : "Ma'lumot yo'q"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
             </Table>
           </div>
         </div>

@@ -231,7 +231,7 @@ const CourseInfo = () => {
             <SidebarProvider>
                 {isOpen && (
                     <div
-                        className="fixed w-full h-[100vh] bg-black/30 z-30 inset-0 transition-all duration-900 ease-in-out"
+                        className="fixed w-full h-[100vh] bg-black/50 backdrop-blur-[2px] z-30 inset-0 transition-all duration-900 ease-in-out"
                         onClick={toggleSidebar}
                     ></div>
                 )}

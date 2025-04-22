@@ -66,26 +66,9 @@ const Course = () => {
         setIsOpen(!isOpen);
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!addCourse.name || !addCourse.price || !addCourse.duration || !addCourse.month) {
-            alert("Barcha maydonlarni to'ldiring!");
-            return;
-        }
-
-        const newCourseRef = ref(database, `Courses/${addCourse.name}`);
-        set(newCourseRef, addCourse)
-            .then(() => {
-                toggleSidebar();
-            })
-            .catch((error) => {
-                console.error("Xatolik yuz berdi:", error);
-            });
-    };
-
     const handleCardClick = (id) => {
         navigate(`/course/${id}`);
-    };
+    };2
 
     const handleAddGroup = (e) => {
         e.preventDefault();
@@ -123,7 +106,7 @@ const Course = () => {
             <SidebarProvider>
                 {isOpen && (
                     <div
-                        className="fixed w-full h-[100vh] bg-black/30 z-30 inset-0 transition-all duration-900 ease-in-out"
+                        className="fixed w-full h-[100vh] bg-black/50 z-30 inset-0 transition-all backdrop-blur-[2px] duration-900 ease-in-out"
                         onClick={toggleSidebar}
                     ></div>
                 )}

@@ -6,6 +6,9 @@ import {
   getDatabase,
   ref,
   onValue,
+  set,
+  update,
+  get
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -66,6 +69,9 @@ import {
   Wallet
 } from "lucide-react";
 import { Button } from "./button";
+import { Modal } from "./modal";
+import { Input } from "./input";
+import { Label } from "./label";
 
 const timeSlots = Array.from({ length: 13 }).map((_, i) => ({
   time: `${(i + 8).toString().padStart(2, "0")}:00`,
@@ -126,17 +132,31 @@ const filterGroupsByDay = (groupsArray, day) => {
 };
 
 export default function Dashboard({ data }) {
+  const navigate = useNavigate();
   const [groupsData, setGroupsData] = useState([]);
   const [roomData, setRoomsData] = useState([]);
   const [leadsData, setLeadsData] = useState([]);
   const [courseSchedule, setCourseSchedule] = useState([]); // Ertangi kun uchun jadval
-  const navigate = useNavigate();
+  const [OpenModal, setOpenModal] = useState(false)
+  const [StudentKeys, setStudentKeys] = useState({});
+  const [TakeStudents, setTakeStudents] = useState([])
+  const [SearchStudens, setSearchStudens] = useState([]);
+
+  const [FirstKey, setFirstKey] = useState("")
+  const [StudentName, setStudentName] = useState("")
+
+  const [PayValue, setPayValue] = useState({
+    value1: "",
+    value2: ""
+  })
+
+  const [firstStudent, setfirstStudent] = useState({})
 
   useEffect(() => {
     const leadsRef = ref(database, "leads");
     onValue(leadsRef, (snapshot) => {
       const data = snapshot.val
-      ();
+        ();
       const leadsArray = data ? Object.values(data) : 0;
       setLeadsData(leadsArray);
     });
@@ -178,7 +198,19 @@ export default function Dashboard({ data }) {
     });
   }, []);
 
+  useEffect(() => {
+    const StudentRef = ref(database, "Students");
 
+    const unsubscribe = onValue(StudentRef, (snapshot) => {
+      const data = snapshot.val();
+      const studentsArray = data ? Object.values(data) : [];
+
+      setTakeStudents(studentsArray);
+      setStudentKeys(Object.keys(data || {}));
+    });
+
+    return () => unsubscribe(); // Kuzatuvni tozalash
+  }, []);
 
   const courseScheduleData = groupsData.map((group, index) => {
     if (!group.duration) {
@@ -340,369 +372,532 @@ export default function Dashboard({ data }) {
         startHour,
         selectedDays: group.selectedDays,
       };
-    }).filter(Boolean); 
+    }).filter(Boolean);
 
     // Ertangi kun uchun jadvalni yangilash
     setCourseSchedule(filteredSchedule);
   };
 
+  // Komponent yuklanganda bugungi guruhlarni ko'rsatish
   useEffect(() => {
-    // Komponent yuklanganda bugungi guruhlarni ko'rsatish
     handleShowTodayGroups();
   }, [groupsData]);
 
+
+  // Talabalarni qidirish funksiyasi
+  const handleSearchStudent = (searchTerm) => {
+    if (!searchTerm) {
+      setSearchStudens([]);
+      return;
+    }
+
+    const filteredStudents = TakeStudents.filter((student) =>
+      student.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.studentNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    setSearchStudens(filteredStudents); // Faqat filtrlangan natijalarni o'rnating
+  };
+
+
+  // Talabani bosilganda inputga qo'shish funksiyasi
+  const handleStudentClick = (studentName) => {
+    if (PayValue.value2) {
+      setPayValue((prevState) => ({
+        ...prevState,
+        value2: studentName
+      }))
+    }
+
+    const selectedStudent = TakeStudents.filter((student) => student.studentName === studentName);
+    setSearchStudens(selectedStudent); // Faqat bosilgan talaba bilan natijalarni yangilash
+  };
+
+
+  // Talabaga to'lov qilish funksiyasi
+  const handleStudentFee = () => {
+    const studentRef = ref(database, `Students/${PayValue.value2}`);
+  
+    // Bo'sh joylarni olib tashlab, raqamga aylantirish
+    const paymentAmount = parseInt(PayValue.value1.replace(/\s/g, ""), 10);
+  
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+      console.error("To'lov miqdori noto'g'ri:", PayValue.value1);
+      return;
+    }
+  
+    get(studentRef).then((snapshot) => {
+      if (snapshot.exists()) {
+        const studentData = snapshot.val();
+        const currentBalance = studentData.balance || 0;
+        const updatedBalance = currentBalance + paymentAmount;
+  
+        update(studentRef, { balance: updatedBalance })
+          .then(() => {
+            setOpenModal(false);
+            setPayValue({ value1: "", value2: "" });
+            setSearchStudens([]);
+            console.log(`Balans muvaffaqiyatli yangilandi: ${updatedBalance}`);
+          })
+          .catch((error) => {
+            console.error("Firebase yozish xatosi:", error);
+          });
+      } else {
+        console.error("Talaba topilmadi:", PayValue.value2);
+      }
+    }).catch((error) => {
+      console.error("Firebase o'qish xatosi:", error);
+    });
+  };
+
   return (
-    <div className="space-y-5">
+    <>
+      {
+        OpenModal && (
+          <Modal
+            title="To'lov qilish"
+            isOpen={OpenModal}
+            onClose={() => setOpenModal(false)}
+            positionTop={"t-[40px]"}
+            children={
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
+                  <Label htmlFor="pay" className="text-sm/3 text-gray-400">To'lov miqdori</Label>
+                  <Input
+                    id="pay"
+                    type="text"
+                    className="placeholder-gray-500 text-black" 
+                    placeholder="To'lovni kiriting"
+                    value={PayValue.value1}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\s/g, ""); // Bo'sh joylarni olib tashlash
+                      if (isNaN(rawValue)) return; // Faqat raqamlarni qabul qilish
+                  
+                      const formattedValue = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, " "); // Har 3 ta raqamdan keyin bo'sh joy qo'shish
+                      setPayValue((prevState) => ({
+                        ...prevState,
+                        value1: formattedValue,
+                      }));
+                    }}
+                  />
+                </div>
+                <div className="flex flex-col gap-3">
+                  <label htmlFor="who" className="text-sm/3 text-gray-400">Kimga</label>
+                  <Input
+                    id="who"
+                    type="search"
+                    placeholder="Talaba ismini qidiring..."
+                    value={PayValue.value2}
+                    onChange={(e) => {
+                      setPayValue((prevState) => ({
+                        ...prevState,
+                        value2: e.target.value
+                      }))
+                      handleSearchStudent(e.target.value)
+                    }}
+                  />
+                </div>
+                <div
+                  className={`flex flex-col gap-2 ${SearchStudens.length > 0 ? "h-auto" : SearchStudens.length < 4 ? "h-auto overflow-y-scroll" : ""}`}
+                >
+                  {SearchStudens.length > 0 ? (
+                    SearchStudens.map((student) => (
+                      <div
+                        key={student.id}
+                        className="flex justify-between items-center p-2 border-b border-gray-300 cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleStudentClick(student.studentName)} // Div bosilganda ismni inputga qo'shish
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-semibold">{student.studentName}</span>
+                          <span className="text-sm text-gray-500">{student.studentNumber}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : ""
+                  }
+                </div>
+                <div className="flex justify-between items-center gap-10">
+                  <Button
+                    variant="outline"
+                    onClick={() => setOpenModal(false)}
+                  >
+                    Bekor qilish
+                  </Button>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleStudentFee()
+                    }}
+                  >
+                    To'lash
+                    <CreditCard className="w-4 h-4 mr-2" />
+                  </Button>
+                </div>
+              </div>
+            }
+          />
+        )
+      }
 
-      {/* Payment */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">IT Ta'lim Markazi CRM</h1>
-        <div className="flex gap-4">
-          <Button className="bg-green-600 hover:bg-green-700 text-white">
-            <CreditCard className="w-4 h-4 mr-2" />
-            To'lov qilish
-          </Button>
-          <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
-            <Receipt className="w-4 h-4 mr-2" />
-            To'lovlar tarixi
-          </Button>
-          <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
-            <Wallet className="w-4 h-4 mr-2" />
-            Balans: 2,450,000 so'm
-          </Button>
+      <div className="space-y-5">
+
+        {/* Payment */}
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold">IT Ta'lim Markazi CRM</h1>
+          <div className="flex gap-4">
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={(e) => {
+                e.preventDefault()
+                setOpenModal(true)
+              }}
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              To'lov qilish
+            </Button>
+            <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+              <Receipt className="w-4 h-4 mr-2" />
+              To'lovlar tarixi
+            </Button>
+            <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+              <Wallet className="w-4 h-4 mr-2" />
+              Balans: 2,450,000 so'm
+            </Button>
+          </div>
         </div>
-      </div>
-      {/* KPI Section */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card
-          className="bg-gradient-to-br cursor-pointer from-pink-50 to-pink-100"
-          onClick={() => navigate("/leads")}
-        >
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Yangi Lidlar</CardTitle>
-            <UserPlus className="h-4 w-4 text-pink-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-pink-700">{leadsData === 0 ? 0 : leadsData.length}</div>
-            <p className="text-xs text-pink-600 mt-1 flex items-center">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              O'tgan haftaga nisbatan +15%
-            </p>
-          </CardContent>
-        </Card>
-        <Card
-          className="bg-gradient-to-br cursor-pointer from-blue-50 to-blue-100"
-          onClick={() => handleCardClick(groupsData[0]?.id)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Oylik Daromad</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-700">
-              {data.totalRevenue.toLocaleString()} so'm
+        {/* KPI Section */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <Card
+            className="bg-gradient-to-br cursor-pointer from-pink-50 to-pink-100"
+            onClick={() => navigate("/leads")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Yangi Lidlar</CardTitle>
+              <UserPlus className="h-4 w-4 text-pink-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-pink-700">{leadsData === 0 ? 0 : leadsData.length}</div>
+              <p className="text-xs text-pink-600 mt-1 flex items-center">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                O'tgan haftaga nisbatan +15%
+              </p>
+            </CardContent>
+          </Card>
+          <Card
+            className="bg-gradient-to-br cursor-pointer from-blue-50 to-blue-100"
+            onClick={() => handleCardClick(groupsData[0]?.id)}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Oylik Daromad</CardTitle>
+              <DollarSign className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-700">
+                {data.totalRevenue.toLocaleString()} so'm
+              </div>
+              <p className="text-xs text-blue-600 mt-1 flex items-center">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                O'tgan oyga nisbatan +12.5%
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="bg-gradient-to-br cursor-pointer from-green-50 to-green-100"
+            onClick={() => handleCardClick(groupsData[1]?.id)}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                Faol O'quvchilar
+              </CardTitle>
+              <Users className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-700">
+                {data.totalStudents}
+              </div>
+              <p className="text-xs text-green-600 mt-1 flex items-center">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                +8.2% saqlanish darajasi
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="bg-gradient-to-br cursor-pointer from-indigo-50 to-indigo-100"
+            onClick={() => navigate("/groups")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Faol Guruhlar</CardTitle>
+              <Users className="h-4 w-4 text-indigo-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-indigo-700">24</div>
+              <p className="text-xs text-indigo-600 mt-1 flex items-center">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                O'tgan oyga nisbatan +2 ta
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-amber-50 to-amber-100">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                Qarzdor O'quvchilar
+              </CardTitle>
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-amber-700">15</div>
+              <p className="text-xs text-amber-600 mt-1 flex items-center">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                O'tgan oyga nisbatan -3 ta
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Course Schedule */}
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Dars Jadvali</CardTitle>
+            <CardDescription>
+              Barcha xonalardagi joriy va kelgusi darslar
+            </CardDescription>
+            <div className="flex items-center justify-center mt-2">
+              Bugun:
+              <div className="bg-blue-100 rounded-full w-10 h-10 flex items-center justify-center text-blue-700 font-bold">
+                {new Date().getDate()}
+              </div>
             </div>
-            <p className="text-xs text-blue-600 mt-1 flex items-center">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              O'tgan oyga nisbatan +12.5%
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-gradient-to-br cursor-pointer from-green-50 to-green-100"
-          onClick={() => handleCardClick(groupsData[1]?.id)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Faol O'quvchilar
-            </CardTitle>
-            <Users className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {data.totalStudents}
+            <div className="text-center text-sm text-gray-600 mt-2">
+              {new Date().toLocaleDateString("uz-UZ", { weekday: "long" })}
             </div>
-            <p className="text-xs text-green-600 mt-1 flex items-center">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              +8.2% saqlanish darajasi
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-gradient-to-br cursor-pointer from-indigo-50 to-indigo-100"
-          onClick={() => navigate("/groups")}
-        >
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Faol Guruhlar</CardTitle>
-            <Users className="h-4 w-4 text-indigo-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indigo-700">24</div>
-            <p className="text-xs text-indigo-600 mt-1 flex items-center">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              O'tgan oyga nisbatan +2 ta
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Qarzdor O'quvchilar
-            </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-700">15</div>
-            <p className="text-xs text-amber-600 mt-1 flex items-center">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              O'tgan oyga nisbatan -3 ta
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Course Schedule */}
-      <Card className="col-span-3">
-        <CardHeader>
-          <CardTitle>Dars Jadvali</CardTitle>
-          <CardDescription>
-            Barcha xonalardagi joriy va kelgusi darslar
-          </CardDescription>
-          <div className="flex items-center justify-center mt-2">
-            Bugun:
-            <div className="bg-blue-100 rounded-full w-10 h-10 flex items-center justify-center text-blue-700 font-bold">
-              {new Date().getDate()}
-            </div>
-          </div>
-          <div className="text-center text-sm text-gray-600 mt-2">
-            {new Date().toLocaleDateString("uz-UZ", { weekday: "long" })}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[600px] w-full rounded-md border border-gray-300">
-            <div className="relative w-full">
-              {/* Time header */}
-              <div className="sticky top-0 z-10 w-full border-b border-gray-300 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="flex h-12">
-                  <div className="flex-none w-[100px] border-r border-gray-300 bg-background p-2">
-                    Xona
+            <ScrollArea className="h-[600px] w-full rounded-md border border-gray-300">
+              <div className="relative w-full">
+                {/* Time header */}
+                <div className="sticky top-0 z-10 w-full border-b border-gray-300 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                  <div className="flex h-12">
+                    <div className="flex-none w-[100px] border-r border-gray-300 bg-background p-2">
+                      Xona
+                    </div>
+                    {timeSlots.map((slot) => (
+                      <div
+                        key={slot.time}
+                        className={cn(
+                          "flex-none w-[100px] border-r border-gray-300 p-2 text-center",
+                          isSlotCurrent(slot.time) && "bg-blue-100 font-bold",
+                          isSlotPast(slot.time) && "bg-gray-100 text-gray-400"
+                        )}
+                      >
+                        {slot.time}
+                      </div>
+                    ))}
                   </div>
-                  {timeSlots.map((slot) => (
+                </div>
+                <div className="sticky top-12 z-20 w-full bg-yellow-100 p-2 text-center font-bold">
+                  Joriy vaqt: {currentTime}
+                </div>
+
+                {/* Schedule grid */}
+                <div className="flex flex-col">
+                  {roomData.map((room) => (
                     <div
-                      key={slot.time}
-                      className={cn(
-                        "flex-none w-[100px] border-r border-gray-300 p-2 text-center",
-                        isSlotCurrent(slot.time) && "bg-blue-100 font-bold",
-                        isSlotPast(slot.time) && "bg-gray-100 text-gray-400"
-                      )}
+                      key={room.value} // Use a unique property like `room.value` as the key
+                      className="flex min-h-[100px] border-b border-gray-300"
                     >
-                      {slot.time}
+                      <div className="flex-none w-[100px] border-r border-gray-300 bg-muted/20 p-2">
+                        {room.label}
+                      </div>
+                      <div className="relative flex flex-1">
+                        {courseSchedule
+                          .filter((course) => course.room === room.label)
+                          .map((course) => {
+                            const isToday = new Date().toDateString() === new Date(course.date).toDateString();
+                            return (
+                              <div
+                                key={course.id} // Ensure each course also has a unique key
+                                className={cn(
+                                  " group absolute flex flex-col transition-all duration-300 cursor-pointer rounded-lg border p-2 text-sm hover:shadow-md",
+                                  isCoursePast(course)
+                                    ? "bg-gray-300 border-gray-400 text-gray-600"
+                                    : course.id % 2 === 0
+                                      ? "bg-blue-100 border-blue-200"
+                                      : "bg-green-100 border-green-200",
+                                  isToday && "bg-yellow-100 border-yellow-200"
+                                )}
+                                style={{
+                                  left: `${(course.startHour - 8) * 100}px`,
+                                  width: `${course.duration * 100}px`,
+                                  top: "4px",
+                                  bottom: "4px",
+                                }}
+                                onClick={() => handleCardClick(course.id)}
+                              >
+                                {/* Yon chiziq */}
+                                <div className="absolute left-0 top-0 bottom-0 w-1  bg-transparent group-hover:bg-blue-500 transition-all duration-300"></div>
+
+                                {/* Kontent */}
+                                <div className="font-semibold">{course.name}</div>
+                                <div className="text-xs text-muted-foreground">{course.instructor}</div>
+                                <div className="text-xs font-medium text-primary">Guruh: {course.groupId}</div>
+                                <div className="text-xs p-0 m-0 text-gray-800 mt-1">
+                                  {course.selectedDays ? course.selectedDays.join(", ") : "Noma'lum"}
+                                </div>
+                                {isCoursePast(course) && (
+                                  <div className="absolute top-0 right-0 bg-red-500 text-white text-xs px-1 rounded-bl rounded-tr-[inherit]">
+                                    Tugadi
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="sticky top-12 z-20 w-full bg-yellow-100 p-2 text-center font-bold">
-                Joriy vaqt: {currentTime}
-              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
 
-              {/* Schedule grid */}
-              <div className="flex flex-col">
-                {roomData.map((room) => (
-                  <div
-                    key={room.value} // Use a unique property like `room.value` as the key
-                    className="flex min-h-[100px] border-b border-gray-300"
-                  >
-                    <div className="flex-none w-[100px] border-r border-gray-300 bg-muted/20 p-2">
-                      {room.label}
-                    </div>
-                    <div className="relative flex flex-1">
-                      {courseSchedule
-                        .filter((course) => course.room === room.label)
-                        .map((course) => {
-                          const isToday = new Date().toDateString() === new Date(course.date).toDateString();
-                          return (
-                            <div
-                              key={course.id} // Ensure each course also has a unique key
-                              className={cn(
-                                " group absolute flex flex-col transition-all duration-300 cursor-pointer rounded-lg border p-2 text-sm hover:shadow-md",
-                                isCoursePast(course)
-                                  ? "bg-gray-300 border-gray-400 text-gray-600"
-                                  : course.id % 2 === 0
-                                    ? "bg-blue-100 border-blue-200"
-                                    : "bg-green-100 border-green-200",
-                                isToday && "bg-yellow-100 border-yellow-200"
-                              )}
-                              style={{
-                                left: `${(course.startHour - 8) * 100}px`,
-                                width: `${course.duration * 100}px`,
-                                top: "4px",
-                                bottom: "4px",
-                              }}
-                              onClick={() => handleCardClick(course.id)}
-                            >
-                              {/* Yon chiziq */}
-                              <div className="absolute left-0 top-0 bottom-0 w-1  bg-transparent group-hover:bg-blue-500 transition-all duration-300"></div>
-
-                              {/* Kontent */}
-                              <div className="font-semibold">{course.name}</div>
-                              <div className="text-xs text-muted-foreground">{course.instructor}</div>
-                              <div className="text-xs font-medium text-primary">Guruh: {course.groupId}</div>
-                              <div className="text-xs p-0 m-0 text-gray-800 mt-1">
-                                {course.selectedDays ? course.selectedDays.join(", ") : "Noma'lum"}
-                              </div>
-                              {isCoursePast(course) && (
-                                <div className="absolute top-0 right-0 bg-red-500 text-white text-xs px-1 rounded-bl rounded-tr-[inherit]">
-                                  Tugadi
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
-
-        </CardContent>
-      </Card>
-
-      {/* Ertangi kun tugmasi */}
-      <div className="flex justify-end mb-4 gap-2">
-        <Button
-          className="bg-green-600 hover:bg-green-700 text-white"
-          onClick={handleShowTodayGroups}
-        >
-          Bugungi Guruhlarni Ko'rsat
-        </Button>
-        <Button
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-          onClick={handleShowTomorrowGroups}
-        >
-          Ertangi Guruhlarni Ko'rsat
-        </Button>
-      </div>
-
-      {/* Revenue and Performance Analytics */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Daromad Trendi</CardTitle>
-            <CardDescription>So'nggi 6 oy uchun oylik daromad</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#8884d8"
-                  strokeWidth={2}
-                  dot={{ fill: "#8884d8" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
 
+        {/* Ertangi kun tugmasi */}
+        <div className="flex justify-end mb-4 gap-2">
+          <Button
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleShowTodayGroups}
+          >
+            Bugungi Guruhlarni Ko'rsat
+          </Button>
+          <Button
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={handleShowTomorrowGroups}
+          >
+            Ertangi Guruhlarni Ko'rsat
+          </Button>
+        </div>
+
+        {/* Revenue and Performance Analytics */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Daromad Trendi</CardTitle>
+              <CardDescription>So'nggi 6 oy uchun oylik daromad</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#8884d8"
+                    strokeWidth={2}
+                    dot={{ fill: "#8884d8" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Daromad Taqsimoti</CardTitle>
+              <CardDescription>
+                Kurs toifasi bo'yicha daromad ulushi
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={courseRevenue}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {courseRevenue.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Performing Courses */}
         <Card>
           <CardHeader>
-            <CardTitle>Daromad Taqsimoti</CardTitle>
+            <CardTitle>Eng Yaxshi Kurslar</CardTitle>
             <CardDescription>
-              Kurs toifasi bo'yicha daromad ulushi
+              Eng yuqori daromad va talabalar mamnuniyatiga ega kurslar
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kurs Nomi</TableHead>
+                  <TableHead>Daromad</TableHead>
+                  <TableHead>O'quvchilar</TableHead>
+                  <TableHead>Reyting</TableHead>
+                  <TableHead>O'sish</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {topPerformers.map((course) => (
+                  <TableRow key={course.name}>
+                    <TableCell className="font-medium">{course.name}</TableCell>
+                    <TableCell>{course.revenue.toLocaleString()} so'm</TableCell>
+                    <TableCell>{course.students}</TableCell>
+                    <TableCell>
+                      <span className="flex items-center text-amber-600">
+                        {course.rating} <Award className="h-4 w-4 ml-1" />
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-green-600">
+                      {course.growth}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Kurs Mashhurligi</CardTitle>
+          </CardHeader>
+          <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={courseRevenue}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {courseRevenue.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
+              <BarChart data={data.coursePopularity}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
                 <Tooltip />
-              </PieChart>
+                <Bar dataKey="students" fill="#8884d8" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
-
-      {/* Top Performing Courses */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Eng Yaxshi Kurslar</CardTitle>
-          <CardDescription>
-            Eng yuqori daromad va talabalar mamnuniyatiga ega kurslar
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Kurs Nomi</TableHead>
-                <TableHead>Daromad</TableHead>
-                <TableHead>O'quvchilar</TableHead>
-                <TableHead>Reyting</TableHead>
-                <TableHead>O'sish</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {topPerformers.map((course) => (
-                <TableRow key={course.name}>
-                  <TableCell className="font-medium">{course.name}</TableCell>
-                  <TableCell>{course.revenue.toLocaleString()} so'm</TableCell>
-                  <TableCell>{course.students}</TableCell>
-                  <TableCell>
-                    <span className="flex items-center text-amber-600">
-                      {course.rating} <Award className="h-4 w-4 ml-1" />
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-green-600">
-                    {course.growth}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Kurs Mashhurligi</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.coursePopularity}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="students" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-    </div>
+    </>
   );
 }

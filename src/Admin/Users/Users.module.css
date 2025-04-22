@@ -1,0 +1,49 @@
+.course {
+    display: flex;
+    flex-direction: column;
+}
+
+.info {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding-right: 50px;
+}
+
+.title {
+    text-transform: capitalize;
+}
+
+.card {
+    width: 400px;
+    position: relative;
+}
+
+.icons {
+    display: flex;
+    gap: 10px;
+}
+
+.icon {
+    font-size: 20px;
+    color: #4d4d4d;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid #4d4d4d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: 0.3s;
+
+    &:hover {
+        opacity: 0.85;
+    }
+}
+
+.tabs {
+    cursor: pointer;
+    padding-bottom: 9px;
+}
