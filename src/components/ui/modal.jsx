@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 
-export function Modal({ isOpen, onClose, title, children }) {
+export function Modal({ isOpen, onClose, positionTop, title, children }) {
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -23,7 +23,7 @@ export function Modal({ isOpen, onClose, title, children }) {
       <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="fixed  left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[425px] bg-white rounded-lg shadow-lg z-60 p-6">
+      <div className={`fixed ${positionTop} left-[550px]  w-full max-w-[425px] bg-white rounded-lg shadow-lg z-60 p-6`}>
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold">{title}</h2>
         </div>
@@ -31,7 +31,7 @@ export function Modal({ isOpen, onClose, title, children }) {
         {children}
 
         {/* Close button */}
-        <button onClick={onClose} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600">
+        <button onClick={onClose} className="absolute cursor-pointer right-4 top-4 text-gray-400 hover:text-gray-600">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"

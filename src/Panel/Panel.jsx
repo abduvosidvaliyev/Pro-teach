@@ -13,7 +13,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LineChart, lineElementClasses } from '@mui/x-charts/LineChart';
-import {SidebarPanel} from "../Sidebar.jsx"
+import { SidebarPanel } from "../Sidebar.jsx"
 import Dashboard from '../components/ui/Dashboard.jsx';
 
 
@@ -48,36 +48,36 @@ function Panel() {
     const [students] = useState([
         { id: 1, name: "Alisher Navoiy", email: "alisher@example.com", course: "React asoslari" },
         { id: 2, name: "Bobur Mirzo", email: "bobur@example.com", course: "Ilg'or JavaScript" },
-      ])
-      const [courses] = useState([
+    ])
+    const [courses] = useState([
         { id: 1, name: "React asoslari", duration: "4 hafta", students: 15 },
         { id: 2, name: "Ilg'or JavaScript", duration: "6 hafta", students: 10 },
-      ])
-    
-      // Mock data for the dashboard
-      const dashboardData = {
+    ])
+
+    // Mock data for the dashboard
+    const dashboardData = {
         totalStudents: students.length,
         totalCourses: courses.length,
         totalRevenue: 75000000,
         averageRating: 4.7,
         recentEnrollments: [
-          { id: 1, name: "Alisher Navoiy", course: "Boshlang'ich Python", date: "2023-06-15" },
-          { id: 2, name: "Bobur Mirzo", course: "Ilg'or React", date: "2023-06-14" },
-          { id: 3, name: "Cho'lpon", course: "Data Science asoslari", date: "2023-06-13" },
+            { id: 1, name: "Alisher Navoiy", course: "Boshlang'ich Python", date: "2023-06-15" },
+            { id: 2, name: "Bobur Mirzo", course: "Ilg'or React", date: "2023-06-14" },
+            { id: 3, name: "Cho'lpon", course: "Data Science asoslari", date: "2023-06-13" },
         ],
         upcomingCourses: [
-          { id: 1, name: "Machine Learning asoslari", startDate: "2023-07-01", enrolledStudents: 20 },
-          { id: 2, name: "Web Dasturlash Bootcamp", startDate: "2023-07-15", enrolledStudents: 15 },
-          { id: 3, name: "Cloud Hisoblash asoslari", startDate: "2023-08-01", enrolledStudents: 18 },
+            { id: 1, name: "Machine Learning asoslari", startDate: "2023-07-01", enrolledStudents: 20 },
+            { id: 2, name: "Web Dasturlash Bootcamp", startDate: "2023-07-15", enrolledStudents: 15 },
+            { id: 3, name: "Cloud Hisoblash asoslari", startDate: "2023-08-01", enrolledStudents: 18 },
         ],
         coursePopularity: [
-          { name: "JavaScript", students: 45 },
-          { name: "Python", students: 40 },
-          { name: "Java", students: 30 },
-          { name: "React", students: 35 },
-          { name: "Data Science", students: 25 },
+            { name: "JavaScript", students: 45 },
+            { name: "Python", students: 40 },
+            { name: "Java", students: 30 },
+            { name: "React", students: 35 },
+            { name: "Data Science", students: 25 },
         ],
-      }
+    }
 
     const toggleSidebar = () => {
         setIsCollapsed(!isCollapsed);
@@ -184,7 +184,7 @@ function Panel() {
 
     return (
         <div>
-            <SidebarPanel/>
+            <SidebarPanel />
             {/* <div
                 className={style.panel}
                 style={{
@@ -273,14 +273,14 @@ function Panel() {
                     </ul>
                 </div>
             </div> */}
-     <div className='p-5 mx-auto' 
-        style={ {
-            marginLeft: "var(--sidebar-width, 250px)",
-            width: "var(--sidebar-width), 100%",
-            transition: "all 0.5s ease, background 0.3s ease, width 0.5s ease",
-          }}>
-      <Dashboard data={dashboardData} />
-    </div>
+            <div className='p-5 mx-auto'
+                style={{
+                    marginLeft: "var(--sidebar-width, 250px)",
+                    width: "var(--sidebar-width), 100%",
+                    transition: "all 0.5s ease, background 0.3s ease, width 0.5s ease",
+                }}>
+                <Dashboard data={dashboardData} />
+            </div>
         </div>
     );
 }
