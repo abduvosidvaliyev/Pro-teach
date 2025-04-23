@@ -28,7 +28,8 @@ import {
   set,
   onValue,
   remove,
-  get
+  get,
+  update
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 import { Modal } from "../components/ui/modal"
 import { cn } from "../lib/utils"
@@ -215,6 +216,89 @@ export default function LeadsPage() {
     });
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const today = new Date();
+      const dayOfWeek = today.toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase();
+
+      const studentsRef = ref(database, `Students`);
+      get(studentsRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const studentsData = snapshot.val();
+
+            // Har bir o'quvchini tekshirish
+            Object.entries(studentsData).forEach(([studentName, studentData]) => {
+              if (studentData.status === "Faol") {
+                const currentBalance = studentData.balance || 0;
+                const perLessonCost = studentData.perLessonCost || 0;
+                const groupName = studentData.group;
+
+                if (!groupName) {
+                  console.error(`Group name not found for student: ${studentName}`);
+                  return;
+                }
+
+                // Guruh ma'lumotlarini olish
+                const groupRef = ref(database, `Groups/${groupName}`);
+                get(groupRef)
+                  .then((groupSnapshot) => {
+                    if (groupSnapshot.exists()) {
+                      const groupData = groupSnapshot.val();
+                      const selectedDays = groupData.selectedDays || [];
+
+                      // Agar bugungi kun dars kuni bo'lsa
+                      if (selectedDays.includes(dayOfWeek)) {
+                        const updatedBalance = currentBalance - perLessonCost;
+
+                        console.log(
+                          `Daily deduction for ${studentName}: ${perLessonCost}`
+                        );
+                        console.log(
+                          `Updated Balance for ${studentName}: ${updatedBalance}`
+                        );
+
+                        // Firebase-ni yangilash
+                        const studentRef = ref(database, `Students/${studentName}`);
+                        update(studentRef, { balance: updatedBalance })
+                          .then(() => {
+                            console.log(
+                              `Balance updated for ${studentName} for today's lesson.`
+                            );
+                          })
+                          .catch((error) => {
+                            console.error(
+                              `Error updating balance for ${studentName}:`,
+                              error
+                            );
+                          });
+                      }
+                    } else {
+                      console.error(
+                        `Group data not found for group: ${groupName}`
+                      );
+                    }
+                  })
+                  .catch((error) => {
+                    console.error(
+                      `Error fetching group data for group: ${groupName}`,
+                      error
+                    );
+                  });
+              }
+            });
+          } else {
+            console.error("No students found in Firebase.");
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching students data:", error);
+        });
+    }, 1000 * 60 * 60 * 24); // Har kuni tekshirish
+
+    return () => clearInterval(interval); // Komponent unmount bo'lganda intervalni tozalash
+  }, []);
+
   // state to store new lead data 
   const [newLead, setNewLead] = useState({
     name: "",
@@ -350,16 +434,25 @@ export default function LeadsPage() {
               },
             },
             id: Students.length,
-            balance: -totalDeduction, // Faqat qolgan dars kunlari uchun to'lov
+            balance: 0, // Boshlang'ich balansni 0 qilib qo'yamiz
             group: selectedOptions.groups.label,
             studentName: newUser.name,
             studentNumber: newUser.phone,
             status: "Faol",
             addedDate: date, // Qo'shilgan sana
+            perLessonCost, // Har bir dars uchun narxni saqlaymiz
+            remainingLessonDaysCount, // Qolgan dars kunlari soni
+            studentHistory: [
+              {
+                date: newUser.date, // newUserning sanasi
+                title: "Ro'yxatdan o'tdi",
+                description: `${newUser.name} ${selectedOptions.groups.label} guruhiga qo'shildi.`,
+              },
+            ],
           });
   
           console.log(
-            `Student ${newUser.name} added to group ${selectedOptions.groups.label} with balance updated: -${totalDeduction}`
+            `Student ${newUser.name} added to group ${selectedOptions.groups.label} with per lesson cost: ${perLessonCost}`
           );
   
           // Leadni Firebase-dan o'chirish

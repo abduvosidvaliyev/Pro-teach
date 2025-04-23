@@ -129,6 +129,7 @@ export default function Dashboard({ data }) {
   const [groupsData, setGroupsData] = useState([]);
   const [roomData, setRoomsData] = useState([]);
   const [leadsData, setLeadsData] = useState([]);
+  const [courseAbout, setCourseAbout] = useState([]);
   const [courseSchedule, setCourseSchedule] = useState([]); // Ertangi kun uchun jadval
   const navigate = useNavigate();
 
@@ -142,19 +143,27 @@ export default function Dashboard({ data }) {
     });
   }, [])
 
+  console.log(leadsData);
+
 
   useEffect(() => {
     const groupsRef = ref(database, "Groups");
     onValue(groupsRef, (snapshot) => {
       const data = snapshot.val();
-      const groupsArray = Object.keys(data || {}).map((key) => ({
-        id: key,
-        groupName: key,
-        ...data[key], // Includes selectedDays
-      }));
-      setGroupsData(groupsArray);
+      if (data) {
+        const groupsArray = Object.keys(data).map((key) => ({
+          id: key,
+          groupName: key,
+          ...data[key], // Includes selectedDays
+        }));
+        setGroupsData(groupsArray);
+      } else {
+        console.error("Groups data is empty or undefined.");
+      }
     });
   }, []);
+
+  console.log("Groups Data:", groupsData);
 
   useEffect(() => {
     const coursesRef = ref(database, "Courses");
@@ -170,11 +179,15 @@ export default function Dashboard({ data }) {
     const roomsRef = ref(database, "Rooms");
     onValue(roomsRef, (snapshot) => {
       const data = snapshot.val();
-      const roomData = Object.keys(data).map((key) => ({
-        value: key,
-        label: data[key].name,
-      }));
-      setRoomsData(roomData);
+      if (data) {
+        const roomData = Object.keys(data).map((key) => ({
+          value: key,
+          label: data[key].name,
+        }));
+        setRoomsData(roomData);
+      } else {
+        console.error("Room data is empty or undefined.");
+      }
     });
   }, []);
 
@@ -198,8 +211,10 @@ export default function Dashboard({ data }) {
       startHour,
       selectedDays: group.selectedDays,
     };
-    return schedule;
+    return schedule;  
   }).filter(Boolean); // Filter out null values
+
+  console.log("Course Schedule Data:", courseScheduleData);
 
   // Populate time slots with courses
   courseScheduleData.forEach((course) => {

@@ -258,6 +258,12 @@ function GroupDetails() {
         const hasDayConflict = group.selectedDays.some((day) =>
           newGroup.selectedDays.includes(day)
         );
+
+
+
+
+
+
   
         // Vaqt to'qnashuvini tekshirish
         const hasTimeConflict =

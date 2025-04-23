@@ -21,6 +21,7 @@ import { Input } from "../../components/ui/input";
 import { Tabs } from "./Tabs";
 import CourseGrid from "./CourseGrid";
 import { Comments } from "./Comments";
+import { StudentHistory } from "./StudentHistory";
 import { SidebarPanel } from "../../Sidebar";
 import { Textarea } from "../../components/ui/textarea";
 import { Modal } from "../../components/ui/modal";
@@ -105,20 +106,17 @@ const StudentDetail = () => {
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentNumber, setNewStudentNumber] = useState("");
   const [editingStudent, setEditingStudent] = useState(null);
-  const [isAddVisible, setIsAddVisible] = useState(false);
-  const [paymentPrice, setPaymentPrice] = useState("");
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
-  const [payments, setPayments] = useState(null);
-  const [dateValue, setDateValue] = useState(getCurrentDate());
   const [activeTab, setActiveTab] = useState("groups");
   const [date, setDate] = useState("30.01.2025");
   const [isOpen, setIsOpen] = useState(false);
   const [groupsData, setGroupsData] = useState([]);
   const [groupName, setGroupName] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Added state
-  const [paymentDates, setPaymentDates] = useState([]); // Added state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false); // To'lov modalining holati
   const [paymentAmount, setPaymentAmount] = useState(""); // To'lov miqdori
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false); // Pul qaytarish modalining holati
+  const [refundAmount, setRefundAmount] = useState(""); // Qaytariladigan pul miqdori
 
   const toggleIsAdd = (student = null) => {
     setIsAdd(!isAdd);
@@ -197,27 +195,31 @@ const StudentDetail = () => {
       return;
     }
 
+
+    const formattedPaymentAmount = new Intl.NumberFormat("uz-UZ", {
+      style: "decimal", // Faqat raqamlarni formatlash
+      minimumFractionDigits: 0,
+    }).format(parseFloat(paymentAmount)); // Formatlash
+  
     const paymentDate = getCurrentDate(); // Hozirgi sanani olish
     const paymentTime = new Date().toLocaleTimeString("en-US", { hour12: false }); // To'lov vaqti
     const paymentData = {
-      studentName: student.studentName,
-      studentNumber: student.studentNumber,
-      paymentAmount: parseFloat(paymentAmount),
-      paymentTime: paymentTime, // To'lov vaqti
+      date: paymentDate,
+      amount: `+ ${formattedPaymentAmount}`, // Formatlangan miqdor
+      description: "To'lov qabul qilindi",
+      status: "To'langan",
+      time: paymentTime,
     };
+  
 
     // To'lovni Firebase ma'lumotlar bazasiga yozish
-    const paymentRef = ref(database, `Payments/${currentMonth}/${student.studentName}/${paymentDate}`);
+    const paymentRef = ref(database, `Students/${student.studentName}/paymentHistory`);
     get(paymentRef)
       .then((snapshot) => {
-        const existingPayments = snapshot.val() || {}; // Mavjud to'lovlarni olish
-        const newPaymentKey = `payment_${Object.keys(existingPayments).length + 1}`; // Yangi to'lov uchun kalit
-        const updatedPayments = {
-          ...existingPayments,
-          [newPaymentKey]: paymentData, // Yangi to'lovni qo'shish
-        };
+        const existingPayments = snapshot.val() || []; // Mavjud to'lovlarni olish
+        const updatedPayments = [...existingPayments, paymentData]; // Yangi to'lovni qo'shish
 
-        return update(paymentRef, updatedPayments); // Mavjud to'lovlarni yangilash
+        return update(ref(database, `Students/${student.studentName}`), { paymentHistory: updatedPayments }); // To'lov tarixini yangilash
       })
       .then(() => {
         alert("To'lov muvaffaqiyatli amalga oshirildi!");
@@ -229,7 +231,7 @@ const StudentDetail = () => {
         get(balanceRef)
           .then((snapshot) => {
             const currentBalance = parseFloat(snapshot.val()) || 0; // Hozirgi balansni olish yoki 0 ga o'rnatish
-            const newBalance = currentBalance + parseFloat(paymentAmount); // Yangi balansni hisoblash
+            const newBalance = currentBalance + parseFloat(paymentAmount); // To'g'ri hisoblash
             update(ref(database, `Students/${student.studentName}`), { balance: newBalance }) // Balansni yangilash
               .then(() => console.log("Student balance updated successfully"))
               .catch((error) => console.error("Error updating student balance:", error));
@@ -241,6 +243,57 @@ const StudentDetail = () => {
       });
   };
 
+  const handleRefund = () => {
+    if (!refundAmount || isNaN(refundAmount)) {
+      alert("Qaytariladigan miqdorni to'g'ri kiriting!");
+      return;
+    }
+
+    const formattedRefundAmount = new Intl.NumberFormat("uz-UZ", {
+      style: "decimal", // Faqat raqamlarni formatlash
+      minimumFractionDigits: 0, // Qoldiqsiz ko'rsatish
+    }).format(refundAmount); // Salbiy miqdor
+
+    const refundDate = getCurrentDate(); // Hozirgi sanani olish
+    const refundTime = new Date().toLocaleTimeString("en-US", { hour12: false }); // Qaytarish vaqti
+    const refundData = {
+      date: refundDate,
+      amount: `- ${formattedRefundAmount}`, // Formatlangan miqdor
+      description: "Pul qaytarildi",
+      status: "Qaytarildi",
+      time: refundTime,
+    };
+
+    // To'lov tarixini yangilash
+    const paymentRef = ref(database, `Students/${student.studentName}/paymentHistory`);
+    get(paymentRef)
+      .then((snapshot) => {
+        const existingPayments = snapshot.val() || []; // Mavjud to'lovlarni olish
+        const updatedPayments = [...existingPayments, refundData]; // Yangi yozuvni qo'shish
+
+        return update(ref(database, `Students/${student.studentName}`), { paymentHistory: updatedPayments }); // To'lov tarixini yangilash
+      })
+      .then(() => {
+        alert("Pul muvaffaqiyatli qaytarildi!");
+        setIsRefundModalOpen(false);
+        setRefundAmount(""); // Qaytarish miqdorini tozalash
+
+        // Studentning balansini yangilash
+        const balanceRef = ref(database, `Students/${student.studentName}/balance`);
+        get(balanceRef)
+          .then((snapshot) => {
+            const currentBalance = parseFloat(snapshot.val()) || 0; // Hozirgi balansni olish yoki 0 ga o'rnatish
+            const newBalance = currentBalance - Math.abs(parseFloat(refundAmount)); // Yangi balansni hisoblash
+            update(ref(database, `Students/${student.studentName}`), { balance: newBalance }) // Balansni yangilash
+              .then(() => console.log("Student balance updated successfully"))
+              .catch((error) => console.error("Error updating student balance:", error));
+          })
+          .catch((error) => console.error("Error fetching student balance:", error));
+      })
+      .catch((error) => {
+        console.error("Pulni qaytarishda xatolik yuz berdi:", error);
+      });
+  };
 
   useEffect(() => {
     const studentRef = ref(database, `Students`);
@@ -281,13 +334,25 @@ const StudentDetail = () => {
           group: groupName,
         };
 
+        // `studentHistory`ga yangi yozuv qo'shish
+        const newHistoryEntry = {
+          date: getCurrentDate(), // Hozirgi sana
+          title: "Guruhga qo'shildi",
+          description: `${student.studentName} ${groupName} guruhiga qo'shildi.`,
+        };
+
+        const updatedHistory = studentData.studentHistory
+          ? [...studentData.studentHistory, newHistoryEntry]
+          : [newHistoryEntry];
+
         // Firebase ma'lumotlar bazasiga yozish
-        update(userRef, newStudentData)
+        update(userRef, { ...newStudentData, studentHistory: updatedHistory })
           .then(() => {
             alert("Talaba guruhga muvaffaqiyatli qo'shildi!");
             setStudents((prevStudents) => ({
               ...prevStudents,
               ...newStudentData,
+              studentHistory: updatedHistory,
             }));
           })
           .catch((error) => {
@@ -357,11 +422,15 @@ const StudentDetail = () => {
         </div>
 
         <div className={style.studentActive}>
-          <div className="w-full rounded-lg bg-white shadow">
+          <div className="w-full rounded-lg sticky top-3 bg-white shadow">
             {/* Balance Header */}
-            <div className="bg-[#6366F1] p-4 rounded-t-lg flex justify-end">
-              <span className="bg-white text-green-500 px-3 py-1 rounded-full text-sm">
-                {student.balance} so'm
+            <div className="bg-[#6366F1] p-4 rounded-t-lg font-bold flex justify-end">
+              <span className={`bg-white px-3 py-1 rounded-full text-sm ${student.balance > 0 ? "text-green-500" : "text-red-500"}`}>
+                {new Intl.NumberFormat("uz-UZ", {
+                  style: "currency",
+                  currency: "UZS",
+                  minimumFractionDigits: 0,
+                }).format(parseFloat(student.balance || 0).toFixed(2))}
               </span>
             </div>
 
@@ -419,6 +488,7 @@ const StudentDetail = () => {
                 <Button
                   variant="outline"
                   className="w-full text-red-500 border-red-300 hover:bg-red-50 hover:border-red-500"
+                  onClick={() => setIsRefundModalOpen(true)} // Modalni ochish
                 >
                   PUL QAYTARISH
                 </Button>
@@ -449,11 +519,13 @@ const StudentDetail = () => {
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
             {activeTab === "groups" && student && <CourseGrid student={student} />}
             {activeTab === "notes" && <Comments />}
+            {activeTab === "history" && <StudentHistory student={student} />}
           </main>
         </div>
       </div>
       <Modal
         isOpen={isOpen}
+        positionTop={"top-[20%]"}
         onClose={() => setIsOpen(false)}
         title="Guruhga biriktirish"
       >
@@ -645,6 +717,7 @@ const StudentDetail = () => {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         title="To'lov qilish"
+        positionTop={"top-[35%]"}
       >
         <div className="space-y-4">
           <div className="space-y-2">
@@ -665,6 +738,39 @@ const StudentDetail = () => {
             <Button
               variant="outline"
               onClick={() => setIsPaymentModalOpen(false)}
+              className="px-8"
+            >
+              BEKOR QILISH
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isRefundModalOpen}
+        onClose={() => setIsRefundModalOpen(false)}
+        title="Pul qaytarish"
+        positionTop={"top-[35%]"}
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm text-gray-500">Qaytariladigan miqdor</label>
+            <Input
+              type="text"
+              value={refundAmount}
+              onChange={(e) => setRefundAmount(e.target.value)}
+            />
+          </div>
+          <div className="mt-6 flex gap-3 justify-center">
+            <Button
+              className="bg-[#6366F1] hover:bg-[#5558DD] text-white px-8"
+              onClick={handleRefund}
+            >
+              PUL QAYTARISH
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsRefundModalOpen(false)}
               className="px-8"
             >
               BEKOR QILISH
