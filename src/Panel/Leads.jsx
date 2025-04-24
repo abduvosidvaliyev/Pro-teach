@@ -27,7 +27,9 @@ import {
   ref,
   set,
   onValue,
-  remove
+  remove,
+  get,
+  update
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 import { Modal } from "../components/ui/modal"
 import { cn } from "../lib/utils"
@@ -69,6 +71,74 @@ const courses = [
 const getCurrentMonth = () => {
   const now = new Date();
   return now.toLocaleString("en-US", { month: "long", year: "numeric" }); // Masalan: "April 2025"
+};
+
+const countWeekdaysInMonth = (selectedDays, startDate) => {
+  const year = startDate.getFullYear();
+  const month = startDate.getMonth();
+  const lastDay = new Date(year, month + 1, 0).getDate();
+
+  const dayMapping = {
+    yak: 0, // Yakshanba
+    du: 1,  // Dushanba
+    se: 2,  // Seshanba
+    chor: 3, // Chorshanba
+    pay: 4, // Payshanba
+    ju: 5,  // Juma
+    sha: 6, // Shanba
+  };
+
+  let count = {};
+  selectedDays.forEach((day) => {
+    count[day] = 0; // Har bir kun uchun boshlang'ich qiymat
+  });
+
+  for (let day = 1; day <= lastDay; day++) {
+    const date = new Date(year, month, day);
+    const weekday = date.getDay();
+
+    for (const [key, value] of Object.entries(dayMapping)) {
+      if (selectedDays.includes(key) && weekday === value) {
+        count[key]++;
+      }
+    }
+  }
+
+  return count;
+};
+
+const countWeekdaysToEndOfMonth = (selectedDays, startDate) => {
+  const year = startDate.getFullYear();
+  const month = startDate.getMonth();
+  const lastDay = new Date(year, month + 1, 0).getDate();
+
+  const dayMapping = {
+    yak: 0, // Yakshanba
+    du: 1,  // Dushanba
+    se: 2,  // Seshanba
+    chor: 3, // Chorshanba
+    pay: 4, // Payshanba
+    ju: 5,  // Juma
+    sha: 6, // Shanba
+  };
+
+  let count = {};
+  selectedDays.forEach((day) => {
+    count[day] = 0; // Har bir kun uchun boshlang'ich qiymat
+  });
+
+  for (let day = startDate.getDate(); day <= lastDay; day++) {
+    const date = new Date(year, month, day);
+    const weekday = date.getDay();
+
+    for (const [key, value] of Object.entries(dayMapping)) {
+      if (selectedDays.includes(key) && weekday === value) {
+        count[key]++;
+      }
+    }
+  }
+
+  return count;
 };
 
 export default function LeadsPage() {
@@ -149,6 +219,89 @@ export default function LeadsPage() {
       }));
       setRoomsData(roomData);
     });
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const today = new Date();
+      const dayOfWeek = today.toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase();
+
+      const studentsRef = ref(database, `Students`);
+      get(studentsRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const studentsData = snapshot.val();
+
+            // Har bir o'quvchini tekshirish
+            Object.entries(studentsData).forEach(([studentName, studentData]) => {
+              if (studentData.status === "Faol") {
+                const currentBalance = studentData.balance || 0;
+                const perLessonCost = studentData.perLessonCost || 0;
+                const groupName = studentData.group;
+
+                if (!groupName) {
+                  console.error(`Group name not found for student: ${studentName}`);
+                  return;
+                }
+
+                // Guruh ma'lumotlarini olish
+                const groupRef = ref(database, `Groups/${groupName}`);
+                get(groupRef)
+                  .then((groupSnapshot) => {
+                    if (groupSnapshot.exists()) {
+                      const groupData = groupSnapshot.val();
+                      const selectedDays = groupData.selectedDays || [];
+
+                      // Agar bugungi kun dars kuni bo'lsa
+                      if (selectedDays.includes(dayOfWeek)) {
+                        const updatedBalance = currentBalance - perLessonCost;
+
+                        console.log(
+                          `Daily deduction for ${studentName}: ${perLessonCost}`
+                        );
+                        console.log(
+                          `Updated Balance for ${studentName}: ${updatedBalance}`
+                        );
+
+                        // Firebase-ni yangilash
+                        const studentRef = ref(database, `Students/${studentName}`);
+                        update(studentRef, { balance: updatedBalance })
+                          .then(() => {
+                            console.log(
+                              `Balance updated for ${studentName} for today's lesson.`
+                            );
+                          })
+                          .catch((error) => {
+                            console.error(
+                              `Error updating balance for ${studentName}:`,
+                              error
+                            );
+                          });
+                      }
+                    } else {
+                      console.error(
+                        `Group data not found for group: ${groupName}`
+                      );
+                    }
+                  })
+                  .catch((error) => {
+                    console.error(
+                      `Error fetching group data for group: ${groupName}`,
+                      error
+                    );
+                  });
+              }
+            });
+          } else {
+            console.error("No students found in Firebase.");
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching students data:", error);
+        });
+    }, 1000 * 60 * 60 * 24); // Har kuni tekshirish
+
+    return () => clearInterval(interval); // Komponent unmount bo'lganda intervalni tozalash
   }, []);
 
   // state to store new lead data 
@@ -248,24 +401,74 @@ export default function LeadsPage() {
       alert("Iltimos, guruhni tanlang!");
       return;
     }
-
-    // push Student to firebase
-    set(ref(database, `Students/${newUser.name}`), {
-      attendance: {
-        [currentMonth]: {
-          _empty: true,
-        },
-      },
-      id: Students.length,
-      balance: 0,
-      group: selectedOptions.groups.label,
-      studentName: newUser.name,
-      studentNumber: newUser.phone,
-      status: "Faol",
-    });
-
-    // delete lead from firebase
-    handleDeleteLead(newUser.name);
+    const date = new Date().toISOString().split("T")[0]; // Qo'shilgan sana
+    const today = new Date(); // Bugungi sana
+  
+    // Guruh ma'lumotlarini olish
+    const groupRef = ref(database, `Groups/${selectedOptions.groups.label}`);
+    get(groupRef)
+      .then((groupSnapshot) => {
+        if (groupSnapshot.exists()) {
+          const groupData = groupSnapshot.val();
+          const courseFee = groupData.price || 0; // Guruh narxi
+          const selectedDays = groupData.selectedDays || []; // Guruh dars kunlari
+  
+          // Oy oxirigacha bo'lgan dars kunlarini hisoblash
+          const remainingLessonDays = countWeekdaysToEndOfMonth(selectedDays, today);
+          const remainingLessonDaysCount = Object.values(remainingLessonDays).reduce(
+            (sum, count) => sum + count,
+            0
+          );
+  
+          // Har bir dars uchun narxni hisoblash
+          const totalLessonDays = countWeekdaysInMonth(selectedDays, today);
+          const totalLessonDaysCount = Object.values(totalLessonDays).reduce(
+            (sum, count) => sum + count,
+            0
+          );
+          const perLessonCost = courseFee / totalLessonDaysCount;
+  
+          // Qolgan dars kunlari uchun umumiy to'lovni hisoblash
+          const totalDeduction = Math.round(perLessonCost * remainingLessonDaysCount);
+  
+          // Studentni Firebase-ga qo'shish
+          set(ref(database, `Students/${newUser.name}`), {
+            attendance: {
+              [currentMonth]: {
+                _empty: true,
+              },
+            },
+            id: Students.length,
+            balance: 0, // Boshlang'ich balansni 0 qilib qo'yamiz
+            group: selectedOptions.groups.label,
+            studentName: newUser.name,
+            studentNumber: newUser.phone,
+            status: "Faol",
+            addedDate: date, // Qo'shilgan sana
+            perLessonCost, // Har bir dars uchun narxni saqlaymiz
+            remainingLessonDaysCount, // Qolgan dars kunlari soni
+            studentHistory: [
+              {
+                date: newUser.date, // newUserning sanasi
+                title: "Ro'yxatdan o'tdi",
+                description: `${newUser.name} ${selectedOptions.groups.label} guruhiga qo'shildi.`,
+              },
+            ],
+          });
+  
+          console.log(
+            `Student ${newUser.name} added to group ${selectedOptions.groups.label} with per lesson cost: ${perLessonCost}`
+          );
+  
+          // Leadni Firebase-dan o'chirish
+          handleDeleteLead(newUser.name);
+        } else {
+          console.error("Group data not found in Firebase.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching group data:", error);
+      });
   };
 
   const handleSelectChange = (selectedOption, actionMeta) => {
@@ -640,13 +843,18 @@ export default function LeadsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="time">Vaqt</Label>
-                      <Select onValueChange={handleTimeChange} defaultValue={newLead.time}>
+                      <Select  onValueChange={handleTimeChange} defaultValue={newLead.time}>
                         <SelectTrigger>
                           <SelectValue placeholder="Vaqt tanlang" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Abetdan oldin">Abetdan oldin</SelectItem>
-                          <SelectItem value="Abetdan keyin">Abetdan keyin</SelectItem>
+                          <SelectItem value="Abetdan oldin (DCHJ)">Abetdan oldin (DCHJ)</SelectItem>
+                          <SelectItem value="Abetdan oldin (SPSH)">Abetdan oldin (SPSH)</SelectItem>
+                          <hr />
+                          <SelectItem value="Abetdan keyin (DCHJ)">Abetdan keyin (DCHJ)</SelectItem>
+                          <SelectItem value="Abetdan keyin (SPSH)">Abetdan keyin (SPSH)</SelectItem>
+                          <hr />
+                          <SelectItem value="Har qanday">Har qanday</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
