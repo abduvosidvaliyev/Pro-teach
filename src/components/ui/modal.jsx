@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 
-export function Modal({ isOpen, onClose, positionTop, title, children }) {
+export function Modal({ isOpen, onClose,  positionTop, title, children }) {
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {

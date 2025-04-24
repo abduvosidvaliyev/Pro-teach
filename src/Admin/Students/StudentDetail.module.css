@@ -1,9 +1,11 @@
+body{
+  background-color: #f3f4f6;
+}
 
   .main{
     width: 80%;
-    height: 100vh;
-    background-color: #f8f4fc;
-    margin-left: 20%;
+    height: 100vh; 
+    transition: margin-left 0.5s ease;
     gap: 10px;
     display: grid;
     padding: 10px 25px;
@@ -21,14 +23,22 @@
     flex-direction: column;
 }
 
-  .students{
-    grid-column: 4/11;
-    border-radius: 7px;
-    grid-row: 3/11;
-    grid-template-columns: repeat(2,1fr);
-    gap: 20px;
-    display: grid;
-  }
+.students {
+  grid-column: 4/11;
+  grid-row: 3/11;
+  border-radius: 7px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  max-height: calc(100vh - 20px);
+  overflow-y: scroll;
+}
+.students::-webkit-scrollbar{
+  width: 5px;
+  background-color: #f3f4f6;
+  border-radius: 10px;
+}
+
   .student{
     border-radius: 10px;
     height: 70px;

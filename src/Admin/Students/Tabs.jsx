@@ -5,7 +5,7 @@ import { Users, MessageSquare, History, StickyNote } from "lucide-react"
 
 export function Tabs({ activeTab, setActiveTab }) {
   return (
-    <div className="border-b">
+    <div className="border-b ">
       <nav className="flex  gap-8">
         <button
           onClick={() => setActiveTab("groups")}
