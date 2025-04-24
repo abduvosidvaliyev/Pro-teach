@@ -16,6 +16,8 @@ import "./index.css";
 import Course from "./Admin/Course/Course.jsx";
 import CourseInfo from "./Admin/Course/CourseInfo.jsx";
 import Rooms from "./Admin/Rooms/Rooms.jsx";
+import Users from "./Admin/Users/Users.jsx";
+import UserInfo from "./Admin/Users/UserInfo.jsx";
 
 function App() {
   return (
@@ -28,6 +30,7 @@ function App() {
             <Route path="/control" element={<Control/>}></Route>
             <Route path="/course" element={<Course/>}></Route>
             <Route path="/rooms" element={<Rooms />}></Route>
+            <Route path="/users" element={<Users />}></Route>
             <Route path="/chat" element={<Message/>}></Route>
             <Route path="/groups" element={<Groups/>}></Route>
             <Route path="/students" element={<Students/>}></Route>
@@ -35,6 +38,7 @@ function App() {
             <Route path="/student/:id" element={<StudentDetail/>} />
             <Route path="/group/:id" element={<GroupDetails />} />
             <Route path="/course/:id" element={<CourseInfo />} />
+            <Route path="/users/:id" element={<UserInfo />} />
         </Routes>
     </Router>
   )

@@ -110,7 +110,7 @@ export function SidebarPanel() {
               </Link>
             </li>
             <li>
-              <Link>
+              <Link to="/users">
                 <i class="fa-solid fa-user-group"></i>
                 <a href="#" className={style.dropdownItem}>
                   Xodimlar
