@@ -23,7 +23,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const database = getDatabase(app);
+export const database = getDatabase(app);
 
 import {
   Card,
@@ -556,7 +556,7 @@ export default function Dashboard({ data }) {
               <CreditCard className="w-4 h-4 mr-2" />
               To'lov qilish
             </Button>
-            <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+            <Button variant="outline" onClick={() => navigate("/paymentArchive")} className="border-green-600 text-green-600 hover:bg-green-50">
               <Receipt className="w-4 h-4 mr-2" />
               To'lovlar tarixi
             </Button>
