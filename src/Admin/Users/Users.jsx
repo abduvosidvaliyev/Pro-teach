@@ -35,6 +35,7 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
 import { Label } from "../../components/ui/label";
 import { X } from "lucide-react";
+import { Checkbox } from "../../components/ui/checkbox";
 
 const Users = () => {
     const navigate = useNavigate();
@@ -43,9 +44,24 @@ const Users = () => {
 
     const [addUser, setaddUser] = useState({
         name: "",
+        young: "",
         number: "",
         email: "",
         job: "",
+        address: "",
+    });
+
+    const [CheckValue, setCheckValue] = useState({
+        value1: false,
+        value2: false,
+        value3: false,
+        value4: false,
+        value5: false,
+        value6: false,
+        value7: false,
+        value8: false,
+        value9: false,
+        value10: false,
     });
 
     useEffect(() => {
@@ -77,25 +93,49 @@ const Users = () => {
     };
 
     const handleAddUser = () => {
-        if (!addUser.name || !addUser.number || !addUser.email || !addUser.job) {
+        if (!addUser.name || !addUser.number || !addUser.email || !addUser.job || !addUser.young || !addUser.address) {
             alert("Barcha maydonlarni to'ldiring!");
             return;
         }
 
         set(ref(database, `Teachers/Teacher${takeTeacher.length + 1}`), {
             id: takeTeacher.length + 1,
+            young: addUser.young,
             name: addUser.name,
             number: addUser.number,
             email: addUser.email,
             job: addUser.job,
+            address: addUser.address,
+
+            // User permissions
+            permissions: {
+                toAttend: CheckValue.value1,
+                toChangeInfo: CheckValue.value2,
+                toAddPeople: CheckValue.value3,
+
+                // Additional permissions can be added here
+            }
         })
             .then(() => {
                 alert("Xodim muvaffaqiyatli qo'shildi!");
                 setaddUser({
                     name: "",
+                    young: "",
                     number: "",
                     email: "",
                     job: "",
+                });
+                setCheckValue({
+                    value1: false,
+                    value2: false,
+                    value3: false,
+                    value4: false,
+                    value5: false,
+                    value6: false,
+                    value7: false,
+                    value8: false,
+                    value9: false,
+                    value10: false,
                 });
             })
             .catch((error) => {
@@ -140,6 +180,7 @@ const Users = () => {
                                     id="courseSelect"
                                     type="text"
                                     placeholder="Xodim nomi"
+                                    value={addUser.name}
                                     onChange={(e) =>
                                         setaddUser((prevState) => ({
                                             ...prevState,
@@ -149,34 +190,64 @@ const Users = () => {
                                 />
                             </div>
                             <div className="flex flex-col gap-3">
+                                <Label htmlFor="courseDuration" className="text-xs text-gray-500">Yoshi</Label>
+                                <Input
+                                    id="courseDuration"
+                                    type="number"
+                                    value={addUser.young}
+                                    placeholder="Xodim yoshi"
+                                    onChange={(e) =>
+                                        setaddUser((prevState) => ({
+                                            ...prevState,
+                                            young: e.target.value,
+                                        }))
+                                    }
+                                />
+                            </div>
+                            <div className="flex flex-col gap-3">
                                 <Label htmlFor="coursePrice" className="text-xs text-gray-500">Telifon raqami</Label>
                                 <Input
                                     id="coursePrice"
-                                    placeholder="+998 XX XXX XX XX"
+                                    placeholder="Telefon raqami"
                                     type="text"
                                     value={addUser.number}
-                                    onFocus={(e) => {
-                                        // Agar qiymat bo'sh bo'lsa, `+998` ni avtomatik qo'shish
-                                        if (!addUser.number) {
-                                            setaddUser((prevState) => ({
-                                                ...prevState,
-                                                number: "+998 ",
-                                            }));
-                                        }
-                                    }}
                                     onChange={(e) => {
-                                        const formattedNumber = e.target.value.replace(
-                                            /(\d{2})(\d{3})(\d{2})(\d{2})/,
-                                            "$1 $2 $3 $4"
-                                        );
+                                        let input = e.target.value;
+
+                                        // Faqat raqamlar va "+" belgisini qabul qilish
+                                        input = input.replace(/[^+\d]/g, "");
+
+                                        // Formatlash: +XXX XX XXX XX XX
+                                        if (input.startsWith("+")) {
+                                            input = input.replace(
+                                                /^(\+\d{1,3})(\d{1,2})?(\d{1,3})?(\d{1,2})?(\d{1,2})?/,
+                                                (match, p1, p2, p3, p4, p5) =>
+                                                    [p1, p2, p3, p4, p5].filter(Boolean).join(" ")
+                                            );
+                                        }
 
                                         // Holatni yangilash
                                         setaddUser((prevState) => ({
                                             ...prevState,
-                                            number: formattedNumber
+                                            number: input,
                                         }));
                                     }}
-                                    maxLength={17}
+                                    maxLength={17} // Maksimal uzunlikni cheklash
+                                />
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <Label htmlFor="courseDuration" className="text-xs text-gray-500">Yo'nalishi</Label>
+                                <Input
+                                    id="courseDuration"
+                                    type="text"
+                                    value={addUser.job}
+                                    placeholder="Xodim yo'nalishi"
+                                    onChange={(e) =>
+                                        setaddUser((prevState) => ({
+                                            ...prevState,
+                                            job: e.target.value,
+                                        }))
+                                    }
                                 />
                             </div>
                             <div className="flex flex-col gap-3">
@@ -184,7 +255,8 @@ const Users = () => {
                                 <Input
                                     id="courseMonth"
                                     type="text"
-                                    placeholder="Kurs davomiyligi"
+                                    placeholder="E-mail Address"
+                                    value={addUser.email}
                                     onChange={(e) =>
                                         setaddUser((prevState) => ({
                                             ...prevState,
@@ -194,18 +266,83 @@ const Users = () => {
                                 />
                             </div>
                             <div className="flex flex-col gap-3">
-                                <Label htmlFor="courseDuration" className="text-xs text-gray-500">Yo'nalishi</Label>
+                                <Label htmlFor="country" className="text-xs text-gray-500">Yashash joyi</Label>
                                 <Input
-                                    id="courseDuration"
+                                    id="country"
                                     type="text"
-                                    placeholder="Xodim yo'nalishi"
+                                    value={addUser.address}
+                                    placeholder="Yashash joyi"
                                     onChange={(e) =>
                                         setaddUser((prevState) => ({
                                             ...prevState,
-                                            job: e.target.value,
+                                            address: e.target.value,
                                         }))
                                     }
                                 />
+                            </div>
+                            <div className="w-full pt-3 border-t border-gray-400 flex flex-col gap-3">
+                                <span className="text-xs text-gray-500">Ruxsatnomalar</span>
+                                <div className="flex flex-wrap gap-3">
+                                    <h4
+                                        className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${!CheckValue.value1 ? "text-gray-400" : "text-gray-950"}`}
+                                    >
+                                        <Checkbox
+                                            id="checkbox1"
+                                            className="data-[state=checked]:bg-blue-950"
+                                            onClick={(e) => {
+                                                setCheckValue({
+                                                    ...CheckValue,
+                                                    value1: e.target.ariaChecked === "true" ? false : true
+                                                })
+                                            }}
+                                        />
+                                        <Label
+                                            htmlFor="checkbox1"
+                                            className={`text-sm font-normal ${!CheckValue.value1 ? "text-gray-400" : "text-gray-950"} cursor-pointer`}>
+                                            Davomat qilish
+                                        </Label>
+                                    </h4>
+                                    <h4
+                                        className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${!CheckValue.value2 ? "text-gray-400" : "text-gray-950"}`}
+                                    >
+                                        <Checkbox
+                                            id="checkbox2"
+                                            className="data-[state=checked]:bg-blue-950"
+                                            onClick={(e) => {
+                                                setCheckValue({
+                                                    ...CheckValue,
+                                                    value2: e.target.ariaChecked === "true" ? false : true
+                                                })
+                                            }}
+                                        />
+                                        <Label
+                                            htmlFor="checkbox2"
+                                            className={`text-sm font-normal ${!CheckValue.value2 ? "text-gray-400" : "text-gray-950"} cursor-pointer`}
+                                        >
+                                            Ma'lumotlarni o'zgartirish
+                                        </Label>
+                                    </h4>
+                                    <h4
+                                        className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${!CheckValue.value3 ? "text-gray-400" : "text-gray-950"}`}
+                                    >
+                                        <Checkbox
+                                            id="checkbox-3"
+                                            className="data-[state=checked]:bg-blue-950"
+                                            onClick={(e) => {
+                                                setCheckValue({
+                                                    ...CheckValue,
+                                                    value3: e.target.ariaChecked === "true" ? false : true
+                                                })
+                                            }}
+                                        />
+                                        <Label
+                                            htmlFor="checkbox-3"
+                                            className={`text-sm font-normal ${!CheckValue.value3 ? "text-gray-400" : "text-gray-950"} cursor-pointer`}
+                                        >
+                                            Odamlar qo'shish
+                                        </Label>
+                                    </h4>
+                                </div>
                             </div>
                             <Button
                                 className="bg-blue-950 hover:opacity-80 text-white"
@@ -234,7 +371,7 @@ const Users = () => {
                     }}
                 >
                     <nav className="flex justify-between pt-8 items-center p-6 rounded-lg">
-                        <h2 className="text-3xl font-normal">Xodimlar</h2>
+                        <h2 className="text-3xl font-normal">Xodimlar - {takeTeacher.length} ta</h2>
                         <div className="flex gap-4 items-center">
                             <Input
                                 type="text"
@@ -253,7 +390,7 @@ const Users = () => {
                     </nav>
                     <div className="cards grid grid-cols-4 gap-4 px-6 py-8">
                         {
-                            takeTeacher.map((teacher, index) => (
+                            takeTeacher.length > 0 ? takeTeacher.map((teacher, index) => (
                                 <Card
                                     key={index}
                                     className="flex flex-col hover:shadow-xl cursor-pointer items-center justify-center gap-3 bg-white shadow-md rounded-lg p-4"
@@ -265,7 +402,11 @@ const Users = () => {
                                         <p className="text-gray-500">{teacher.number}</p>
                                     </div>
                                 </Card>
-                            ))
+                            )) : (
+                                <div className="flex items-start justify-start w-full h-full">
+                                    <h2 className="text-2xl font-semibold text-gray-500">Xodimlar topilmadi</h2>
+                                </div>
+                            )
                         }
                     </div>
                 </div>

@@ -5,6 +5,7 @@ import {
   ref,
   onValue,
   set,
+  remove
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -51,18 +52,13 @@ const UserInfo = () => {
   const [delateOpen2, setDelateOpen2] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [open, setOpen] = useState(false);
+
   const [CheckValue, setCheckValue] = useState({
-    value1: "false",
-    value2: "false",
-    value3: "false",
-    value4: "false",
-    value5: "false",
-    value6: "false",
-    value7: "false",
-    value8: "false",
-    value9: "false",
-    value10: "false"
+    value1: false,
+    value2: false,
+    value3: false,
   });
+
   const [tabs, setTabs] = useState("groups");
 
   const [chengeUser, setchengeUser] = useState({
@@ -70,6 +66,8 @@ const UserInfo = () => {
     number: firstTeacher.number,
     email: firstTeacher.email,
     job: firstTeacher.job,
+    young: firstTeacher.young,
+    address: firstTeacher.address,
   });
 
   useEffect(() => {
@@ -116,6 +114,29 @@ const UserInfo = () => {
     }
   }, [FilterGroup, Takestudents]);
 
+  // get user's old data
+  useEffect(() => {
+    if (firstTeacher) {
+      setchengeUser({
+        name: firstTeacher.name || "",
+        number: firstTeacher.number || "",
+        email: firstTeacher.email || "",
+        job: firstTeacher.job || "",
+        young: firstTeacher.young || "",
+        address: firstTeacher.address || "",
+      });
+    }
+  }, [firstTeacher]);
+
+  useEffect(() => {
+    if (firstTeacher && firstTeacher.permissions) {
+      setCheckValue({
+        value1: firstTeacher.permissions.toAttend || false,
+        value2: firstTeacher.permissions.toChangeInfo || false,
+        value3: firstTeacher.permissions.toAddPeople || false,
+      });
+    }
+  }, [firstTeacher]);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -135,7 +156,7 @@ const UserInfo = () => {
   };
 
   const handleChengeToUser = () => {
-    if ((chengeUser.name && chengeUser.number && chengeUser.email && chengeUser.job) === "") {
+    if ((chengeUser.name && chengeUser.number && chengeUser.email && chengeUser.job && chengeUser.address && chengeUser.young) === "") {
       alert("Barcha maydonlarni to'ldiring");
       return;
     }
@@ -146,13 +167,22 @@ const UserInfo = () => {
       number: chengeUser.number,
       email: chengeUser.email,
       job: chengeUser.job,
+      young: chengeUser.young,
+      address: chengeUser.address,
+
+      permissions: {
+        toAttend: CheckValue.value1,
+        toChangeInfo: CheckValue.value2,
+        toAddPeople: CheckValue.value3,
+
+        // Additional permissions can be added here
+      },
     })
       .then(() => {
         alert("O'zgartirishlar saqlandi");
-        setOpen(false);
       })
       .catch((error) => {
-        alert("Xatolik yuz berdi", error);
+        console.error("Xatolik yuz berdi", error);
       });
   }
 
@@ -220,7 +250,7 @@ const UserInfo = () => {
                 <Input
                   id="courseSelect"
                   type="text"
-                  placeholder="Kurs nomi"
+                  placeholder="Xodim ismi"
                   value={chengeUser.name}
                   onChange={(e) =>
                     setchengeUser((prevState) => ({
@@ -231,34 +261,49 @@ const UserInfo = () => {
                 />
               </div>
               <div className="flex flex-col gap-3">
+                <Label htmlFor="courseSelect" className="text-xs text-gray-500">Yoshi</Label>
+                <Input
+                  id="courseSelect"
+                  type="number"
+                  placeholder="Xodim yoshi"
+                  value={chengeUser.young || ""}
+                  onChange={(e) =>
+                    setchengeUser((prevState) => ({
+                      ...prevState,
+                      young: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="flex flex-col gap-3">
                 <Label htmlFor="coursePrice" className="text-xs text-gray-500">Telifon raqami</Label>
                 <Input
                   id="coursePrice"
-                  placeholder="+998 XX XXX XX XX"
+                  placeholder="+XXX XX XXX XX XX"
                   type="text"
-                  value={chengeUser.number}
-                  onFocus={(e) => {
-                    // Agar qiymat bo'sh bo'lsa, `+998` ni avtomatik qo'shish
-                    if (!firstTeacher.number) {
-                      setchengeUser((prevState) => ({
-                        ...prevState,
-                        number: "+998 ",
-                      }));
-                    }
-                  }}
+                  value={chengeUser.number || ""}
                   onChange={(e) => {
-                    const formattedNumber = e.target.value.replace(
-                      /(\d{2})(\d{3})(\d{2})(\d{2})/,
-                      "$1 $2 $3 $4"
-                    );
+                    let input = e.target.value;
+
+                    // Faqat raqamlar va "+" belgisini qabul qilish
+                    input = input.replace(/[^+\d]/g, "");
+
+                    // Formatlash: +XXX XX XXX XX XX
+                    if (input.startsWith("+")) {
+                      input = input.replace(
+                        /^(\+\d{1,3})(\d{1,2})?(\d{1,3})?(\d{1,2})?(\d{1,2})?/,
+                        (match, p1, p2, p3, p4, p5) =>
+                          [p1, p2, p3, p4, p5].filter(Boolean).join(" ")
+                      );
+                    }
 
                     // Holatni yangilash
-                    setchengeUser((prevState) => ({
+                    setaddUser((prevState) => ({
                       ...prevState,
-                      number: formattedNumber
+                      number: input,
                     }));
                   }}
-                  maxLength={17}
+                  maxLength={20} // Maksimal uzunlikni cheklash
                 />
               </div>
               <div className="flex flex-col gap-3">
@@ -277,11 +322,11 @@ const UserInfo = () => {
                 />
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="courseNotes" className="text-xs text-gray-500">Kasbi</Label>
+                <Label htmlFor="courseNotes" className="text-xs text-gray-500">Yo'nalishi</Label>
                 <Input
                   id="courseNotes"
                   type="text"
-                  placeholder="Kasbi"
+                  placeholder="Yo'nalishi"
                   value={chengeUser.job || ""}
                   onChange={(e) =>
                     setchengeUser((prevState) => ({
@@ -291,62 +336,87 @@ const UserInfo = () => {
                   }
                 />
               </div>
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="address" className="text-xs text-gray-500">Yashash manzili</Label>
+                <Input
+                  id="address"
+                  type="text"
+                  placeholder="Yashash manzili"
+                  value={chengeUser.address || ""}
+                  onChange={(e) =>
+                    setchengeUser((prevState) => ({
+                      ...prevState,
+                      address: e.target.value,
+                    }))
+                  }
+                />
+              </div>
               <div className="flex flex-wrap gap-3">
                 <h4
-                  className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${CheckValue.value1 === "true" ? "text-gray-400" : "text-gray-950"}`}
+                  className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${CheckValue.value1 ? "text-gray-950" : "text-gray-400"
+                    }`}
                 >
                   <Checkbox
                     id="checkbox1"
                     className="data-[state=checked]:bg-blue-950"
+                    checked={CheckValue.value1}
                     onClick={(e) => {
-                      setCheckValue({
-                        ...CheckValue,
-                        value1: e.target.ariaChecked
-                      })
+                      setCheckValue((prevState) => ({
+                        ...prevState,
+                        value1: e.target.ariaChecked === "true" ? false : true,
+                      }));
                     }}
                   />
                   <Label
                     htmlFor="checkbox1"
-                    className={`text-sm font-normal ${CheckValue.value1 === "true" ? "text-gray-400" : "text-gray-950"} cursor-pointer`}>
+                    className={`text-sm font-normal ${CheckValue.value1 ? "text-gray-950" : "text-gray-400"
+                      } cursor-pointer`}
+                  >
                     Davomat qilish
                   </Label>
                 </h4>
                 <h4
-                  className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${CheckValue.value2 === "true" ? "text-gray-400" : "text-gray-950"}`}
+                  className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${CheckValue.value2 ? "text-gray-950" : "text-gray-400"
+                    }`}
                 >
                   <Checkbox
                     id="checkbox2"
                     className="data-[state=checked]:bg-blue-950"
+                    checked={CheckValue.value2}
                     onClick={(e) => {
-                      setCheckValue({
-                        ...CheckValue,
-                        value2: e.target.ariaChecked
-                      })
+                      setCheckValue((prevState) => ({
+                        ...prevState,
+                        value2: e.target.ariaChecked === "true" ? false : true,
+                      }));
                     }}
                   />
                   <Label
                     htmlFor="checkbox2"
-                    className={`text-sm font-normal ${CheckValue.value2 === "true" ? "text-gray-400" : "text-gray-950"} cursor-pointer`}
+                    className={`text-sm font-normal ${CheckValue.value2 ? "text-gray-950" : "text-gray-400"
+                      } cursor-pointer`}
                   >
                     Ma'lumotlarni o'zgartirish
                   </Label>
                 </h4>
                 <h4
-                  className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${CheckValue.value3 === "true" ? "text-gray-400" : "text-gray-950"}`}
+                  className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${CheckValue.value3 ? "text-gray-950" : "text-gray-400"
+                  }`}
                 >
                   <Checkbox
-                    id="checkbox-3"
+                    id="checkbox3"
                     className="data-[state=checked]:bg-blue-950"
+                    checked={CheckValue.value3}
                     onClick={(e) => {
-                      setCheckValue({
-                        ...CheckValue,
-                        value3: e.target.ariaChecked
-                      })
+                      setCheckValue((prevState) => ({
+                        ...prevState,
+                        value3: e.target.ariaChecked === "true" ? false : true,
+                      }));
                     }}
                   />
                   <Label
-                    htmlFor="checkbox-3"
-                    className={`text-sm font-normal ${CheckValue.value3 === "true" ? "text-gray-400" : "text-gray-950"} cursor-pointer`}
+                    htmlFor="checkbox3"
+                    className={`text-sm font-normal ${CheckValue.value3 ? "text-gray-950" : "text-gray-400"
+                      } cursor-pointer`}
                   >
                     Odamlar qo'shish
                   </Label>
@@ -356,6 +426,7 @@ const UserInfo = () => {
                 className="bg-blue-950 hover:opacity-80 text-white"
                 onClick={(event) => {
                   event.preventDefault();
+                  setOpen(false);
                   handleChengeToUser();
                 }}
               >
@@ -408,16 +479,16 @@ const UserInfo = () => {
 
                 <div className="flex flex-col gap-7">
                   <div className="flex flex-col gap-1">
-                    <span className="text-sm/3 text-gray-400">Lavozim</span>
-                    <h3 className="text-md/3 font-semibold">Menejer</h3>
+                    <span className="text-sm/3 text-gray-400">Yo'nalishi</span>
+                    <h3 className="text-md/3 font-semibold">{firstTeacher.job ? firstTeacher.job : "Noma'lum"}</h3>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-sm/3 text-gray-400">Yosh</span>
-                    <h3 className="text-md/3 font-semibold">17 yosh</h3>
+                    <h3 className="text-md/3 font-semibold">{firstTeacher.young ? firstTeacher.young + "yosh" : "Noma'lum"}</h3>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-sm/3 text-gray-400">Manzil</span>
-                    <h3 className="text-md/3 font-semibold">Yangi bozor 174-A uy</h3>
+                    <h3 className="text-md/3 font-semibold">{firstTeacher.address ? firstTeacher.address : "Noma'lum"}</h3>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-sm/3 text-gray-400">Telifon raqam</span>
@@ -455,7 +526,7 @@ const UserInfo = () => {
                   Talabalar
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="groups" className="pt-6 grid grid-cols-2 gap-5">
+              <TabsContent value="groups" className={`pt-6 ${FilterGroup.length > 0 ? "grid grid-cols-2 gap-5" : "flex justify-start"}`}>
                 {
                   FilterGroup.length > 0 ? (
                     FilterGroup.map((group, index) => {
@@ -504,7 +575,7 @@ const UserInfo = () => {
                     <h1
                       className="text-sm font-normal w-full py-3 px-5 bg-purple-300/70 text-gray-500"
                     >
-                      Ushbu xodimning guruhlari mavjud emas
+                      Ushbu o'qituvchining guruhlari mavjud emas
                     </h1>
                   )
                 }
@@ -527,7 +598,7 @@ const UserInfo = () => {
                       Ushbu o'qituvchining talabalari mavjud emas
                     </h1>
                   )
-                } 
+                }
               </TabsContent>
             </Tabs>
           </div>
