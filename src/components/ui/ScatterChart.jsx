@@ -8,38 +8,43 @@ import {
     TimeScale,
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
-import { subDays, format } from 'date-fns';
+import { format } from 'date-fns';
 
 ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
 
-// So‘nggi 30 kunlik sanalarni ISO formatda chiqarish
-const getLast30Days = () => {
-    const today = new Date();
+// Helper: get all days in a month as ISO strings
+const getAllDaysOfMonth = (year, month) => {
     const days = [];
-    for (let i = 29; i >= 0; i--) {
-        const day = subDays(today, i);
-        days.push(day.toISOString()); // ISO format kerak!
+    const date = new Date(year, month - 1, 1);
+    while (date.getMonth() === month - 1) {
+        days.push(format(new Date(date), 'yyyy-MM-dd'));
+        date.setDate(date.getDate() + 1);
     }
     return days;
 };
 
-const ScatterChart = ({ expenses }) => {
-    const labels = getLast30Days();
+const ScatterChart = ({ expenses, selectedMonth }) => {
+    // selectedMonth: 'YYYY-MM'
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const labels = getAllDaysOfMonth(year, month);
+
+    // Filter expenses for this month only
+    const filteredExpenses = (expenses || []).filter(e => (e.date || '').startsWith(selectedMonth));
 
     const data = {
         datasets: [
             {
                 label: 'Xarajatlar',
-                data: (expenses || []).map((expense) => ({
-                    x: new Date(expense.date).toISOString(),
-                    y: expense.amount,
+                data: filteredExpenses.map((expense) => ({
+                    x: expense.date,
+                    y: Number(expense.amount),
                 })),
                 backgroundColor: 'rgba(255, 99, 132, 1)',
             },
         ],
     };
 
-    const maxAmount = Math.max(...expenses.map((e) => e.amount), 0);    
+    const maxAmount = Math.max(...filteredExpenses.map((e) => Number(e.amount)), 0);
 
     const options = {
         scales: {

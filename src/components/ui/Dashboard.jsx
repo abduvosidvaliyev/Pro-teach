@@ -86,7 +86,7 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 const calculateDuration = (timeRange) => {
   const [start, end] = timeRange.split("-");
   const [startHour, startMinute] = start.split(":").map(Number);
-  const [endHour, endMinute] = end.split(":").map(Number);
+  const [endHour, endMinute] = end.split(":").map(Number);  
 
   const startTime = startHour + startMinute / 60;
   const endTime = endHour + endMinute / 60;

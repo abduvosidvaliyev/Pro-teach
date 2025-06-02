@@ -9,16 +9,18 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
-const DoughnutChart = ({ Input }) => {
-  const total = Input.reduce((sum, item) => sum + item.amount, 0);
+const DoughnutChart = ({ color, amount, type }) => {
+  const safeLabels = Array.isArray(type) ? type : type ? [type] : [];
+  const safeData = Array.isArray(amount) ? amount : amount ? [amount] : [];
+  const safeColors = Array.isArray(color) ? color : color ? [color] : [];
 
   const data = {
-    labels: Input.map((item) => item.type),
+    labels: safeLabels,
     datasets: [
       {
         label: 'Qancha miqdorda',
-        data: Input.map((item) => item.amount),
-        backgroundColor: Input.map((item) => item.color),
+        data: safeData,
+        backgroundColor: safeColors,
       },
     ],
   };

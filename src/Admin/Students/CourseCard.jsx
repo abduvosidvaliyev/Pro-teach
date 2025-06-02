@@ -396,7 +396,7 @@ export function CourseCard({ course }) {
     const interval = setInterval(() => {
       const today = new Date();
       const tomorrow = new Date(today);
-      tomorrow.setDate(today.getDate()  ); // Ertangi sanani olish
+      tomorrow.setDate(today.getDate()); // Ertangi sanani olish
 
       const dayOfWeek = tomorrow.toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase();
       const todayDate = tomorrow.toISOString().split("T")[0]; // Bugungi sana (YYYY-MM-DD formatda)
@@ -541,7 +541,7 @@ export function CourseCard({ course }) {
 
                       if (currentMonthAttendance) {
                         const todayDate = today.toISOString().split("T")[0]; // Bugungi sana (YYYY-MM-DD formatda)
-                    
+
                         // Bugungi dars kunini topish va `paid` qiymatini `true` qilish
                         const todayLesson = currentMonthAttendance.daysPaid.find((day) => day.date === todayDate);
                         if (todayLesson) {
@@ -618,7 +618,7 @@ export function CourseCard({ course }) {
     const studentRef = ref(database, `Students/${course.studentName}`);
     const today = new Date();
     const todayDate = today.toISOString().split("T")[0]; // Bugungi sana (YYYY-MM-DD formatda)
-  
+
     if (value === "Faol") {
       // Studentning statusini Firebase-da yangilash
       update(studentRef, { status: "Faol" })
@@ -629,7 +629,7 @@ export function CourseCard({ course }) {
         .catch((error) => {
           console.error("Error updating student status in Firebase:", error);
         });
-  
+
       // Qo'shimcha hisob-kitoblar (agar kerak bo'lsa)
       get(studentRef)
         .then((snapshot) => {
@@ -638,12 +638,12 @@ export function CourseCard({ course }) {
             const currentBalance = studentData.balance || 0;
             const groupName = studentData.group;
             const lastDeductionDate = studentData.lastDeductionDate || null;
-  
+
             if (!groupName) {
               console.error("Group name not found for the student.");
               return;
             }
-  
+
             // Guruh ma'lumotlarini olish
             const groupRef = ref(database, `Groups/${groupName}`);
             get(groupRef)
@@ -652,7 +652,7 @@ export function CourseCard({ course }) {
                   const groupData = groupSnapshot.val();
                   const selectedDays = groupData.selectedDays || [];
                   const courseFee = groupData.price || 0;
-  
+
                   const dayMapping = {
                     yak: "yak", // Yakshanba
                     dush: "du", // Dushanba
@@ -665,7 +665,7 @@ export function CourseCard({ course }) {
 
                   const dayOfWeek = today.toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase();
                   const mappedDayOfWeek = dayMapping[dayOfWeek];
-  
+
                   // Agar bugungi kun dars kuni bo'lsa va to'lov hali amalga oshirilmagan bo'lsa
                   if (selectedDays.includes(mappedDayOfWeek) && lastDeductionDate !== todayDate) {
                     const totalLessonDays = countWeekdaysInMonth(selectedDays);
@@ -673,18 +673,18 @@ export function CourseCard({ course }) {
                       (sum, count) => sum + count,
                       0
                     );
-  
+
                     if (totalLessonDaysCount === 0) {
                       console.error("Total lesson days count is 0. Cannot calculate per lesson cost.");
                       return;
                     }
-  
+
                     const perLessonCost = parseFloat((Math.abs(courseFee / totalLessonDaysCount) / 10000).toFixed(3));
                     const updatedBalance = currentBalance - perLessonCost;
-  
+
                     console.log(`Daily deduction for ${course.studentName}: ${perLessonCost}`);
                     console.log(`Updated Balance for ${course.studentName}: ${updatedBalance}`);
-  
+
                     // Firebase-ni yangilash
                     const studentRef = ref(database, `Students/${course.studentName}`);
                     update(studentRef, {
@@ -699,7 +699,7 @@ export function CourseCard({ course }) {
                         date: todayDate,
                         amount: perLessonCost,
                         description: "Kunlik dars to'lovi",
-                      };  
+                      };
 
                       // Yangi yozuvni qo'shish
                       get(paymentHistoryRef)
@@ -749,6 +749,8 @@ export function CourseCard({ course }) {
     }
   };
 
+  console.log(course)
+
   const remainingDebt = course.totalFee - course.balance; // Qolgan qarzni hisoblash
   const formattedRemainingDebt = new Intl.NumberFormat("uz-UZ", {
     style: "decimal", // Faqat raqamlarni formatlash
@@ -759,15 +761,15 @@ export function CourseCard({ course }) {
     <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
       <div className="flex justify-between items-center">
         <span
-          className={`flex items-center gap-1 ${
-            remainingDebt > 0 ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
-          } px-2 py-1 rounded-md`}
+          className={`flex items-center gap-1 ${remainingDebt > 0 ? "text-red-600 bg-red-50" : "text-green-600 bg-green-50"
+            } px-2 py-1 rounded-md`}
         >
           <span className="text-lg">E</span>
           <span>{formattedRemainingDebt} so'm</span> {/* Qolgan qarz */}
         </span>
         <Select
           value={status} // `defaultValue` o'rniga `value` ishlatamiz
+          defaultValue={course.status}
           className="w-[120px]"
           onValueChange={handleStatusChange}
         >
@@ -776,7 +778,7 @@ export function CourseCard({ course }) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="Faol">Faol</SelectItem>
-            <SelectItem value="Muzlatish">Muzlatish</SelectItem>
+            <SelectItem value="Muzlatilgan">Muzlatish</SelectItem>
             <SelectItem value="Nofaol">Nofaol</SelectItem>
           </SelectContent>
         </Select>
@@ -784,7 +786,6 @@ export function CourseCard({ course }) {
 
       <div className="flex justify-between items-start">
         <h2 className="text-2xl font-semibold">{course.name}</h2>
-        <span className="text-xl">0</span>
       </div>
 
       <div className="space-y-3">
@@ -800,7 +801,7 @@ export function CourseCard({ course }) {
 
         <div>
           <div className="text-sm text-gray-500">Dars kunlari :</div>
-          <div>{course.time}</div>
+          <h3>{course.time}</h3>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -829,7 +830,11 @@ export function CourseCard({ course }) {
           </div>
           <div>
             <div className="text-sm text-gray-500">To'lov narxi</div>
-            <div className="text-green-600">{course.paymentAmount} so'm</div>
+            <div className="text-green-600">
+              {
+                Number(course.balance).toLocaleString("uz-UZ", { style: "decimal", minimumFractionDigits: 0 })
+              }
+            </div>
           </div>
         </div>
       </div>

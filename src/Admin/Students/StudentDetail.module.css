@@ -1,26 +1,26 @@
-body{
+body {
   background-color: #f3f4f6;
 }
 
-  .main{
-    width: 80%;
-    height: 100vh; 
-    transition: margin-left 0.5s ease;
-    gap: 10px;
-    display: grid;
-    padding: 10px 25px;
-    grid-template-columns: repeat(10,1fr);
-    grid-template-rows: repeat(10,1fr);
-  }
+.main {
+  width: 80%;
+  height: 100vh;
+  transition: margin-left 0.5s ease;
+  gap: 10px;
+  display: grid;
+  padding: 10px 25px;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+}
 
-  .studentActive{
-    grid-column: 1/4;
-    grid-row: 3/11;
-    border-radius: 7px;
-    font-size: 25px;  
-    display: flex;
-    justify-content: auto;
-    flex-direction: column;
+.studentActive {
+  grid-column: 1/4;
+  grid-row: 3/11;
+  border-radius: 7px;
+  font-size: 25px;
+  display: flex;
+  justify-content: auto;
+  flex-direction: column;
 }
 
 .students {
@@ -33,29 +33,30 @@ body{
   max-height: calc(100vh - 20px);
   overflow-y: scroll;
 }
-.students::-webkit-scrollbar{
+
+.students::-webkit-scrollbar {
   width: 5px;
   background-color: #f3f4f6;
   border-radius: 10px;
 }
 
-  .student{
-    border-radius: 10px;
-    height: 70px;
-    display: flex;
-    justify-content: center;
-    color: white;
-    text-decoration: none;
-    cursor: pointer;
-    background-color: rgb(125, 125, 125);
-  }
+.student {
+  border-radius: 10px;
+  height: 70px;
+  display: flex;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
+  background-color: rgb(125, 125, 125);
+}
 
-  .studentActive img{
-    width: 300px;
-    border-radius: 50%;
-    align-self: center;
-  }
-  
+.studentActive img {
+  width: 300px;
+  border-radius: 50%;
+  align-self: center;
+}
+
 .crud {
   justify-self: centerd;
   align-self: flex-end;
@@ -100,18 +101,19 @@ body{
   color: white;
 }
 
-.crud i:nth-child(4){
+.crud i:nth-child(4) {
   border: 1px solid rgb(1, 177, 1);
-  color:  rgb(1, 177, 1);
+  color: rgb(1, 177, 1);
 }
-.crud i:nth-child(4):hover{
+
+.crud i:nth-child(4):hover {
   background-color: rgb(1, 177, 1);
   color: white;
 }
 
 
 
-.studentAbout{
+.studentAbout {
   grid-row: 2/3;
   padding: 0px 25px;
   display: flex;
@@ -121,7 +123,8 @@ body{
   border-radius: 5px;
   background-color: white;
 }
-.studentAdd{
+
+.studentAdd {
   width: 400px;
   height: 100vh;
   position: fixed;
@@ -130,23 +133,25 @@ body{
   right: 0;
   top: 0;
   padding: 0px 15px;
-  z-index: 5; 
-  background-color: white;  
+  z-index: 5;
+  background-color: white;
 }
-.isAdd{
+
+.isAdd {
   display: none;
 }
-.studentAdd span{
+
+.studentAdd span {
   display: flex;
   padding: 10px;
   justify-content: space-between;
 }
 
-.studentAddButton{
+.studentAddButton {
   padding: 20px 80px;
   border-radius: 10px;
   background-color: #6c63ff;
-  color: white; 
+  color: white;
   cursor: pointer;
   align-self: center;
   font-weight: bolder;
@@ -157,7 +162,7 @@ body{
 
 
 
-.slidePayment{
+.slidePayment {
   width: 400px;
   height: 100vh;
   position: fixed;
@@ -166,6 +171,11 @@ body{
   right: 0;
   top: 0;
   padding: 0px 15px;
-  z-index: 5; 
-  background-color: white; 
+  z-index: 5;
+  background-color: white;
+}
+
+
+.input::placeholder{
+  color: #8b8b8b !important;
 }

@@ -50,7 +50,6 @@ const PaymentArchive = () => {
     const [GetStudents, setGetStudents] = useState([])
     const [OpenModal, setOpenModal] = useState(false)
     const [OpenModalPayment, setOpenModalPayment] = useState(false)
-    const [StudentKeys, setStudentKeys] = useState({});
     const [SearchStudens, setSearchStudens] = useState([]);
 
     const [PayValue, setPayValue] = useState({
@@ -66,7 +65,6 @@ const PaymentArchive = () => {
             const data = snapshot.val();;
 
             setGetStudents(Object.values(data || {}));
-            setStudentKeys(Object.keys(data || {}));
         });
     }, []);
 

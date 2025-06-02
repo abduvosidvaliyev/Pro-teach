@@ -45,6 +45,9 @@ import { Label } from "../../components/ui/label";
 import SelectReact from "react-select"
 import { ToastContainer } from "react-toastify";
 import { AddNotify } from "../../components/ui/Toast"
+import ReactPaginate from "react-paginate";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -60,6 +63,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const database = getDatabase(app);
+
+const pages = [
+  { value: 5, label: 5 },
+  { value: 10, label: 10 },
+  { value: 20, label: 20 },
+  { value: 50, label: 50 },
+]
 
 function Students() {
   const navigate = useNavigate();
@@ -191,6 +201,8 @@ function Students() {
     group: "",
   })
   const [firstLeads, setfirstLeads] = useState({})
+  const [GetFilterStudent, setGetFilterStudent] = useState([])
+  const [PER_PAGE, setPER_PAGE] = useState(10)
 
   const [filters, setFilters] = useState({
     search: "",
@@ -246,9 +258,9 @@ function Students() {
 
   useEffect(() => {
     const coursesRef = ref(database, `Courses`);
-    const unsubscribe = onValue(coursesRef, (snapshot) => {
+    onValue(coursesRef, (snapshot) => {
       const data = snapshot.val();
-      setCourses(data);
+      setCourses(Object.values(data || []));
     });
 
     const LeadsRef = ref(database, "leads")
@@ -278,6 +290,10 @@ function Students() {
   // }, [updatedStudents]);
 
   useEffect(() => {
+    setGetFilterStudent(studentsData.sort((a, b) => a.id - b.id));
+  }, [studentsData]);
+
+  useEffect(() => {
     const searchStudent = GetLeads.find((value) => value.name.toLowerCase() === AddStudent.name.toLowerCase())
     setfirstLeads(searchStudent)
   }, [AddStudent.name])
@@ -285,8 +301,6 @@ function Students() {
 
   const addStudent = () => {
     if ((AddStudent.name && AddStudent.group) === "") {
-      console.log("gvjs");
-
       return
     }
     const selectedDays = ["du", "se", "pay"]; // Guruhning tanlangan kunlari
@@ -380,6 +394,69 @@ function Students() {
     })
   }, [studentsData, groupsData])
 
+  // const filterStudent = studentsData.filter((student) => student.name.toLowerCase().includes(value))
+  const filterStudents = (value) => {
+    const filterStudent = studentsData.filter((student) => student.studentName.toLowerCase().includes(value.toLowerCase()) ||
+      value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "" ||
+        value === "To'langan"
+        ? Number(student.balance) >= 0
+        : Number(student.balance) < 0)
+    setGetFilterStudent(value == "" ? studentsData : filterStudent)
+  }
+
+  const filter = (value) => {
+    const filteredStudents = studentsData.filter(student => {
+      const group = groupsData.find(item => item.groupName.toLowerCase() === student.group.toLowerCase());
+
+      if (!group) return false;
+
+      // Agar group.courses massiv bo‘lsa
+      const finishFilter = Array.isArray(group.courses)
+        ? group.courses.includes(value)
+        : group.courses === value
+
+      return finishFilter;
+    });
+
+    setGetFilterStudent(value == "" ? studentsData : filteredStudents)
+  };
+
+  const filterTeachers = (value) => {
+    const filteredStudents = studentsData.filter(student => {
+      const group = groupsData.find(item => item.groupName.toLowerCase() === student.group.toLowerCase());
+
+      if (!group) return false;
+
+      // Agar group.courses massiv bo‘lsa
+      const finishFilter = Array.isArray(group.teachers)
+        ? group.teachers.includes(value)
+        : group.teachers === value
+
+      return finishFilter;
+    });
+
+    setGetFilterStudent(value == "" ? studentsData : filteredStudents)
+  }
+
+  const [currentPage, setCurrentPage] = useState(0);
+
+  // Barcha student yozuvlarini flat qilish
+  const allPayments = useMemo(() => {
+    return GetFilterStudent;
+  }, [GetFilterStudent, PER_PAGE]);
+
+  const pageCount = Math.ceil(allPayments.length / PER_PAGE);
+
+  // Hozirgi sahifadagi yozuvlar
+  const currentPayments = useMemo(() => {
+    const start = currentPage * PER_PAGE;
+    return allPayments.slice(start, start + PER_PAGE);
+  }, [allPayments, currentPage]);
+
+  const handlePageClick = ({ selected }) => {
+    setCurrentPage(selected);
+  };
+
   return (
     <>
       <ToastContainer />
@@ -469,16 +546,15 @@ function Students() {
             </Button>
           </div>
           <div className={style.students}>
-            <div className="p-6 col-[1/11]">
+            <div className="p-6 col-[1/11] flex flex-col">
               <div className="flex flex-wrap gap-4 mb-6 items-center">
                 {/* Search Input */}
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Qidirish"
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange("search", e.target.value)}
-                    className="pl-8 w-[200px]"
+                    onChange={(e) => filterStudents(e.target.value)}
+                    className={`pl-8 w-[200px] ${style.input}`}
                   />
                 </div>
 
@@ -490,28 +566,25 @@ function Students() {
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
+                  <DropdownMenuContent className="bg-white">
                     <DropdownMenuItem
-                      onClick={() => handleFilterChange("course", "")}
+                      onClick={() => filterStudents("")}
                     >
                       Barchasi
                     </DropdownMenuItem>
-                    {courses && Object.keys(courses).length > 0 ? (
-                      Object.values(courses).map((course, index) => (
-                        <DropdownMenuItem
-                          key={index}
-                          onClick={() =>
-                            handleFilterChange("course", course.name)
-                          }
-                        >
-                          {course.name}
+                    {
+                      courses.length > 0 ? (
+                        courses.map((course) => (
+                          <DropdownMenuItem onClick={() => filter(course.name)}>
+                            {course.name}
+                          </DropdownMenuItem>
+                        ))
+                      ) : (
+                        <DropdownMenuItem>
+                          No courses available
                         </DropdownMenuItem>
-                      ))
-                    ) : (
-                      <DropdownMenuItem disabled>
-                        No courses available
-                      </DropdownMenuItem>
-                    )}
+                      )
+                    }
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -523,22 +596,17 @@ function Students() {
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() => handleFilterChange("groupStatus", "")}
-                    >
+                  <DropdownMenuContent className="bg-white">
+                    <DropdownMenuItem onClick={() => filterStudents("")}>
                       Barchasi
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleFilterChange("groupStatus", "Faol")}
-                    >
+                    <DropdownMenuItem onClick={() => filterStudents("Faol")}>
                       Faol
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange("groupStatus", "Nofaol")
-                      }
-                    >
+                    <DropdownMenuItem onClick={() => filterStudents("Muzlatilgan")}>
+                      Muzlatilgan
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => filterStudents("Nofaol")}>
                       Nofaol
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -552,24 +620,14 @@ function Students() {
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() => handleFilterChange("paymentStatus", "")}
-                    >
+                  <DropdownMenuContent className="bg-white">
+                    <DropdownMenuItem onClick={() => filterStudents("")}>
                       Barchasi
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange("paymentStatus", "To'langan")
-                      }
-                    >
+                    <DropdownMenuItem onClick={() => filterStudents("To'langan")}>
                       To'langan
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        handleFilterChange("paymentStatus", "To'lanmagan")
-                      }
-                    >
+                    <DropdownMenuItem onClick={() => filterStudents("To'lanmagan")}>
                       To'lanmagan
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -583,20 +641,13 @@ function Students() {
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() => handleFilterChange("teacher", "")}
-                    >
+                  <DropdownMenuContent className="bg-white">
+                    <DropdownMenuItem onClick={() => filterTeachers("")}>
                       Barchasi
                     </DropdownMenuItem>
                     {teachersData && Object.keys(teachersData).length > 0 ? (
                       Object.values(teachersData).map((teacher, index) => (
-                        <DropdownMenuItem
-                          key={index}
-                          onClick={() =>
-                            handleFilterChange("teacher", teacher.name)
-                          }
-                        >
+                        <DropdownMenuItem onClick={() => filterTeachers(teacher.name)}>
                           {teacher.name}
                         </DropdownMenuItem>
                       ))
@@ -641,7 +692,7 @@ function Students() {
 
                 <TableBody>
                   {studentsData.length > 0 ? (
-                    studentsData.map((student) => {
+                    currentPayments.map((student) => {
                       return (
                         <TableRow
                           onClick={(event) =>
@@ -675,10 +726,45 @@ function Students() {
                   }
                 </TableBody>
               </Table>
+
+              {/* Paginations */}
+              <div className="flex items-center gap-3 self-end">
+                <Select
+                  value={String(PER_PAGE)}
+                  onValueChange={val => {
+                    setPER_PAGE(Number(val));
+                    setCurrentPage(0);
+                  }}
+                  defaultValue={String(pages[1].value)}
+                >
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Qator sonini tanlash" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pages.map((page) => (
+                      <SelectItem key={page.value} value={String(page.value)}>
+                        {page.value} tadan
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <ReactPaginate
+                  pageCount={pageCount}
+                  onPageChange={handlePageClick}
+                  forcePage={currentPage}
+                  previousLabel={<FiChevronLeft />}
+                  nextLabel={<FiChevronRight />}
+                  breakLabel="..."
+                  marginPagesDisplayed={1}
+                  pageRangeDisplayed={1}
+                  containerClassName="pagination"
+                  activeClassName="active"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </div >
     </>
   );
 }

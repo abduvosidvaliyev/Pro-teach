@@ -342,11 +342,7 @@ function GroupDetails() {
     const coursesRef = ref(database, "Teachers");
     onValue(coursesRef, (snapshot) => {
       const data = snapshot.val();
-      const teacherData = Object.keys(data).map((key) => ({
-        value: key,
-        label: data[key].name,
-      }));
-      setTeachersData(teacherData);
+      setTeachersData(Object.values(data || {}))
     });
   }, []);
 
@@ -571,7 +567,7 @@ function GroupDetails() {
                     <Label htmlFor="teacher">O'qituvchi</Label>
                     <SelectReact
                       onChange={() => setAddGroup({ ...AddGroup, teachers: e.value })}
-                      options={teachersData}
+                      options={teachersData.map((teacher) => ({value: teacher.name, label: teacher.name}))}
                       placeholder="O'qitchini tanlang"
                     />
                   </div>

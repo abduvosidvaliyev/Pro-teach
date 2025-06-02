@@ -33,6 +33,7 @@ import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Button } from "../../components/ui/button"
+import { Modal } from "../../components/ui/modal"
 import SelectReact from "react-select"
 import style from "./Dashboard.module.css"
 
@@ -43,6 +44,9 @@ import { FaPencil } from "react-icons/fa6";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
 import { cn } from "../../lib/utils";
 import { X } from "lucide-react";
+import { ToastContainer } from "react-toastify";
+import { DelateNotify, AddNotify, ChengeNotify } from "../../components/ui/Toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 
 const getCurrentDate = () => {
     const today = new Date();
@@ -54,9 +58,13 @@ const getCurrentDate = () => {
 
 const Expenses = () => {
     const [GetTeacher, setGetTeacher] = useState([])
+    const getCurrentMonth = () => {
+        const today = new Date();
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    };
+    const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
     const [GetExpenses, setGetExpenses] = useState([])
     const [date, setDate] = React.useState(getCurrentDate());
-    const [SelectedOptions, setSelectedOptions] = useState([])
     const [Expenses, setExpenses] = useState("")
     const [checked, setchecked] = useState("")
     const [isOpen, setisOpen] = useState(false)
@@ -64,7 +72,9 @@ const Expenses = () => {
     const [ExpensesId, setExpensesId] = useState("")
     const [ChengeExpense, setChengeExpense] = useState({})
     const [object, setobject] = useState({})
-    const [SidebarRecipient, setSidebarRecipient] = useState(null); // Sidebar uchun alohida holat
+    const [SidebarRecipient, setSidebarRecipient] = useState(null);
+    const [IsOpen, setIsOpen] = useState(false)
+    const [ExpenseId, setExpenseId] = useState(null)
 
     const [AddExpense, setAddExpense] = useState({
         expenseName: "",
@@ -74,40 +84,43 @@ const Expenses = () => {
         paymentType: ""
     })
 
+    const CloseModal = () => setIsOpen(false)
 
     useEffect(() => {
         const TeacherRef = ref(database, "Teachers");
         onValue(TeacherRef, (snapshot) => {
             const data = snapshot.val();
-            const TeacherOptions = Object.keys(data).map((key) => ({
-                value: data[key]?.name || "Noma'lum Ism", // Ensure the value is set to the teacher's name
-                label: data[key]?.name || "Noma'lum o'qituvchi", // Ensure the label is set to the teacher's name
-            }));
-            setGetTeacher(TeacherOptions);
+            setGetTeacher(Object.values(data || []));
         });
-
-        const ExpensesRef = ref(database, "Expenses")
-        onValue(ExpensesRef, (snapshot) => {
-            const data = snapshot.val()
-            const expenseAmount = Object.values(data).map((key) => key.amount || 0)
-            const allAmount = expenseAmount.reduce((acc, curr) => Number(acc) + Number(curr), 0)
-            setExpenses(allAmount)
-            setGetExpenses(Object.values(data || {}))
-        })
     }, []);
 
-    const handleSelectChange = (selectedOption, actionMeta) => {
-        setSelectedOptions((prevState) => ({
-            ...prevState,
-            [actionMeta.name]: selectedOption,
-        }));
+    // Oylik select uchun barcha mavjud oylarni olish
+    const [availableMonths, setAvailableMonths] = useState([getCurrentMonth()]);
 
-        // ChengeExpense ni yangilash
-        setChengeExpense((prevState) => ({
-            ...prevState,
-            recipient: selectedOption.value,
-        }));
-    };
+    useEffect(() => {
+        const ExpensesRef = ref(database, "Expenses");
+        onValue(ExpensesRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                setAvailableMonths(Object.keys(data));
+            }
+        });
+    }, []);
+
+    //  Tanlangan oy uchun xarajatlarni olish
+    useEffect(() => {
+        const ExpensesRef = ref(database, `Expenses/${selectedMonth}`);
+        onValue(ExpensesRef, (snapshot) => {
+            const data = snapshot.val();
+            setGetExpenses(Object.values(data || []));
+            // Jami xarajatni ham shu yerda hisoblang
+            setExpenses(
+                data
+                    ? Object.values(data).reduce((acc, curr) => Number(acc) + Number(curr.amount || 0), 0)
+                    : 0
+            );
+        });
+    }, [selectedMonth]);
 
     useEffect(() => {
         const chengeExpense = GetExpenses.find((firstExpense) => firstExpense.id === ExpensesId)
@@ -147,12 +160,11 @@ const Expenses = () => {
 
     // Code for updating the Expense
     const handleUptadeExpenses = (e) => {
-        set()
         e.preventDefault()
 
         if (object.expenseName && object.amount && object.date && SidebarRecipient.value && object.paymentType) {
             const updates = {};
-            updates[`/Expenses/Expense${object.id}`] = {
+            updates[`/Expenses/${selectedMonth}/Expense${object.id}`] = {
                 ...object,
                 recipient: SidebarRecipient.value, // SidebarRecipient qiymatini olish
             };
@@ -160,6 +172,7 @@ const Expenses = () => {
                 .then(() => {
                     setOpen(false);
                     setisOpen(false);
+                    ChengeNotify({ ChengeTitle: "Ma'lumot o'zgartirildi!" })
                 })
                 .catch((error) => {
                     console.error("Error updating data:", error);
@@ -176,13 +189,14 @@ const Expenses = () => {
 
         if (
             AddExpense.amount &&
-            AddExpense.expenceName &&
+            AddExpense.expenseName &&
             AddExpense.date &&
             AddExpense.recipient &&
             AddExpense.paymentType &&
-            AddExpense.date > getCurrentDate()
+            AddExpense.date <= getCurrentDate()
         ) {
-            const newExpenseRef = ref(database, `Expenses/Expense${GetExpenses.length + 1}`);
+            const monthKey = selectedMonth;
+            const newExpenseRef = ref(database, `Expenses/${monthKey}/Expense${GetExpenses.length + 1}`);
             set(newExpenseRef, {
                 ...AddExpense,
                 id: GetExpenses.length + 1
@@ -190,13 +204,14 @@ const Expenses = () => {
                 .then(() => {
                     setAddExpense({
                         expenseName: "",
-                        date: "",
+                        date: getCurrentDate(),
                         amount: "",
                         recipient: "",
                         paymentType: ""
-                    })
-                    setDate(getCurrentDate())
-                    console.log("Data added successfully");
+                    });
+                    setchecked("");
+                    setDate(getCurrentDate());
+                    AddNotify({ AddTitle: "Xarajat qo'shildi!" });
                 })
                 .catch((error) => {
                     console.error("Error adding data:", error);
@@ -212,21 +227,38 @@ const Expenses = () => {
     }
 
     // Delate Expense
-    const handleDelateExpense = (id) => {
-        if (id) {
-            const expenseRef = ref(database, `Expenses/Expense${id}`);
+    const handleDelateExpense = () => {
+        if (ExpenseId) {
+            const expenseRef = ref(database, `Expenses/${selectedMonth}/Expense${ExpenseId}`);
             remove(expenseRef)
                 .then(() => {
-                    console.log("Data removed successfully!");
+                    // O‘chirgandan keyin shu oydagi chiqimlar qolgan-qolmaganini tekshir
+                    const ExpensesRef = ref(database, `Expenses/${selectedMonth}`);
+                    onValue(ExpensesRef, (snapshot) => {
+                        const data = snapshot.val();
+                        if (!data || Object.keys(data).length === 0) {
+                            // Agar bu oyda chiqim qolmasa va bu oy hozirgi oy bo‘lmasa, hozirgi oyni tanla
+                            const currentMonth = getCurrentMonth();
+                            if (selectedMonth !== currentMonth) {
+                                setSelectedMonth(currentMonth);
+                            }
+                            // Agar hozirgi oy selectda yo‘q bo‘lsa, qo‘shib qo‘y
+                            setAvailableMonths((prev) => {
+                                if (!prev.includes(currentMonth)) {
+                                    return [...prev, currentMonth];
+                                }
+                                return prev;
+                            });
+                        }
+                    }, { onlyOnce: true });
+                    CloseModal();
+                    DelateNotify({ DelateTitle: "Xarajat o'chirildi!" });
                 })
                 .catch((error) => {
                     console.error("Error removing data:", error);
                 });
-        } else {
-            console.log("Error! Invalid ID.");
         }
     };
-
     // Search by expense name
     const handleSearchExpense = (value) => {
         const filteredExpenses = GetExpenses.filter((expense) =>
@@ -248,8 +280,39 @@ const Expenses = () => {
         }
     }
 
+    useEffect(() => {
+        if (selectedMonth === getCurrentMonth()) {
+            setAddExpense((prev) => ({
+                ...prev,
+                date: getCurrentDate(),
+            }));
+        } else {
+            setAddExpense((prev) => ({
+                ...prev,
+                date: "",
+            }));
+        }
+    }, [selectedMonth]);
+
     return (
         <>
+            <ToastContainer />
+
+            {
+                IsOpen ? <Modal
+                    title="Xarajat o'chirilsinmi?"
+                    isOpen={IsOpen}
+                    onClose={CloseModal}
+                    positionTop="top-[40%]"
+                    children={
+                        <div className="flex justify-center items-center gap-8">
+                            <Button variant="red" className="px-6" onClick={handleDelateExpense}>Ha</Button>
+                            <Button variant="outline" className="px-6" onClick={() => setIsOpen(false)}>Yo'q</Button>
+                        </div>
+                    }
+                /> : ""
+            }
+
             <SidebarProvider>
                 {isOpen && (
                     <div
@@ -284,7 +347,7 @@ const Expenses = () => {
                         </Button>
                     </SidebarHeader>
                     <SidebarContent>
-                        <form   
+                        <form
                             className="space-y-6 p-6 text-left"
                         >
                             <div className="flex flex-col gap-2">
@@ -302,27 +365,26 @@ const Expenses = () => {
                                 <Input
                                     id="date"
                                     type="date"
-                                    value={object.date}
-                                    onChange={(e) =>
-                                        setobject((prevState) => ({
+                                    className={style.input}
+                                    value={AddExpense.date}
+                                    onChange={(e) => {
+                                        setAddExpense((prevState) => ({
                                             ...prevState,
-                                            data: e.target.value,
-                                        }))
-                                    }
+                                            date: e.target.value || "",
+                                        }));
+                                    }}
+                                    placeholder="YYYY-MM-DD"
                                 />
                             </div>
 
                             <div className="flex flex-col gap-2">
+                                <Label>
+                                    Oluvchi
+                                </Label>
                                 <SelectReact
-                                    value={SidebarRecipient || null} // SidebarRecipient qiymatini ishlatamiz
-                                    onChange={(selectedOption) => {
-                                        setSidebarRecipient(selectedOption); // SidebarRecipient ni yangilash
-                                        setChengeExpense((prevState) => ({
-                                            ...prevState,
-                                            recipient: selectedOption.value, // ChengeExpense ni yangilash
-                                        }));
-                                    }}
-                                    options={GetTeacher}
+                                    value={SidebarRecipient || null}
+                                    onChange={(e) => setChengeExpense(({ ...ChengeExpense, recipient: e.value }))}
+                                    options={GetTeacher.map((teacher) => ({ value: teacher.name, label: teacher.name }))}
                                     placeholder="Oluvchini tanlang"
                                 />
                             </div>
@@ -347,12 +409,12 @@ const Expenses = () => {
                                     >
                                         <Checkbox
                                             id="Cash"
-                                            checked={object.paymentType === "Cash" ? true : false} // object.paymentType ni tekshirish
+                                            checked={object.paymentType === "Naqt pul" ? true : false} // object.paymentType ni tekshirish
                                             className="rounded-full"
                                             onClick={() => {
                                                 setobject((prevState) => ({
                                                     ...prevState,
-                                                    paymentType: "Cash",
+                                                    paymentType: "Naqt pul",
                                                 }))
                                             }}
                                         />
@@ -364,11 +426,11 @@ const Expenses = () => {
                                     >
                                         <Checkbox
                                             id="Card"
-                                            checked={object.paymentType === "Card" ? true : false} // object.paymentType ni tekshirish
+                                            checked={object.paymentType === "Plastik karta" ? true : false} // object.paymentType ni tekshirish
                                             onClick={() => {
                                                 setobject((prevState) => ({
                                                     ...prevState,
-                                                    paymentType: "Card",
+                                                    paymentType: "Plastik karta",
                                                 }))
                                             }}
                                             className="rounded-full"
@@ -400,12 +462,12 @@ const Expenses = () => {
                                     >
                                         <Checkbox
                                             id="Bank"
-                                            checked={object.paymentType === "Bank" ? true : false} // object.paymentType ni tekshirish
+                                            checked={object.paymentType === "Bank hisobi" ? true : false} // object.paymentType ni tekshirish
                                             className="rounded-full"
                                             onClick={() => {
                                                 setobject((prevState) => ({
                                                     ...prevState,
-                                                    paymentType: "Bank",
+                                                    paymentType: "Bank hisobi",
                                                 }))
                                             }}
                                         />
@@ -413,6 +475,7 @@ const Expenses = () => {
                                     </Label>
                                 </div>
                             </div>
+
                             <Button
                                 variant="outline"
                                 className="bg-blue-700 text-white"
@@ -436,8 +499,26 @@ const Expenses = () => {
                         transition: "all 0.5s ease, background 0.3s ease, width 0.5s ease",
                     }}
                 >
-                    <nav className="w-full">
+                    <nav className="w-full flex justify-start items-center gap-5">
                         <h3 className="text-3xl font-normal">Xarajatlar</h3>
+
+                        <Select
+                            value={selectedMonth}
+                            onValueChange={e => setSelectedMonth(e)}
+                        >
+                            <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder="Oyni tanlash" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {
+                                    availableMonths.map(month => (
+                                        <SelectItem key={month} value={month}>
+                                            {month}
+                                        </SelectItem>
+                                    ))
+                                }
+                            </SelectContent>
+                        </Select>
                     </nav>
 
                     <Card className="w-full flex flex-col gap-8 py-6 bg-transparent border-transparent">
@@ -446,17 +527,18 @@ const Expenses = () => {
                                 <nav
                                     className="w-full h-[90px] before:left-[1px] before:rounded-lg before:w-[5px] before:h-full before:bg-blue-500 before:absolute relative bg-white shadow-xl p-5 rounded-xl flex justify-between items-center"
                                 >
-                                    <h3 className="text-2xl flex gap-1">Jami xarajat miqdori:
+                                    <h3 className="text-2xl flex gap-1">
+                                        Jami xarajat miqdori:
                                         <span>
                                             {Expenses
                                                 ? new Intl.NumberFormat("uz-UZ").format(Expenses) + " UZS"
-                                                : "Noma'lum summa"
+                                                : "0 UZS"
                                             }
                                         </span>
                                     </h3>
                                     <GrMoney className="text-2xl text-blue-500" />
                                 </nav>
-                                <ScatterChart expenses={GetExpenses.map((expense) => ({ date: expense.date, amount: expense.amount }))} />
+                                <ScatterChart expenses={GetExpenses} selectedMonth={selectedMonth} />
                             </div>
                             <Card className="w-[28%] p-5 flex flex-col gap-5 border-t-2 border-t-blue-500">
                                 <h3 className="text-xl">Yangi xarajatlar</h3>
@@ -469,6 +551,7 @@ const Expenses = () => {
                                             placeholder="Xarajat nomi"
                                             className={style.input}
                                             onChange={(e) => setAddExpense((prevState) => ({ ...prevState, expenseName: e.target.value }))}
+                                            value={AddExpense.expenseName}
                                         />
                                     </div>
                                     <div className="flex flex-col gap-2">
@@ -477,28 +560,22 @@ const Expenses = () => {
                                             id="date"
                                             type="date"
                                             className={style.input}
-                                            value={date}
+                                            value={AddExpense.date}
                                             onChange={(e) => {
-                                                setDate(e.target.value || getCurrentDate())
                                                 setAddExpense((prevState) => ({
                                                     ...prevState,
-                                                    date: e.target.value || getCurrentDate(),
-                                                }))
+                                                    date: e.target.value || "",
+                                                }));
                                             }}
+                                            placeholder="YYYY-MM-DD"
                                         />
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <Label htmlFor="recipient">Oluvchi</Label>
                                         <SelectReact
-                                            value={SelectedOptions.courses || null}
-                                            onChange={(selectedOption) => {
-                                                handleSelectChange(selectedOption, { name: "courses" }),
-                                                    setAddExpense((prevState) => ({
-                                                        ...prevState,
-                                                        recipient: selectedOption.value, // Update AddExpense.recipient with the selected value
-                                                    }));
-                                            }}
-                                            options={GetTeacher}
+                                            className="w-full"
+                                            onChange={(e) => setAddExpense(({ ...AddExpense, recipient: e.value }))}
+                                            options={GetTeacher.map((teacher) => ({ value: teacher.name, label: teacher.name }))}
                                             placeholder="Oluvchini tanlang"
                                         />
                                     </div>
@@ -509,6 +586,7 @@ const Expenses = () => {
                                             placeholder="Narxi"
                                             className={style.input}
                                             onChange={(e) => setAddExpense((prevState) => ({ ...prevState, amount: e.target.value }))}
+                                            value={AddExpense.amount}
                                         />
                                     </div>
                                     <div className="flex flex-col gap-3">
@@ -518,8 +596,12 @@ const Expenses = () => {
                                                 htmlFor="Cash"
                                                 className="flex gap-2 items-center text-sm font-normal cursor-pointer"
                                                 onClick={() => {
-                                                    setchecked("Cash"),
-                                                        setAddExpense((prevState) => ({ ...prevState, paymentType: "Cash" }))
+                                                    setchecked(checked === "Cash" ? "" : checked !== "Cash" ? "Cash" : ""),
+                                                        setAddExpense((prevState) =>
+                                                        ({
+                                                            ...prevState,
+                                                            paymentType: checked === "Cash" ? "" : checked !== "Cash" ? "Naqt pul" : ""
+                                                        }))
                                                 }}
                                             >
                                                 <Checkbox
@@ -533,8 +615,12 @@ const Expenses = () => {
                                                 htmlFor="Card"
                                                 className="flex gap-2 items-center text-sm font-normal cursor-pointer"
                                                 onClick={() => {
-                                                    setchecked("Card"),
-                                                        setAddExpense((prevState) => ({ ...prevState, paymentType: "Card" }))
+                                                    setchecked(checked === "Card" ? "" : checked !== "Card" ? "Card" : ""),
+                                                        setAddExpense((prevState) =>
+                                                        ({
+                                                            ...prevState,
+                                                            paymentType: checked === "Card" ? "" : checked !== "Card" ? "Plastik karta" : ""
+                                                        }))
                                                 }}
                                             >
                                                 <Checkbox
@@ -548,8 +634,12 @@ const Expenses = () => {
                                                 htmlFor="Click"
                                                 className="flex gap-2 items-center text-sm font-normal cursor-pointer"
                                                 onClick={() => {
-                                                    setchecked("Click"),
-                                                        setAddExpense((prevState) => ({ ...prevState, paymentType: "Click" }))
+                                                    setchecked(checked === "Click" ? "" : checked !== "Click" ? "Click" : ""),
+                                                        setAddExpense((prevState) =>
+                                                        ({
+                                                            ...prevState,
+                                                            paymentType: checked === "Click" ? "" : checked !== "Click" ? "Click" : ""
+                                                        }))
                                                 }}
                                             >
                                                 <Checkbox
@@ -563,8 +653,12 @@ const Expenses = () => {
                                                 htmlFor="Bank"
                                                 className="flex gap-2 items-center text-sm font-normal cursor-pointer"
                                                 onClick={() => {
-                                                    setchecked("Bank"),
-                                                        setAddExpense((prevState) => ({ ...prevState, paymentType: "Bank" }))
+                                                    setchecked(checked === "Bank" ? "" : checked !== "Bank" ? "Bank" : ""),
+                                                        setAddExpense((prevState) =>
+                                                        ({
+                                                            ...prevState,
+                                                            paymentType: checked === "Bank" ? "" : checked !== "Bank" ? "Bank hisobi" : ""
+                                                        }))
                                                 }}
                                             >
                                                 <Checkbox
@@ -616,15 +710,15 @@ const Expenses = () => {
                                         <TableBody>
                                             {GetExpenses.map((expense, index) => (
                                                 <TableRow key={index}>
-                                                    <TableCell>{expense.id || "Noma'lum ID"}</TableCell>
-                                                    <TableCell>{expense.date || "Noma'lum sana"}</TableCell>
-                                                    <TableCell>{expense.expenseName || "Noma'lum nomi"}</TableCell>
-                                                    <TableCell>{expense.recipient || "Noma'lum oluvchi"}</TableCell>
-                                                    <TableCell>{expense.paymentType || "Noma'lum to'lov turi"}</TableCell>
+                                                    <TableCell>{expense.id}</TableCell>
+                                                    <TableCell>{expense.date}</TableCell>
+                                                    <TableCell>{expense.expenseName}</TableCell>
+                                                    <TableCell>{expense.recipient}</TableCell>
+                                                    <TableCell>{expense.paymentType}</TableCell>
                                                     <TableCell>
                                                         {expense.amount
                                                             ? new Intl.NumberFormat("uz-UZ").format(expense.amount) + " UZS"
-                                                            : "Noma'lum summa"}
+                                                            : "0 UZS"}
                                                     </TableCell>
                                                     <TableCell className="flex gap-2 items-center">
                                                         <div
@@ -635,7 +729,7 @@ const Expenses = () => {
                                                         </div>
                                                         <div
                                                             className="w-7 h-7 rounded-full border cursor-pointer border-red-500 flex justify-center items-center"
-                                                            onClick={() => handleDelateExpense(expense.id)}
+                                                            onClick={() => (setIsOpen(true), setExpenseId(expense.id))}
                                                         >
                                                             <IoTrashOutline className="text-lg text-red-500" />
                                                         </div>

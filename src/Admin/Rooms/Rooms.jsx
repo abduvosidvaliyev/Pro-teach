@@ -174,10 +174,10 @@ const Rooms = () => {
 
       <SidebarProvider>
         {(isOpen || ChengeOpen) && (
-          <div2
+          <div
             className="fixed w-full h-[100vh] bg-black/50 backdrop-blur-[2px] z-30 inset-0 transition-all duration-900 ease-in-out"
             onClick={toggleSidebar}
-          ></div2>
+          ></div>
         )}
         <Sidebar
           className={`fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out ${isOpen || ChengeOpen ? "translate-x-0" : "translate-x-full"}`}
