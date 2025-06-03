@@ -74,6 +74,8 @@ import { Button } from "./button";
 import { Modal } from "./modal";
 import { Input } from "./input";
 import { Label } from "./label";
+import { AddNotify } from "./Toast"
+import { ToastContainer } from "react-toastify";
 
 const timeSlots = Array.from({ length: 13 }).map((_, i) => ({
   time: `${(i + 8).toString().padStart(2, "0")}:00`,
@@ -86,7 +88,7 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 const calculateDuration = (timeRange) => {
   const [start, end] = timeRange.split("-");
   const [startHour, startMinute] = start.split(":").map(Number);
-  const [endHour, endMinute] = end.split(":").map(Number);  
+  const [endHour, endMinute] = end.split(":").map(Number);
 
   const startTime = startHour + startMinute / 60;
   const endTime = endHour + endMinute / 60;
@@ -152,6 +154,7 @@ export default function Dashboard({ data }) {
   const [StudentKeys, setStudentKeys] = useState({});
   const [TakeStudents, setTakeStudents] = useState([])
   const [SearchStudens, setSearchStudens] = useState([]);
+  const [balance, setbalance] = useState(0)
 
   const [DebtorStudent, setDebtorStudent] = useState([])
 
@@ -225,6 +228,17 @@ export default function Dashboard({ data }) {
 
     return () => unsubscribe(); // Kuzatuvni tozalash
   }, []);
+
+  useEffect(() => {
+    const allBalanceRef = ref(database, "AllBalance")
+
+    onValue(allBalanceRef, (snapshot) => {
+      const data = snapshot.val()
+
+      setbalance(data)
+    })
+  }, [])
+
 
   const courseScheduleData = groupsData.map((group, index) => {
     if (!group.duration) {
@@ -478,7 +492,7 @@ export default function Dashboard({ data }) {
         .then(() => {
           setPayValue({ value1: "", value2: "" });
           setSearchStudens([])
-          alert("To'lov muvaffaqiyatli amalga oshirildi!");
+          AddNotify({ AddTitle: "Pul to'landi!" })
 
           const balanceRef = ref(database, `Students/${PayValue.value2}/balance`);
           get(balanceRef)
@@ -497,9 +511,10 @@ export default function Dashboard({ data }) {
     }
   };
 
-
   return (
     <>
+      <ToastContainer />
+
       {
         OpenModal && (
           <Modal
@@ -609,10 +624,6 @@ export default function Dashboard({ data }) {
               <Receipt className="w-4 h-4 mr-2" />
               To'lovlar tarixi
             </Button>
-            <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
-              <Wallet className="w-4 h-4 mr-2" />
-              Balans: 2,450,000 so'm
-            </Button>
           </div>
         </div>
         {/* KPI Section */}
@@ -635,15 +646,16 @@ export default function Dashboard({ data }) {
           </Card>
           <Card
             className="bg-gradient-to-br cursor-pointer from-blue-50 to-blue-100"
-            onClick={() => handleCardClick(groupsData[0]?.id)}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Oylik Daromad</CardTitle>
+              <CardTitle className="text-sm font-medium">Daromad</CardTitle>
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-700">
-                {data.totalRevenue.toLocaleString()} so'm
+                {
+                  new Intl.NumberFormat('uz-UZ').format(balance) + " so'm"
+                }
               </div>
               <p className="text-xs text-blue-600 mt-1 flex items-center">
                 <TrendingUp className="h-4 w-4 mr-1" />

@@ -37,6 +37,8 @@ import imageKnow from "../../assets/dont-know.png";
 import React, { useEffect, useState } from "react";
 import { PaymentItem } from "../../components/ui/payment-item";
 import style from "./PaymentArchive.module.css"
+import { AddNotify, DelateNotify } from "../../components/ui/Toast"
+import { ToastContainer } from "react-toastify";
 
 const getCurrentDate = () => {
     const today = new Date();
@@ -129,7 +131,7 @@ const PaymentArchive = () => {
                 setOpenModal(false);
                 setPayValue({ value1: "", value2: "" });
                 setSearchStudens([])
-                alert("To'lov muvaffaqiyatli amalga oshirildi!");
+                AddNotify({ AddTitle: "Pul to'landi!" })
 
                 const balanceRef = ref(database, `Students/${PayValue.value2}/balance`);
                 get(balanceRef)
@@ -208,13 +210,14 @@ const PaymentArchive = () => {
                 setOpenModalPayment(false);
                 setPayValue({ value1: "", value2: "" });
                 setSearchStudens([]);
-                alert("Pul muvaffaqiyatli yechildi!");
+                DelateNotify({ DelateTitle: "Pul yechildi!" });
             })
             .catch((error) => {
                 console.error("Pul yechishda xatolik yuz berdi:", error);
             });
     };
 
+    // Talabani qidirish funksiyasi
     const handleSearchStudentPayment = (value) => {
         if (!value) {
             setGetStudents(GetStudents); // Qidiruv maydoni bo'sh bo'lsa, natijalarni tozalash va eski holatga qaytarish
@@ -243,6 +246,7 @@ const PaymentArchive = () => {
 
     return (
         <>
+            <ToastContainer />
             {
                 (OpenModal || OpenModalPayment) && (
                     <Modal
