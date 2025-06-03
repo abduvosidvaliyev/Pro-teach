@@ -231,76 +231,28 @@ function GroupDetails() {
   };
 
   const addGroup = () => {
-    if (newGroupName.trim() !== "") {
-      const newGroup = {
-        groupName: newGroupName,
-        price: newPrice,
-        duration: `${startTime}-${endTime}`,
-        courses: selectedOptions.courses ? selectedOptions.courses.label : null,
-        teachers: selectedOptions.teachers ? selectedOptions.teachers.label : null,
-        rooms: selectedOptions.rooms ? selectedOptions.rooms.label : null,
-        selectedDays: selectedDays, // Yangi guruhning kunlari
-      };
-
-      // Yangi guruhning boshlanish va tugash vaqtini aniqlash
-      const newGroupStartTime = parseInt(startTime.split(":")[0], 10) * 60 +
-        parseInt(startTime.split(":")[1], 10);
-      const newGroupEndTime = parseInt(endTime.split(":")[0], 10) * 60 +
-        parseInt(endTime.split(":")[1], 10);
-
-      // Vaqtlar mantiqiyligini tekshirish
-      if (newGroupStartTime >= newGroupEndTime) {
-        alert("Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak.");
-        return;
-      }
-
-      // To'qnashuvni tekshirish
-      const isConflict = groupsData.some((group) => {
-        if (!group.duration || !group.rooms || !group.selectedDays) {
-          return false; // Guruhda kerakli ma'lumotlar bo'lmasa, to'qnashuv yo'q
-        }
-
-        const groupStartTime = parseInt(group.duration.split("-")[0].split(":")[0], 10) * 60 +
-          parseInt(group.duration.split("-")[0].split(":")[1], 10);
-        const groupEndTime = parseInt(group.duration.split("-")[1].split(":")[0], 10) * 60 +
-          parseInt(group.duration.split("-")[1].split(":")[1], 10);
-
-        // Kunlar to'qnashuvini tekshirish
-        const hasDayConflict = group.selectedDays.some((day) =>
-          newGroup.selectedDays.includes(day)
-        );
-
-        // Vaqt to'qnashuvini tekshirish
-        const hasTimeConflict =
-          (newGroupStartTime < groupEndTime && newGroupEndTime > groupStartTime);
-
-        // Xona, vaqt va kunlar to'qnashuvini birgalikda tekshirish
-        return group.rooms === newGroup.rooms && hasDayConflict && hasTimeConflict;
-      });
-
-      if (isConflict) {
-        alert("Yangi guruhning dars vaqti va xonasi mavjud guruhlar bilan to'qnash keladi.");
-        return;
-      }
-
-      // Guruhni qo'shish
-      setGroupsData([...groupsData, newGroup]);
-
-      const newGroupRef = ref(database, `Groups/${newGroupName}`);
-      set(newGroupRef, newGroup)
+    if ((AddGroup.groupName && AddGroup.courses && AddGroup.duration && AddGroup.rooms && AddGroup.teachers) !== "" && AddGroup.selectedDays != []) {
+    
+      const newGroupRef = ref(database, `Groups/${AddGroup.groupName}`);
+      set(newGroupRef, {...AddGroup, id: groupsData.length+1})
         .then(() => {
-          console.log("Group added to Firebase:", newGroup);
+          setIsAdd(false)
+          setAddGroup({
+            groupName: "",
+            courses: "",
+            duration: "",
+            rooms: "",
+            teachers: "",
+            selectedDays: []
+          })
+          AddNotify({AddTitle: "Guruh qo'shildi!"})
         })
         .catch((error) => {
           console.error("Error adding group to Firebase:", error);
         });
-
-      // Formani tozalash
-      setNewGroupName("");
-      setStartTime("");
-      setEndTime("");
-      setNewPrice("");
-      setSelectedDays([]); // Kunlarni tozalash
+    }
+    else{
+      alert("Ma'lumotni to'ldiring")
     }
   };
 
@@ -342,7 +294,7 @@ function GroupDetails() {
     const coursesRef = ref(database, "Teachers");
     onValue(coursesRef, (snapshot) => {
       const data = snapshot.val();
-      setTeachersData(Object.values(data || {}))
+      setTeachersData(Object.values(data || []));
     });
   }, []);
 
@@ -380,11 +332,7 @@ function GroupDetails() {
     const coursesRef = ref(database, "Rooms");
     onValue(coursesRef, (snapshot) => {
       const data = snapshot.val();
-      const roomData = Object.keys(data).map((key) => ({
-        value: key,
-        label: data[key].name,
-      }));
-      setRoomsData(roomData);
+      setRoomsData(Object.values(data || []));
     });
   }, []);
 
@@ -392,12 +340,7 @@ function GroupDetails() {
     const groupsRef = ref(database, "Groups");
     onValue(groupsRef, (snapshot) => {
       const data = snapshot.val();
-      const groupsArray = Object.keys(data).map((key) => ({
-        id: key,
-        groupName: key,
-        ...data[key],
-      }));
-      setGroupsData(groupsArray);
+      setGroupsData(Object.values(data || []));
     });
   }, []);
 
@@ -565,9 +508,9 @@ function GroupDetails() {
 
                   <div className="space-y-2">
                     <Label htmlFor="teacher">O'qituvchi</Label>
-                    <SelectReact
-                      onChange={() => setAddGroup({ ...AddGroup, teachers: e.value })}
-                      options={teachersData.map((teacher) => ({value: teacher.name, label: teacher.name}))}
+                    <SelectReact  
+                    onChange={(e) => setAddGroup({...AddGroup, teachers: e.value})}
+                    options={teachersData.map((teacher)=> ({value: teacher.name, label: teacher.name}))}
                       placeholder="O'qitchini tanlang"
                     />
                   </div>
@@ -617,19 +560,16 @@ function GroupDetails() {
                     <SelectReact
                       placeholder="Dars vaqti tanlang"
                       className="w-full"
+                      onChange={(e) => setAddGroup({...AddGroup, duration: e.value})}
                       options={LessonTime.map((time) => ({value: time, label: time}))}
-                      onChange={(e) => console.log(e.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="room">Xona</Label>
                     <SelectReact
-                      value={selectedOptions.rooms}
-                      onChange={(selectedOption) =>
-                        handleSelectChange(selectedOption, { name: "rooms" })
-                      }
-                      options={roomsData}
+                      onChange={(e) => setAddGroup({...AddGroup, rooms: e.value})}
+                      options={roomsData.map((room)=> ({value: room.name, label: room.name}))}
                       placeholder="Xona tanlang"
                     />
                   </div>
@@ -784,57 +724,58 @@ function GroupDetails() {
                     const isPastDate = new Date(currentDate) < new Date(today);
                     const isNotToday = currentDate !== today;
 
-                    return (
-                      <div key={dateIndex} className={style.attendanceCell}>
-                        <div
-                          className={`${style.circle} ${attendance === true
-                            ? style.present
-                            : attendance === false
-                              ? style.absent
-                              : ""
-                            }`}
-                        >
-                          <div className={style.hoverButtons}>
-                            <button
-                              className={style.yesBtn}
-                              onClick={() =>
-                                handleAttendance(studentIndex, dateIndex, student, true)
-                              }
-                              disabled={isPastDate || isNotToday}
-                            >
-                              Ha
-                            </button>
-                            <button
-                              className={style.noBtn}
-                              onClick={() =>
-                                handleAttendance(studentIndex, dateIndex, student, false)
-                              }
-                              disabled={isPastDate || isNotToday}
-                            >
-                              Yo'q
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+          return (
+            <div key={dateIndex} className={style.attendanceCell}>
+              <div
+                className={`${style.circle} ${
+                  attendance === true
+                    ? style.present
+                    : attendance === false
+                    ? style.absent
+                    : ""
+                }`}
+              >
+                <div className={style.hoverButtons}>
+                  <button
+                    className={style.yesBtn}
+                    onClick={() =>
+                      handleAttendance(studentIndex, dateIndex, student, true)
+                    }
+                    disabled={isPastDate || isNotToday}
+                  >
+                    Ha
+                  </button>
+                  <button
+                    className={style.noBtn}
+                    onClick={() =>
+                      handleAttendance(studentIndex, dateIndex, student, false)
+                    }
+                    disabled={isPastDate || isNotToday}
+                  >
+                    Yo'q
+                  </button>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  })}
+</div>
 
         </div>
       </div>
       <div>
         {isEditModalOpen && (
 
-          <div
-            className="fixed w-full h-[100vh] z-30 inset-0 backdrop-blur-[2px] bg-black/50 transition-all duration-900 ease-in-out"
-            onClick={() => {
-              closeEditModal()
-            }}
-          ></div>
-        )}
+      <div
+      className="fixed w-full  h-[100vh] z-30  inset-0 backdrop-blur-sm transition-all duration-900 ease-in-out"
+      onClick={() => {
+        closeEditModal()
+        }}
+              ></div>
+            )}
 
         {/* Modalning o'ngdan chiqishi */}
         <Sidebar

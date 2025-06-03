@@ -37,6 +37,9 @@ import { Checkbox } from "../../components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../../components/ui/command";
 import { cn } from "../../lib/utils";
+import { PiArrowUDownLeftBold } from "react-icons/pi";
+import { AddNotify } from "../../components/ui/Toast"
+import { ToastContainer } from "react-toastify";
 
 
 const firebaseConfig = {
@@ -55,12 +58,21 @@ const analytics = getAnalytics(app);
 const database = getDatabase(app);
 
 const days = [
-  { label: "Toq kunlar" },
-  { label: "Juft kunlar" },
-  { label: "Dam olish kuni" },
+  { label: "Toq kunlar (SPSH)" },
+  { label: "Juft kunlar (DCHJ)" },
   { label: "Har kuni" },
+  { label: "Maxsus kunlar" },
 ];
 
+const daysOfWeek = [
+  { id: "du", label: "Du" },
+  { id: "se", label: "Se" },
+  { id: "chor", label: "Chor" },
+  { id: "pay", label: "Pay" },
+  { id: "ju", label: "Ju" },
+  { id: "shan", label: "Shan" },
+  { id: "yak", label: "Yak" },
+];
 
 const teachers = [
   { value: "umarxon", label: "Umarxon" },
@@ -85,15 +97,6 @@ const weekDays = [
   { id: "saturday", label: "Shan" },
   { id: "sunday", label: "Yak" },
 ]
-const daysOfWeek = [
-  { id: "du", label: "Du" },
-  { id: "se", label: "Se" },
-  { id: "chor", label: "Chor" },
-  { id: "pay", label: "Pay" },
-  { id: "ju", label: "Ju" },
-  { id: "shan", label: "Shan" },
-  { id: "yak", label: "Yak" },
-];
 
 function Groups() {
   const navigate = useNavigate();
@@ -120,7 +123,17 @@ function Groups() {
   const [newStudentName, setNewStudentName] = useState("");
   const [newStudentNumber, setNewStudentNumber] = useState("");
   const [students, setStudents] = useState([]);
-  const [selectedDays, setSelectedDays] = useState([]); 
+  const [selectedDays, setSelectedDays] = useState([]);
+  const [LessonTime, setLessonTime] = useState([])
+
+  const [AddGroup, setAddGroup] = useState({
+    groupName: "",
+    courses: "",
+    teachers: "",
+    rooms: "",
+    duration: "",
+    selectedDays: [],
+  })
 
   const getCurrentMonthDates = () => {
     const dates = [];
@@ -201,89 +214,70 @@ function Groups() {
   };
 
   const handleDayChange = (day) => {
+    // Remove the day if it's already selected
     if (selectedDays.includes(day)) {
-      setSelectedDays((prev) => prev.filter((d) => d !== day));
+      setSelectedDays(prev => prev.filter(d => d !== day));
       return;
     }
 
+    // Add the new day first
     const updatedDays = [...selectedDays, day];
+
+    // Check for odd days pattern (du, chor, ju)
+    const oddDays = ['du', 'chor', 'ju'];
+    const evenDays = ['se', 'pay', 'shan'];
+
+    // Check if all odd days are selected
+    const selectedOddDays = updatedDays.filter(d => oddDays.includes(d));
+    if (selectedOddDays.length === 3 && oddDays.includes(day)) {
+      setSelectedDays([...oddDays, 'toq kunlar']); // Keep odd days selected and add label
+      return;
+    }
+
+    // Check if all even days are selected
+    const selectedEvenDays = updatedDays.filter(d => evenDays.includes(d));
+    if (selectedEvenDays.length === 3 && evenDays.includes(day)) {
+      setSelectedDays([...evenDays, 'juft kunlar']); // Keep even days selected and add label
+      return;
+    }
+
     setSelectedDays(updatedDays);
   };
+
+  const handleSelectDays = (value) => {
+    value === "Toq kunlar (SPSH)" ? setAddGroup({ ...AddGroup, selectedDays: ["Se", "Pay", "Shan"] }) :
+      value === "Juft kunlar (DCHJ)" ? setAddGroup({ ...AddGroup, selectedDays: ["Du", "Chor", "Ju"] }) :
+        value === "Har kuni" ? setAddGroup({ ...AddGroup, selectedDays: ["Du", "Se", "Chor", "Pay", "Ju", "Shan", "Yak"] }) :
+          value === "Maxsus kunlar" ? setAddGroup({ ...AddGroup, selectedDays: "Maxsus kunlar" }) : null
+  }
 
   const handleInputChangeNum = (event) =>
     setNewStudentNumber(event.target.value || "");
 
   const addGroup = () => {
-    if (newGroupName.trim() !== "") {
-      const newGroup = {
-        groupName: newGroupName,
-        price: newPrice,
-        duration: `${startTime}-${endTime}`,
-        courses: selectedOptions.courses ? selectedOptions.courses.label : null,
-        teachers: selectedOptions.teachers ? selectedOptions.teachers.label : null,
-        rooms: selectedOptions.rooms ? selectedOptions.rooms.label : null,
-        selectedDays: selectedDays, // Yangi guruhning kunlari
-      };
-
-      // Yangi guruhning boshlanish va tugash vaqtini aniqlash
-      const newGroupStartTime = parseInt(startTime.split(":")[0], 10) * 60 +
-        parseInt(startTime.split(":")[1], 10);
-      const newGroupEndTime = parseInt(endTime.split(":")[0], 10) * 60 +
-        parseInt(endTime.split(":")[1], 10);
-
-      // Vaqtlar mantiqiyligini tekshirish
-      if (newGroupStartTime >= newGroupEndTime) {
-        alert("Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak.");
-        return;
-      }
-
-      // To'qnashuvni tekshirish
-      const isConflict = groupsData.some((group) => {
-        if (!group.duration || !group.rooms || !group.selectedDays) {
-          return false; // Guruhda kerakli ma'lumotlar bo'lmasa, to'qnashuv yo'q
-        }
-
-        const groupStartTime = parseInt(group.duration.split("-")[0].split(":")[0], 10) * 60 +
-          parseInt(group.duration.split("-")[0].split(":")[1], 10);
-        const groupEndTime = parseInt(group.duration.split("-")[1].split(":")[0], 10) * 60 +
-          parseInt(group.duration.split("-")[1].split(":")[1], 10);
-
-        // Kunlar to'qnashuvini tekshirish
-        const hasDayConflict = group.selectedDays.some((day) =>
-          newGroup.selectedDays.includes(day)
-        );
-
-        // Vaqt to'qnashuvini tekshirish
-        const hasTimeConflict =
-          (newGroupStartTime < groupEndTime && newGroupEndTime > groupStartTime);
-
-        // Xona, vaqt va kunlar to'qnashuvini birgalikda tekshirish
-        return group.rooms === newGroup.rooms && hasDayConflict && hasTimeConflict;
-      });
-
-      if (isConflict) {
-        alert("Yangi guruhning dars vaqti va xonasi mavjud guruhlar bilan to'qnash keladi.");
-        return;
-      }
-
-      // Guruhni qo'shish
-      setGroupsData([...groupsData, newGroup]);
-
-      const newGroupRef = ref(database, `Groups/${newGroupName}`);
-      set(newGroupRef, newGroup)
+    console.log(AddGroup);
+    if ((AddGroup.groupName && AddGroup.courses && AddGroup.duration && AddGroup.rooms && AddGroup.teachers) !== "" && AddGroup.selectedDays != []) {
+      
+      const newGroupRef = ref(database, `Groups/${AddGroup.groupName}`);
+      set(newGroupRef, {...AddGroup, id: groupsData.length+1})
         .then(() => {
-          console.log("Group added to Firebase:", newGroup);
+          setIsAdd(false)
+          setAddGroup({
+            groupName: "",
+            courses: "",
+            duration: "",
+            rooms: "",
+            teachers: "",
+            selectedDays: []
+          })
+          AddNotify({AddTitle: "Guruh qo'shildi!"})
         })
         .catch((error) => {
           console.error("Error adding group to Firebase:", error);
         });
-
-      // Formani tozalash
-      setNewGroupName("");
-      setStartTime("");
-      setEndTime("");
-      setNewPrice("");
-      setSelectedDays([]); // Kunlarni tozalash
+    }
+    else{
+      alert("Ma'lumotni to'ldiring")
     }
   };
 
@@ -377,11 +371,8 @@ function Groups() {
     const coursesRef = ref(database, "Teachers");
     onValue(coursesRef, (snapshot) => {
       const data = snapshot.val();
-      const teacherData = Object.keys(data).map((key) => ({
-        value: key,
-        label: data[key].name,
-      }));
-      setTeachersData(teacherData);
+
+      setTeachersData(Object.values(data || []));
     });
   }, []);
 
@@ -405,13 +396,7 @@ function Groups() {
     const coursesRef = ref(database, "Courses");
     onValue(coursesRef, (snapshot) => {
       const data = snapshot.val();
-      const courseOptions = Object.keys(data).map((key) => ({
-        value: key,
-        label: data[key].name,
-        price: data[key].price,
-        duration: data[key].duration
-      }));
-      setCoursesData(courseOptions);
+      setCoursesData(Object.values(data || []));
     });
   }, []);
 
@@ -419,11 +404,7 @@ function Groups() {
     const coursesRef = ref(database, "Rooms");
     onValue(coursesRef, (snapshot) => {
       const data = snapshot.val();
-      const roomData = Object.keys(data).map((key) => ({
-        value: key,
-        label: data[key].name,
-      }));
-      setRoomsData(roomData);
+      setRoomsData(Object.values(data || []))
     });
   }, []);
 
@@ -431,181 +412,167 @@ function Groups() {
     const groupsRef = ref(database, "Groups");
     onValue(groupsRef, (snapshot) => {
       const data = snapshot.val();
-      const groupsArray = Object.keys(data).map((key) => ({
-        id: key,
-        groupName: key,
-        ...data[key],
-      }));
-      setGroupsData(groupsArray);
+      setGroupsData(Object.values(data || []));
     });
   }, []);
 
+  useEffect(() => {
+    const LessonTimeRef = ref(database, "LessonTimes");
+    onValue(LessonTimeRef, (snapshot) => {
+      const data = snapshot.val();
+
+      setLessonTime(Object.values(data || {}));
+    });
+  }, [])
 
 
 
   return (
     <>
+      <ToastContainer />
       <SidebarProvider>
-        {isOpen && (
-          <div
-            className="fixed w-full h-[100vh] bg-black/50 backdrop-blur-[2px] z-30 inset-0 transition-all duration-900 ease-in-out"
-            onClick={() => {
-              setOpen(false);
-              toggleSidebar();
-            }}
-          ></div>
-        )}
-        <Sidebar
-          className={cn(
-            "fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out",
-            open ? "translate-x-0" : "translate-x-full"
-          )}
-          side="right"
-          collapsible="none"
-        >
-          <SidebarHeader className="flex  items-center justify-between border border-gray-300 p-4">
-            <h2 className="text-xl font-semibold">Yangi kurs qo'shish</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setOpen(false);
-                toggleSidebar();
-              }}
-              className="rounded-full hover:bg-gray-100"
-            >
-              <X className="h-5 w-5  " />
-              <span className="sr-only">Yopish</span>
-            </Button>
-          </SidebarHeader>
-
-          <SidebarContent>
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-6 p-6 text-left"
-            >
-              <div className="space-y-6">
-                <Label htmlFor="courseName">Kurs nomi</Label>
-                <Input
-                  id="courseName"
-                  placeholder="Kurs nomini kiriting"
-                  className={`${style.inputSearch} w-full`}
-                  value={newGroupName} // Controlled input
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="courseSelect">Kursni tanlash</Label>
-                <SelectReact
-                  value={selectedOptions.courses}
-                  onChange={(selectedOption) =>
-                    handleSelectChange(selectedOption, { name: "courses" })
-                  }
-                  options={coursesData}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="teacher">O'qituvchi</Label>
-                <SelectReact
-                  value={selectedOptions.teachers}
-                  onChange={(selectedOption) =>
-                    handleSelectChange(selectedOption, { name: "teachers" })
-                  }
-                  options={teachersData}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="price">Narxi</Label>
-                <Input
-                  id="price"
-                  placeholder="Narxini kiriting"
-                  className={`${style.inputSearch} w-full`}
-                  value={newPrice}
-                  onChange={(e) => setNewPrice(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Label>Dars kunlari</Label>
-                <div className="flex flex-wrap gap-3">
-                  {daysOfWeek.map((day) => (
-                    <div
-                      key={day.id}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={day.id}
-                        checked={selectedDays.includes(day.id)}
-                        onCheckedChange={() => handleDayChange(day.id)}
-                      />
-                      <Label
-                        htmlFor={day.id}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        {day.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Dars vaqti</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="relative">
-                    <Input
-                      type="time"
-                      className={`${style.inputSearch} w-full pl-10`}
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      required
-                    />
-                    <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                  </div>
-                  <div className="relative">
-                    <Input
-                      type="time"
-                      className={`${style.inputSearch} w-full pl-10`}
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      required
-                    />
-                    <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="room">Xona</Label>
-                <SelectReact
-                  value={selectedOptions.rooms}
-                  onChange={(selectedOption) =>
-                    handleSelectChange(selectedOption, { name: "rooms" })
-                  }
-                  options={roomsData}
-                />
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-black hover:opacity-80 text-white"
+            {isOpen && (
+              <div
+                className="fixed w-full h-[100vh] z-30  inset-0 backdrop-blur-[2px] bg-black/50 transition-all duration-900 ease-in-out"
                 onClick={() => {
                   setOpen(false);
                   toggleSidebar();
-                  addGroup();
                 }}
-              >
-                Saqlash
-              </Button>
-            </form>
-          </SidebarContent>
-        </Sidebar>
-      </SidebarProvider>
+              ></div>
+            )}
+            <Sidebar
+              className={cn(
+                "fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out",
+                open ? "translate-x-0" : "translate-x-full"
+              )}
+              side="right"
+              collapsible="none"
+            >
+              <SidebarHeader className="flex  items-center justify-between border border-gray-300 p-4">
+                <h2 className="text-xl font-semibold">Yangi guruh qo'shish</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setOpen(false);
+                    toggleSidebar();
+                  }}
+                  className="rounded-full hover:bg-gray-100"
+                >
+                  <X className="h-5 w-5  " />
+                  <span className="sr-only">Yopish</span>
+                </Button>
+              </SidebarHeader>
+
+              <SidebarContent>
+                <form
+                  onSubmit={handleSubmit}
+                  className="space-y-6 p-6 text-left "
+                >
+                  <div className="space-y-6">
+                    <Label htmlFor="courseName">Guruh nomi</Label>
+                    <Input
+                      id="courseName"
+                      placeholder="Guruh nomini kiriting"
+                      className={`w-full ${style.inputSearch}`}
+                      onChange={(e) => setAddGroup({ ...AddGroup, groupName: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="courseSelect">Kursni tanlash</Label>
+                    <SelectReact
+                     onChange={(e) => setAddGroup({ ...AddGroup, courses: e.value })}
+                     options={coursesData.map((cours)=>({value: cours.name, label: cours.name}))}
+                      placeholder="Kursni tanlang"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="teacher">O'qituvchi</Label>
+                    <SelectReact  
+                      value={selectedOptions.teachers}
+                      onChange={(e) => setAddGroup({...AddGroup, teachers: e.value})}
+                      options={teachersData.map((teacher)=> ({value: teacher.name, label: teacher.name}))}
+                      placeholder="O'qitchini tanlang"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Dars kunlari</Label>
+                    <div className="flex flex-wrap gap-3">
+                      {AddGroup.selectedDays !== "Maxsus kunlar" ? <SelectReact
+                        className="w-full"
+                        placeholder="Dars kunlarini tanlang"
+                        options={days.map((day) => ({ value: day.label, label: day.label }))}
+                        onChange={(e) => handleSelectDays(e.value)}
+                      /> :
+                        <div className="w-full flex justify-start flex-col gap-3">
+                          <div
+                            className="cursor-pointer w-[30px] h-[30px] rounded-full hover:bg-gray-200 flex justify-center items-center"
+                            onClick={() => setAddGroup({ ...AddGroup, selectedDays: [] })}
+                          >
+                            <PiArrowUDownLeftBold className="text-lg" />
+                          </div>
+                          {
+                            daysOfWeek.map((day) => (
+                              <div
+                                key={day.id}
+                                className="flex items-center space-x-2"
+                              >
+                                <Checkbox
+                                  id={day.id}
+                                  checked={selectedDays.includes(day.id)}
+                                  onCheckedChange={() => handleDayChange(day.id)}
+                                />
+                                <Label
+                                  htmlFor={day.id}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {day.label}
+                                </Label>
+                              </div>
+                            ))}
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Dars vaqti</Label>
+                    <SelectReact
+                      placeholder="Dars vaqti tanlang"
+                      className="w-full"
+                      options={LessonTime.map((time) => ({value: time, label: time}))}
+                      onChange={(e) => setAddGroup({...AddGroup, duration: e.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="room">Xona</Label>
+                    <SelectReact
+                      value={selectedOptions.rooms}
+                      onChange={(e) => setAddGroup({...AddGroup, rooms: e.value})}
+                      options={roomsData.map((room)=> ({value: room.name, label: room.name}))}
+                      placeholder="Xona tanlang"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-black hover:opacity-80 text-white"
+                    onClick={() => {
+                      setOpen(false);
+                      toggleSidebar();
+                      addGroup();
+                    }}
+                  >
+                    Saqlash
+                  </Button>
+                </form>
+              </SidebarContent>
+            </Sidebar>
+          </SidebarProvider>
 
       <div>
         <SidebarPanel />
