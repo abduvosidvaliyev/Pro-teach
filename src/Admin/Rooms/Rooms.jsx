@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/table";
 import { useEffect, useState } from "react";
 import { Sidebar, SidebarHeader, SidebarContent, SidebarProvider } from "../../components/ui/sidebar";
-import { Label } from "../../components/ui/Label";
+import { Label } from "../../components/ui/UiLabel";
 import { Input } from "../../components/ui/input";
 import { X } from "lucide-react";
 import { Modal } from "../../components/ui/modal";
