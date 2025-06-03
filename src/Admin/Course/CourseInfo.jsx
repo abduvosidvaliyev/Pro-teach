@@ -11,7 +11,7 @@ import SelectReact from "react-select";
 import style from "./Course.module.css";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
 import { UserPlus, X } from "lucide-react";
-import { Label } from "../../components/ui/label";
+import { Label } from "../../components/ui/UiLabel";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Modal } from "../../components/ui/modal";

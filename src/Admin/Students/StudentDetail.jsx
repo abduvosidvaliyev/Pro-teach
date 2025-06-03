@@ -37,7 +37,7 @@ import { DelateNotify, ChengeNotify, AddNotify } from "../../components/ui/Toast
 import { ToastContainer } from "react-toastify";
 import { FiMinusCircle } from "react-icons/fi";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
-import { Label } from "../../components/ui/label";
+import { Label } from "../../components/ui/UiLabell";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",

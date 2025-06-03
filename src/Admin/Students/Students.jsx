@@ -41,7 +41,7 @@ import {
   X,
 } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
-import { Label } from "../../components/ui/label";
+import { Label } from "../../components/ui/UiLabel";
 import SelectReact from "react-select"
 import { ToastContainer } from "react-toastify";
 import { AddNotify } from "../../components/ui/Toast"

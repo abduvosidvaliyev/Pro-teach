@@ -29,7 +29,7 @@ import { SidebarPanel } from "../../Sidebar";
 import { Button } from "../../components/ui/button";
 import { MdOutlinePayments } from "react-icons/md";
 import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
+import { Label } from "../../components/ui/UiLabel";
 import { Modal } from "../../components/ui/modal";
 import { Card, CardContent, CardTitle } from "../../components/ui/card";
 import imageKnow from "../../assets/dont-know.png";

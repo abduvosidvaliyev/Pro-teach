@@ -36,7 +36,7 @@ import { FiArrowDown, FiArrowDownLeft, FiArrowRight, FiArrowUpRight, FiChevronDo
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar"
 import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { Label } from "../../components/ui/label"
+import { Label } from "../../components/ui/UiLabel"
 import { Input } from "../../components/ui/input"
 import style from "./Dashboard.module.css"
 import SelectReact from "react-select"

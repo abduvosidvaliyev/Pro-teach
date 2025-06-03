@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import CardBg1 from "./Images/ChatGPT Image Apr 7, 2025, 02_01_46 PM.png";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
 import { X } from "lucide-react";
-import { Label } from "../../components/ui/label";
+import { Label } from "../../components/ui/UiLabel";
 // import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import SelectReact from "react-select";

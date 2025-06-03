@@ -29,7 +29,7 @@ import React, { useEffect, useState } from "react";
 import { GrMoney } from "react-icons/gr";
 import { SidebarPanel } from "../../Sidebar";
 import { Card, CardContent } from "../../components/ui/card"
-import { Label } from "../../components/ui/label";
+import { Label } from "../../components/ui/UiLabel";
 import { Input } from "../../components/ui/input";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Button } from "../../components/ui/button"
