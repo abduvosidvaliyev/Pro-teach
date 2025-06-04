@@ -33,7 +33,7 @@ const database = getDatabase(app);
 import UserPng from "../../assets/Avatar.png"
 import { useNavigate } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
-import { Label } from "../../components/ui/label";
+import { Label } from "../../components/ui/UiLabel";
 import { X } from "lucide-react";
 import { Checkbox } from "../../components/ui/checkbox";
 

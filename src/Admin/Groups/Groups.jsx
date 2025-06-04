@@ -32,7 +32,7 @@ import {
 import { Button } from "../../components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../../components/ui/sheet";
 import { Input } from "@/components/ui/input";
-import { Label } from "../../components/ui/UiLabelw";
+import { Label } from "../../components/ui/UiLabel";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "../../components/ui/command";

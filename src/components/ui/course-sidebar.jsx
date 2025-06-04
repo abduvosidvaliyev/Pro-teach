@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./select";
-import { Label } from "./Label";
+import { Label } from "./UiLabel";
 import { cn } from "../../lib/utils";
 
 const daysOfWeek = [

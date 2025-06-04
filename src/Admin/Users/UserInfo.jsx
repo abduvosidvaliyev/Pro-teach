@@ -30,7 +30,7 @@ import style from "./Users.module.css";
 import { Modal } from "../../components/ui/modal";
 import { Button } from "../../components/ui/button";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
-import { Label } from "../../components/ui/label";
+import { Label } from "../../components/ui/UiLabel";
 import { Input } from "../../components/ui/input";
 import { GraduationCap, X } from "lucide-react";
 import { Card, CardContent, CardHeader } from "../../components/ui/card";

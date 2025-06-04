@@ -73,7 +73,7 @@ import {
 import { Button } from "./button";
 import { Modal } from "./modal";
 import { Input } from "./input";
-import { Label } from "./label";
+import { Label } from "./UiLabel";
 import { AddNotify } from "./Toast"
 import { ToastContainer } from "react-toastify";
 
