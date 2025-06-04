@@ -147,6 +147,12 @@ const StudentDetail = () => {
               .catch((error) => console.error("Error updating student balance:", error));
           })
           .catch((error) => console.error("Error fetching student balance:", error));
+        const allBalanceRef = ref(database, "AllBalance");
+        get(allBalanceRef).then((snapshot) => {
+          const oldBalance = parseInt(snapshot.val()) || 0;
+          const payment = parseInt(paymentAmount.toString().replace(/\s/g, ""), 10) || 0;
+          set(allBalanceRef, oldBalance + payment);
+        });
       })
       .catch((error) => {
         console.error("To'lovni amalga oshirishda xatolik yuz berdi:", error);
@@ -200,6 +206,12 @@ const StudentDetail = () => {
               .catch((error) => console.error("Error updating student balance:", error));
           })
           .catch((error) => console.error("Error fetching student balance:", error));
+        const allBalanceRef = ref(database, "AllBalance");
+        get(allBalanceRef).then((snapshot) => {
+          const oldBalance = parseInt(snapshot.val()) || 0;
+          const refund = parseInt(refundAmount.toString().replace(/\s/g, ""), 10) || 0;
+          set(allBalanceRef, oldBalance - refund);
+        });
       })
       .catch((error) => {
         console.error("Pulni qaytarishda xatolik yuz berdi:", error);

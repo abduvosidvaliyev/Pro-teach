@@ -143,6 +143,13 @@ const PaymentArchive = () => {
                     })
                     .then(() => console.log("Student balance updated successfully"))
                     .catch((error) => console.error("Error updating student balance:", error));
+
+                const allBalanceRef = ref(database, "AllBalance");
+                get(allBalanceRef).then((snapshot) => {
+                    const oldBalance = parseInt(snapshot.val()) || 0;
+                    const payAmount = parseInt(PayValue.value1.replace(/\s/g, ""), 10);
+                    set(allBalanceRef, oldBalance + payAmount);
+                });
             })
             .catch((error) => {
                 console.error("To'lovni amalga oshirishda xatolik yuz berdi:", error);

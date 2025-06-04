@@ -8,8 +8,9 @@ import { faCircleUser, faKey, faUsersLine } from '@fortawesome/free-solid-svg-ic
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 import bgVideo from '../assets/class.mp4';
+import { useNavigate } from 'react-router-dom';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -40,6 +41,19 @@ function SignUpForm() {
     const [loginName, setLoginName] = useState('');
     const [loginSecretPass, setLoginSecretPass] = useState('');
     const [loading, setLoading] = useState(false); // Loader holati
+    const [GetAdmins, setGetAdmins] = useState([])
+    const navigate = useNavigate()
+
+    useEffect(() => {
+        const adminsRef = ref(database, "Admins")
+
+        onValue(adminsRef, (snapshot) => {
+            const data = snapshot.val()
+
+            setGetAdmins(Object.values(data || []))
+        })
+    }, [])
+
 
     useEffect(() => {
         // Check local storage for saved login state and data
@@ -55,48 +69,39 @@ function SignUpForm() {
         setActive(!active);
     };
 
-    const handleChange = (e) => {
-        const { id, value } = e.target;
-        setFormData({ ...formData, [id]: value });
-    };
-
-    const handleLoginChange = (e) => {
-        setLoginName(e.target.value);
-    };
-
-    const handleSecretPassChange = (e) => {
-        setLoginSecretPass(e.target.value);
-    };
+    // const handleChange = (e) => {
+    //     const { id, value } = e.target;
+    //     setFormData({ ...formData, [id]: value });
+    // };
 
     const handleLogin = () => {
-        setLoading(true); // Loaderni yoqish
-        const usersRef = ref(database, 'Users');
+        if ((loginName && loginSecretPass) !== "") {
+            const Admin = GetAdmins.find((admin) =>
+                typeof admin.login === "string" &&
+                typeof admin.parol !== "undefined" &&
+                admin.login.toLowerCase() === loginName.toLowerCase() &&
+                admin.parol.toString() === loginSecretPass
+            );
 
-        get(usersRef).then((snapshot) => {
-            let userExists = false;
+            console.log(Admin)
 
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
-                    const userData = childSnapshot.val();
-                    if (userData.name === loginName && userData.secretPass === loginSecretPass) {
-                        userExists = true;
-                        setFormData(userData); // Set formData to the logged-in user's data
-                        // Save user data to local storage
-                        localStorage.setItem('userData', JSON.stringify(userData));
-                    }
-                });
+            if (Admin) {
+                const store = localStorage.setItem("UserData", JSON.stringify({
+                    login: Admin.login,
+                    parol: Admin.parol
+                }))
+                navigate("/panel")
+                setLoginName("")
+                setLoginSecretPass("")
+                setLoading(false)
             }
-
-            if (userExists) {
-                setIsRegistered(true);
-            } else {
-                alert("User not found or incorrect SecretPass.");
+            else {
+                console.log("Kirtilgan ma'lumot noto'g'ri yoki yo'q!")
             }
-        }).catch((error) => {
-            console.error("Error checking data: ", error);
-        }).finally(() => {
-            setLoading(false); // Loaderni o'chirish
-        });
+        }
+        else {
+            alert("Ma'lumotlarni to'liq kiriting!")
+        }
     };
 
     const handleLogout = () => {
@@ -218,7 +223,7 @@ function SignUpForm() {
             <video autoPlay loop>
                 <source src={bgVideo} />
             </video>
-            {active ?
+            {/* {active ?
                 < div className={style.signUp} >
                     <div className={style.logo}></div>
                     <span className={style.switch} onClick={handleToggle}>Login</span>
@@ -259,30 +264,38 @@ function SignUpForm() {
                             <FontAwesomeIcon className={style.faKey} icon={faKey} />
                         </div>
                         <button type="submit">Ro'yhatdan O'tish</button>
-                        {loading && <div className={style.loader}>Loading...</div>} {/* Loader */}
+                        {loading && <div className={style.loader}>Loading...</div>} 
                     </form>
                 </div>
-                : ""}
+                : ""} */}
 
-            {!active ?
-                <div className={style.signIn}>
-                    <div className={style.logo}></div>
-                    <span className={style.switch} onClick={handleToggle}>Register</span>
-                    <h1 className={style.signText}>Login<span>/</span>Akkauntga Kirish</h1>
-                    <div className={style.form}>
-                        <div className={style.inps}>
-                            <input type="text" placeholder='Ismingizni Kiriting' value={loginName} onChange={handleLoginChange} />
-                            <FontAwesomeIcon className={style.faCircle} icon={faCircleUser} />
-                        </div>
-                        <div className={style.inps}>
-                            <input type="password" placeholder='SecretPassni Kiriting' value={loginSecretPass} onChange={handleSecretPassChange} />
-                            <FontAwesomeIcon className={style.faKey} icon={faKey} />
-                        </div>
-                        <button onClick={handleLogin}>Tasdiqlash</button>
-                        {loading && <div className={style.loader}>Loading...</div>} {/* Loader */}
+            <div className={style.signIn}>
+                <div className={style.logo}></div>
+                <span className={style.switch} onClick={handleToggle}>Register</span>
+                <h1 className={style.signText}>Login<span>/</span>Akkauntga Kirish</h1>
+                <div className={style.form}>
+                    <div className={style.inps}>
+                        <input
+                            type="text"
+                            placeholder='Ismingizni Kiriting'
+                            value={loginName}
+                            onChange={(e) => setLoginName(e.target.value)}
+                        />
+                        <FontAwesomeIcon className={style.faCircle} icon={faCircleUser} />
                     </div>
+                    <div className={style.inps}>
+                        <input
+                            type="password"
+                            placeholder='Parol Kiriting'
+                            value={loginSecretPass}
+                            onChange={(e) => setLoginSecretPass(e.target.value)}
+                        />
+                        <FontAwesomeIcon className={style.faKey} icon={faKey} />
+                    </div>
+                    <button onClick={handleLogin}>Tasdiqlash</button>
+                    {loading && <div className={style.loader}>Loading...</div>} {/* Loader */}
                 </div>
-                : ""}
+            </div>
         </div >
     );
 }

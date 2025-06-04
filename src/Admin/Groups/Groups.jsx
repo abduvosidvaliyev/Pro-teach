@@ -57,6 +57,32 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const database = getDatabase(app);
 
+// Dars vaqtini hisoblash funksiyasi
+function getLessonTimeRange(startTime, duration) {
+  if (!startTime || !duration) return "";
+
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+
+  let durHour = 0, durMinute = 0;
+  if (typeof duration === "string" && duration.includes(":")) {
+    [durHour, durMinute] = duration.split(":").map(Number);
+  } else {
+    durMinute = parseInt(duration, 10);
+  }
+
+  // Tugash vaqtini hisoblash
+  let endHour = startHour + durHour;
+  let endMinute = startMinute + durMinute;
+  if (endMinute >= 60) {
+    endHour += Math.floor(endMinute / 60);
+    endMinute = endMinute % 60;
+  }
+
+  // Formatlash
+  const pad = (n) => n.toString().padStart(2, "0");
+  return `${pad(startHour)}:${pad(startMinute)}-${pad(endHour)}:${pad(endMinute)}`;
+}
+
 const days = [
   { label: "Toq kunlar (SPSH)" },
   { label: "Juft kunlar (DCHJ)" },
@@ -125,13 +151,14 @@ function Groups() {
   const [students, setStudents] = useState([]);
   const [selectedDays, setSelectedDays] = useState([]);
   const [LessonTime, setLessonTime] = useState([])
+  const [FindCourse, setFindCourse] = useState({})
+  const [LessonStartTime, setLessonStartTime] = useState("")
 
   const [AddGroup, setAddGroup] = useState({
     groupName: "",
     courses: "",
     teachers: "",
     rooms: "",
-    duration: "",
     selectedDays: [],
   })
 
@@ -171,201 +198,6 @@ function Groups() {
   const { dates, months, pastMonths } = getCurrentMonthDates();
 
   const [selectedMonth, setSelectedMonth] = useState(`${months}`);
-
-  const handleAttendance = (studentIndex, dateIndex, student, status) => {
-    const newStudents = [...students, dateIndex];
-    newStudents[studentIndex][`attendance`][months][dateIndex] = status;
-
-    const studentCell = ref(database, `Students/${student.studentName}`);
-
-    update(studentCell, {
-      [`attendance/${months}/${dateIndex}`]: status,
-    }).catch((error) => {
-      console.error("Error adding group to Firebase:", error);
-    });
-
-    setStudents(students);
-    console.log(students);
-  };
-
-  const handleMonthClick = (month) => {
-    setSelectedMonth(month);
-  };
-
-  const toggleIsAdd = () => {
-    setIsAdd(!isAdd);
-  };
-
-  const toggleModal = () => setIsModalOpen(!isModalOpen);
-
-  const handleSelectChange = (selectedOption, actionMeta) => {
-    setSelectedOptions((prevState) => ({
-      ...prevState,
-      [actionMeta.name]: selectedOption,
-    }));
-  };
-  const handleInputChange = (event) => {
-    const value = event.target.value;
-    setNewGroupName(value); // Update new group name state
-    setSelectedOptions((prevState) => ({
-      ...prevState,
-      groupName: value,
-    }));
-  };
-
-  const handleDayChange = (day) => {
-    // Remove the day if it's already selected
-    if (selectedDays.includes(day)) {
-      setSelectedDays(prev => prev.filter(d => d !== day));
-      return;
-    }
-
-    // Add the new day first
-    const updatedDays = [...selectedDays, day];
-
-    // Check for odd days pattern (du, chor, ju)
-    const oddDays = ['du', 'chor', 'ju'];
-    const evenDays = ['se', 'pay', 'shan'];
-
-    // Check if all odd days are selected
-    const selectedOddDays = updatedDays.filter(d => oddDays.includes(d));
-    if (selectedOddDays.length === 3 && oddDays.includes(day)) {
-      setSelectedDays([...oddDays, 'toq kunlar']); // Keep odd days selected and add label
-      return;
-    }
-
-    // Check if all even days are selected
-    const selectedEvenDays = updatedDays.filter(d => evenDays.includes(d));
-    if (selectedEvenDays.length === 3 && evenDays.includes(day)) {
-      setSelectedDays([...evenDays, 'juft kunlar']); // Keep even days selected and add label
-      return;
-    }
-
-    setSelectedDays(updatedDays);
-  };
-
-  const handleSelectDays = (value) => {
-    value === "Toq kunlar (SPSH)" ? setAddGroup({ ...AddGroup, selectedDays: ["Se", "Pay", "Shan"] }) :
-      value === "Juft kunlar (DCHJ)" ? setAddGroup({ ...AddGroup, selectedDays: ["Du", "Chor", "Ju"] }) :
-        value === "Har kuni" ? setAddGroup({ ...AddGroup, selectedDays: ["Du", "Se", "Chor", "Pay", "Ju", "Shan", "Yak"] }) :
-          value === "Maxsus kunlar" ? setAddGroup({ ...AddGroup, selectedDays: "Maxsus kunlar" }) : null
-  }
-
-  const handleInputChangeNum = (event) =>
-    setNewStudentNumber(event.target.value || "");
-
-  const addGroup = () => {
-    console.log(AddGroup);
-    if ((AddGroup.groupName && AddGroup.courses && AddGroup.duration && AddGroup.rooms && AddGroup.teachers) !== "" && AddGroup.selectedDays != []) {
-      
-      const newGroupRef = ref(database, `Groups/${AddGroup.groupName}`);
-      set(newGroupRef, {...AddGroup, id: groupsData.length+1})
-        .then(() => {
-          setIsAdd(false)
-          setAddGroup({
-            groupName: "",
-            courses: "",
-            duration: "",
-            rooms: "",
-            teachers: "",
-            selectedDays: []
-          })
-          AddNotify({AddTitle: "Guruh qo'shildi!"})
-        })
-        .catch((error) => {
-          console.error("Error adding group to Firebase:", error);
-        });
-    }
-    else{
-      alert("Ma'lumotni to'ldiring")
-    }
-  };
-
-
-  const addStudentToGroup = () => {
-    if (newStudentName.trim() === "" || newStudentNumber.trim() === "") {
-      console.log("Student name and number are required");
-      return;
-    }
-
-    const newStudent = {
-      studentName: newStudentName,
-      studentNumber: newStudentNumber,
-      group: groupInfo.groupName,
-      attendance: {
-        [months]: Array(dates.length).fill(false),
-      },
-    };
-
-    const userRef = ref(database, `Students/${newStudentName}`);
-    update(userRef, newStudent)
-      .then(() => {
-        alert("Ma'lumot muvaffaqiyatli yangilandi!");
-      })
-      .catch((error) => {
-        console.error("Xatolik yuz berdi: ", error);
-      });
-
-    setNewStudentName("");
-    setNewStudentNumber("");
-    toggleModal();
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted");
-    setOpen(false);
-  };
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
-
-  function handleGroupClick(groupName, id) {
-    const groupData = groupsData.find((group) => group.groupName === groupName);
-    if (groupData) {
-      setGroupInfo(groupData);
-      // Fetch students for the selected group
-      const studentsRef = ref(database, "Students");
-      onValue(studentsRef, (snapshot) => {
-        const data = snapshot.val();
-        const groupStudents = Object.keys(data)
-          .map((key) => data[key])
-          .filter((student) => student.group === groupName);
-
-        setStudents(groupStudents);
-      });
-
-      navigate(`/group/${id}`); // Yangi sahifaga o'tish
-    }
-  }
-  console.log(groupInfo);
-
-  const attendance = (studentName) => {
-    const attendanceRef = ref(database, `Students/${studentName}/attendance`);
-
-    // Get the current date
-    const currentDate = new Date();
-
-    // Format the key as "YYYY-MM-DD"
-    const dateKey = `${currentDate.getFullYear()}-${String(
-      currentDate.getMonth() + 1
-    ).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
-
-    const attendanceData = {
-      [dateKey]: { status: true },
-    };
-
-    update(attendanceRef, attendanceData)
-      .then(() => {
-        console.log("Attendance recorded for:", studentName);
-        console.log(studentsData[0].attendance);
-      })
-      .catch((error) => {
-        console.error("Error adding attendance to Firebase:", error);
-      });
-  };
-
-  // ... existing code ...
 
   useEffect(() => {
     const coursesRef = ref(database, "Teachers");
@@ -426,153 +258,292 @@ function Groups() {
   }, [])
 
 
+  const handleAttendance = (studentIndex, dateIndex, student, status) => {
+    const newStudents = [...students, dateIndex];
+    newStudents[studentIndex][`attendance`][months][dateIndex] = status;
+
+    const studentCell = ref(database, `Students/${student.studentName}`);
+
+    update(studentCell, {
+      [`attendance/${months}/${dateIndex}`]: status,
+    }).catch((error) => {
+      console.error("Error adding group to Firebase:", error);
+    });
+
+    setStudents(students);
+    console.log(students);
+  };
+
+  const handleMonthClick = (month) => {
+    setSelectedMonth(month);
+  };
+
+  const toggleIsAdd = () => {
+    setIsAdd(!isAdd);
+  };
+
+  const toggleModal = () => setIsModalOpen(!isModalOpen);
+
+
+  const handleDayChange = (day) => {
+    // Remove the day if it's already selected
+    if (selectedDays.includes(day)) {
+      setSelectedDays(prev => prev.filter(d => d !== day));
+      return;
+    }
+
+    // Add the new day first
+    const updatedDays = [...selectedDays, day];
+
+    // Check for odd days pattern (du, chor, ju)
+    const oddDays = ['du', 'chor', 'ju'];
+    const evenDays = ['se', 'pay', 'shan'];
+
+    // Check if all odd days are selected
+    const selectedOddDays = updatedDays.filter(d => oddDays.includes(d));
+    if (selectedOddDays.length === 3 && oddDays.includes(day)) {
+      setSelectedDays([...oddDays, 'toq kunlar']); // Keep odd days selected and add label
+      return;
+    }
+
+    // Check if all even days are selected
+    const selectedEvenDays = updatedDays.filter(d => evenDays.includes(d));
+    if (selectedEvenDays.length === 3 && evenDays.includes(day)) {
+      setSelectedDays([...evenDays, 'juft kunlar']); // Keep even days selected and add label
+      return;
+    }
+
+    setSelectedDays(updatedDays);
+  };
+
+  const handleSelectDays = (value) => {
+    value === "Toq kunlar (SPSH)" ? setAddGroup({ ...AddGroup, selectedDays: ["Se", "Pay", "Shan"] }) :
+      value === "Juft kunlar (DCHJ)" ? setAddGroup({ ...AddGroup, selectedDays: ["Du", "Chor", "Ju"] }) :
+        value === "Har kuni" ? setAddGroup({ ...AddGroup, selectedDays: ["Du", "Se", "Chor", "Pay", "Ju", "Shan", "Yak"] }) :
+          value === "Maxsus kunlar" ? setAddGroup({ ...AddGroup, selectedDays: "Maxsus kunlar" }) : null
+  }
+
+  useEffect(() => {
+    if (AddGroup.courses) {
+      const courseFind = coursesData.find((course) => course.name.toLowerCase() === AddGroup.courses.toLowerCase())
+
+      setFindCourse(courseFind)
+    }
+    else {
+      console.log("The course name is incorrect or missing!")
+    }
+  }, [AddGroup.courses])
+
+  const addGroup = () => {
+    console.log(AddGroup);
+    if ((AddGroup.groupName && AddGroup.courses && LessonStartTime && AddGroup.rooms && AddGroup.teachers) !== "" && AddGroup.selectedDays != []) {
+
+      const lessonTimeRange = getLessonTimeRange(
+        LessonStartTime,
+        FindCourse?.duration
+      );
+
+      const newGroupRef = ref(database, `Groups/${AddGroup.groupName}`);
+      set(newGroupRef, {
+        ...AddGroup,
+        id: groupsData.length + 1,
+        duration: lessonTimeRange
+      })
+        .then(() => {
+          setIsAdd(false)
+          setAddGroup({
+            groupName: "",
+            courses: "",
+            rooms: "",
+            teachers: "",
+            selectedDays: []
+          })
+          setLessonStartTime("")
+          AddNotify({ AddTitle: "Guruh qo'shildi!" })
+        })
+        .catch((error) => {
+          console.error("Error adding group to Firebase:", error);
+        });
+    }
+    else {
+      alert("Ma'lumotni to'ldiring")
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Form submitted");
+    setOpen(false);
+  };
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
+
+  function handleGroupClick(groupName, id) {
+    const groupData = groupsData.find((group) => group.groupName === groupName);
+    if (groupData) {
+      setGroupInfo(groupData);
+      // Fetch students for the selected group
+      const studentsRef = ref(database, "Students");
+      onValue(studentsRef, (snapshot) => {
+        const data = snapshot.val();
+        const groupStudents = Object.keys(data)
+          .map((key) => data[key])
+          .filter((student) => student.group === groupName);
+
+        setStudents(groupStudents);
+      });
+
+      navigate(`/group/${id}`); // Yangi sahifaga o'tish
+    }
+  }
 
   return (
     <>
       <ToastContainer />
       <SidebarProvider>
-            {isOpen && (
-              <div
-                className="fixed w-full h-[100vh] z-30  inset-0 backdrop-blur-[2px] bg-black/50 transition-all duration-900 ease-in-out"
+        {isOpen && (
+          <div
+            className="fixed w-full h-[100vh] z-30  inset-0 backdrop-blur-[2px] bg-black/50 transition-all duration-900 ease-in-out"
+            onClick={() => {
+              setOpen(false);
+              toggleSidebar();
+            }}
+          ></div>
+        )}
+        <Sidebar
+          className={cn(
+            "fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out",
+            open ? "translate-x-0" : "translate-x-full"
+          )}
+          side="right"
+          collapsible="none"
+        >
+          <SidebarHeader className="flex  items-center justify-between border border-gray-300 p-4">
+            <h2 className="text-xl font-semibold">Yangi guruh qo'shish</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setOpen(false);
+                toggleSidebar();
+              }}
+              className="rounded-full hover:bg-gray-100"
+            >
+              <X className="h-5 w-5  " />
+              <span className="sr-only">Yopish</span>
+            </Button>
+          </SidebarHeader>
+
+          <SidebarContent>
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-6 p-6 text-left "
+            >
+              <div className="space-y-6">
+                <Label htmlFor="courseName">Guruh nomi</Label>
+                <Input
+                  id="courseName"
+                  placeholder="Guruh nomini kiriting"
+                  className={`w-full ${style.inputSearch}`}
+                  onChange={(e) => setAddGroup({ ...AddGroup, groupName: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="courseSelect">Kursni tanlash</Label>
+                <SelectReact
+                  onChange={(e) => setAddGroup({ ...AddGroup, courses: e.value })}
+                  options={coursesData.map((cours) => ({ value: cours.name, label: cours.name }))}
+                  placeholder="Kursni tanlang"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="teacher">O'qituvchi</Label>
+                <SelectReact
+                  value={selectedOptions.teachers}
+                  onChange={(e) => setAddGroup({ ...AddGroup, teachers: e.value })}
+                  options={teachersData.map((teacher) => ({ value: teacher.name, label: teacher.name }))}
+                  placeholder="O'qitchini tanlang"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label>Dars kunlari</Label>
+                <div className="flex flex-wrap gap-3">
+                  {AddGroup.selectedDays !== "Maxsus kunlar" ? <SelectReact
+                    className="w-full"
+                    placeholder="Dars kunlarini tanlang"
+                    options={days.map((day) => ({ value: day.label, label: day.label }))}
+                    onChange={(e) => handleSelectDays(e.value)}
+                  /> :
+                    <div className="w-full flex justify-start flex-col gap-3">
+                      <div
+                        className="cursor-pointer w-[30px] h-[30px] rounded-full hover:bg-gray-200 flex justify-center items-center"
+                        onClick={() => setAddGroup({ ...AddGroup, selectedDays: [] })}
+                      >
+                        <PiArrowUDownLeftBold className="text-lg" />
+                      </div>
+                      {
+                        daysOfWeek.map((day) => (
+                          <div
+                            key={day.id}
+                            className="flex items-center space-x-2"
+                          >
+                            <Checkbox
+                              id={day.id}
+                              checked={selectedDays.includes(day.id)}
+                              onCheckedChange={() => handleDayChange(day.id)}
+                            />
+                            <Label
+                              htmlFor={day.id}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {day.label}
+                            </Label>
+                          </div>
+                        ))}
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Dars vaqti</Label>
+                <SelectReact
+                  placeholder="Dars vaqti tanlang"
+                  className="w-full"
+                  options={LessonTime.map((time) => ({ value: time, label: time }))}
+                  onChange={(e) => setLessonStartTime(e.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="room">Xona</Label>
+                <SelectReact
+                  value={selectedOptions.rooms}
+                  onChange={(e) => setAddGroup({ ...AddGroup, rooms: e.value })}
+                  options={roomsData.map((room) => ({ value: room.name, label: room.name }))}
+                  placeholder="Xona tanlang"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-black hover:opacity-80 text-white"
                 onClick={() => {
                   setOpen(false);
                   toggleSidebar();
+                  addGroup();
                 }}
-              ></div>
-            )}
-            <Sidebar
-              className={cn(
-                "fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out",
-                open ? "translate-x-0" : "translate-x-full"
-              )}
-              side="right"
-              collapsible="none"
-            >
-              <SidebarHeader className="flex  items-center justify-between border border-gray-300 p-4">
-                <h2 className="text-xl font-semibold">Yangi guruh qo'shish</h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setOpen(false);
-                    toggleSidebar();
-                  }}
-                  className="rounded-full hover:bg-gray-100"
-                >
-                  <X className="h-5 w-5  " />
-                  <span className="sr-only">Yopish</span>
-                </Button>
-              </SidebarHeader>
-
-              <SidebarContent>
-                <form
-                  onSubmit={handleSubmit}
-                  className="space-y-6 p-6 text-left "
-                >
-                  <div className="space-y-6">
-                    <Label htmlFor="courseName">Guruh nomi</Label>
-                    <Input
-                      id="courseName"
-                      placeholder="Guruh nomini kiriting"
-                      className={`w-full ${style.inputSearch}`}
-                      onChange={(e) => setAddGroup({ ...AddGroup, groupName: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="courseSelect">Kursni tanlash</Label>
-                    <SelectReact
-                     onChange={(e) => setAddGroup({ ...AddGroup, courses: e.value })}
-                     options={coursesData.map((cours)=>({value: cours.name, label: cours.name}))}
-                      placeholder="Kursni tanlang"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="teacher">O'qituvchi</Label>
-                    <SelectReact  
-                      value={selectedOptions.teachers}
-                      onChange={(e) => setAddGroup({...AddGroup, teachers: e.value})}
-                      options={teachersData.map((teacher)=> ({value: teacher.name, label: teacher.name}))}
-                      placeholder="O'qitchini tanlang"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label>Dars kunlari</Label>
-                    <div className="flex flex-wrap gap-3">
-                      {AddGroup.selectedDays !== "Maxsus kunlar" ? <SelectReact
-                        className="w-full"
-                        placeholder="Dars kunlarini tanlang"
-                        options={days.map((day) => ({ value: day.label, label: day.label }))}
-                        onChange={(e) => handleSelectDays(e.value)}
-                      /> :
-                        <div className="w-full flex justify-start flex-col gap-3">
-                          <div
-                            className="cursor-pointer w-[30px] h-[30px] rounded-full hover:bg-gray-200 flex justify-center items-center"
-                            onClick={() => setAddGroup({ ...AddGroup, selectedDays: [] })}
-                          >
-                            <PiArrowUDownLeftBold className="text-lg" />
-                          </div>
-                          {
-                            daysOfWeek.map((day) => (
-                              <div
-                                key={day.id}
-                                className="flex items-center space-x-2"
-                              >
-                                <Checkbox
-                                  id={day.id}
-                                  checked={selectedDays.includes(day.id)}
-                                  onCheckedChange={() => handleDayChange(day.id)}
-                                />
-                                <Label
-                                  htmlFor={day.id}
-                                  className="text-sm font-normal cursor-pointer"
-                                >
-                                  {day.label}
-                                </Label>
-                              </div>
-                            ))}
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Dars vaqti</Label>
-                    <SelectReact
-                      placeholder="Dars vaqti tanlang"
-                      className="w-full"
-                      options={LessonTime.map((time) => ({value: time, label: time}))}
-                      onChange={(e) => setAddGroup({...AddGroup, duration: e.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="room">Xona</Label>
-                    <SelectReact
-                      value={selectedOptions.rooms}
-                      onChange={(e) => setAddGroup({...AddGroup, rooms: e.value})}
-                      options={roomsData.map((room)=> ({value: room.name, label: room.name}))}
-                      placeholder="Xona tanlang"
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full bg-black hover:opacity-80 text-white"
-                    onClick={() => {
-                      setOpen(false);
-                      toggleSidebar();
-                      addGroup();
-                    }}
-                  >
-                    Saqlash
-                  </Button>
-                </form>
-              </SidebarContent>
-            </Sidebar>
-          </SidebarProvider>
+              >
+                Saqlash
+              </Button>
+            </form>
+          </SidebarContent>
+        </Sidebar>
+      </SidebarProvider>
 
       <div>
         <SidebarPanel />
