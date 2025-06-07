@@ -75,6 +75,8 @@ const Expenses = () => {
     const [SidebarRecipient, setSidebarRecipient] = useState(null);
     const [IsOpen, setIsOpen] = useState(false)
     const [ExpenseId, setExpenseId] = useState(null)
+    const [Balance, setBalance] = useState(0)
+
 
     const [AddExpense, setAddExpense] = useState({
         expenseName: "",
@@ -105,6 +107,13 @@ const Expenses = () => {
                 setAvailableMonths(Object.keys(data));
             }
         });
+
+        const allBalanceRef = ref(database, "AllBalance")
+        onValue(allBalanceRef, (snapshot) => {
+            const data = snapshot.val()
+
+            setBalance(data)
+        })
     }, []);
 
     //  Tanlangan oy uchun xarajatlarni olish
@@ -150,23 +159,25 @@ const Expenses = () => {
     }, [ChengeExpense]);
 
     useEffect(() => {
-        if (isOpen && ChengeExpense?.paymentType) {
-            setobject((prevState) => ({
-                ...prevState,
-                paymentType: ChengeExpense.paymentType,
-            }));
-        }
-    }, [isOpen, ChengeExpense]);
+        const currentMonth = getCurrentMonth();
+        setAvailableMonths((prev) => {
+            // Agar currentMonth massivda yo'q bo'lsa, uni qo'sh
+            if (!prev.includes(currentMonth)) {
+                return [...prev, currentMonth];
+            }
+            return prev;
+        });
+    }, [getCurrentMonth]);
 
     // Code for updating the Expense
     const handleUptadeExpenses = (e) => {
         e.preventDefault()
+        console.log(object)
 
-        if (object.expenseName && object.amount && object.date && SidebarRecipient.value && object.paymentType) {
+        if (object.expenseName && object.amount && object.date && object.recipient && object.paymentType) {
             const updates = {};
             updates[`/Expenses/${selectedMonth}/Expense${object.id}`] = {
-                ...object,
-                recipient: SidebarRecipient.value, // SidebarRecipient qiymatini olish
+                ...object
             };
             update(ref(database), updates)
                 .then(() => {
@@ -202,6 +213,10 @@ const Expenses = () => {
                 id: GetExpenses.length + 1
             })
                 .then(() => {
+                    const NewBalance = Number(Balance) - Number(AddExpense.amount)
+                    const BalanceRef = ref(database, "AllBalance")
+                    set(BalanceRef, NewBalance)
+
                     setAddExpense({
                         expenseName: "",
                         date: getCurrentDate(),
@@ -366,12 +381,12 @@ const Expenses = () => {
                                     id="date"
                                     type="date"
                                     className={style.input}
-                                    value={AddExpense.date}
+                                    value={object.date}
                                     onChange={(e) => {
-                                        setAddExpense((prevState) => ({
+                                        setobject((prevState) => ({
                                             ...prevState,
-                                            date: e.target.value || "",
-                                        }));
+                                            date: e.target.value,
+                                        }))
                                     }}
                                     placeholder="YYYY-MM-DD"
                                 />
@@ -383,7 +398,12 @@ const Expenses = () => {
                                 </Label>
                                 <SelectReact
                                     value={SidebarRecipient || null}
-                                    onChange={(e) => setChengeExpense(({ ...ChengeExpense, recipient: e.value }))}
+                                    onChange={(e) => {
+                                        setobject((prevState) => ({
+                                            ...prevState,
+                                            recipient: e.value
+                                        }));
+                                    }}
                                     options={GetTeacher.map((teacher) => ({ value: teacher.name, label: teacher.name }))}
                                     placeholder="Oluvchini tanlang"
                                 />
@@ -499,26 +519,34 @@ const Expenses = () => {
                         transition: "all 0.5s ease, background 0.3s ease, width 0.5s ease",
                     }}
                 >
-                    <nav className="w-full flex justify-start items-center gap-5">
-                        <h3 className="text-3xl font-normal">Xarajatlar</h3>
+                    <nav className="w-full flex justify-between items-center gap-5">
+                        <div className="flex gap-3">
+                            <h3 className="text-3xl font-normal">Xarajatlar</h3>
 
-                        <Select
-                            value={selectedMonth}
-                            onValueChange={e => setSelectedMonth(e)}
-                        >
-                            <SelectTrigger className="w-[150px]">
-                                <SelectValue placeholder="Oyni tanlash" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {
-                                    availableMonths.map(month => (
-                                        <SelectItem key={month} value={month}>
-                                            {month}
-                                        </SelectItem>
-                                    ))
-                                }
-                            </SelectContent>
-                        </Select>
+                            <Select
+                                value={selectedMonth ? selectedMonth : getCurrentMonth()}
+                                onValueChange={e => setSelectedMonth(e)}
+                            >
+                                <SelectTrigger className="w-[150px]">
+                                    <SelectValue placeholder="Oyni tanlash" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {
+                                        availableMonths.map(month => (
+                                            <SelectItem key={month} value={month}>
+                                                {month}
+                                            </SelectItem>
+                                        ))
+                                    }
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <h3 className="text-lg">
+                            Balans:
+                            {
+                                ` ${new Intl.NumberFormat("uz-UZ").format(parseInt(Balance, 10))} so'm`
+                            }
+                        </h3>
                     </nav>
 
                     <Card className="w-full flex flex-col gap-8 py-6 bg-transparent border-transparent">

@@ -143,15 +143,13 @@ const CourseInfo = () => {
         console.log("Form yuborildi");
     };
 
-    const handleChengeToGroup = () => {
+    const handleChengeToCours = () => {
         if ((chengeCourse.name && chengeCourse.price && chengeCourse.duration && chengeCourse.month) === "") {
             alert("Barcha maydonlarni to'ldiring");
         }
 
         if (takeCourses.length > 0) {
             if (firstKey) {
-                // Bu yerda `foundKey` bilan kerakli amallarni bajaring
-
                 set(ref(database, `Courses/${firstKey}`), {
                     id: firstCourse.id,
                     name: chengeCourse.name,
@@ -359,7 +357,7 @@ const CourseInfo = () => {
                                 className="bg-blue-950 hover:opacity-80 text-white"
                                 onClick={(event) => {
                                     event.preventDefault();
-                                    handleChengeToGroup();
+                                    handleChengeToCours();
                                 }}
                             >
                                 Saqlash
