@@ -33,7 +33,7 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const database = getDatabase(app);
 
-function Panel() {
+function Panel({ setUserData }) {
     const [secretPass, setSecretPass] = useState('');
     const [name, setName] = useState('');
     const [addBall, setAddBall] = useState('');
@@ -184,7 +184,6 @@ function Panel() {
 
     return (
         <div>
-            <SidebarPanel />
             {/* <div
                 className={style.panel}
                 style={{
@@ -279,7 +278,7 @@ function Panel() {
                     width: "var(--sidebar-width), 100%",
                     transition: "all 0.5s ease, background 0.3s ease, width 0.5s ease",
                 }}>
-                <Dashboard data={dashboardData} />
+                <Dashboard data={dashboardData} setUserData={setUserData} />
             </div>
         </div>
     );

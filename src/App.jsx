@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Register from '../src/Register&Login/Register.jsx'
 import Basic from '../src/Basic/Basic.jsx'
@@ -22,46 +22,69 @@ import PaymentArchive from "./Admin/PaymentArchive/PaymentArchive.jsx";
 import DebtadStudents from "./Admin/DebtadStudents/DebtadStudents.jsx";
 import InputAndOutput from "./Admin/Dashboard/InputAndOutput.jsx";
 import "./Panel/Toast.css"
-import PrivateRoute from "./Register&Login/PrivateRoute.jsx";
+import { PrivateRoute, PrivateStudentRoute } from "./Register&Login/PrivateRoute.jsx";
+import { Profile } from "./Admin/Profile/Profile.jsx";
+import { SidebarPanel } from "./Sidebar.jsx";
 
 function App() {
+  const [userData, setUserData] = useState(localStorage.getItem("UserData"))
 
-  const userData = localStorage.getItem("UserData");
-
+  const studentData = localStorage.getItem("StudentData")
 
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            userData ? <Navigate to="/panel" replace /> : <Register />
-          }
-        />
-        <Route path="/templates" element={<Templates />} />
-
-        {/* Barcha himoyalangan routelarni PrivateRoute parent qilib o'rang */}
-        <Route element={<PrivateRoute />}>
-          <Route path="/panel" element={<Panel />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/inputAndOutput" element={<InputAndOutput />} />
-          <Route path="/control" element={<Control />} />
-          <Route path="/course" element={<Course />} />
-          <Route path="/rooms" element={<Rooms />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/chat" element={<Message />} />
-          <Route path="/groups" element={<Groups />} />
-          <Route path="/students" element={<Students />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/paymentArchive" element={<PaymentArchive />} />
-          <Route path="/debtadStudents" element={<DebtadStudents />} />
-          <Route path="/student/:id" element={<StudentDetail />} />
-          <Route path="/group/:id" element={<GroupDetails />} />
-          <Route path="/course/:id" element={<CourseInfo />} />
-          <Route path="/users/:id" element={<UserInfo />} />
-        </Route>
-      </Routes>
-    </Router>
+    <>
+      <Router>
+        {userData && <SidebarPanel />}
+        <Routes>
+          <Route
+            path="/"
+            element={
+              studentData
+                ? <Navigate to={`/studentpages/${studentData.id}`} replace />
+                : userData
+                  ? <Navigate to="/panel" replace />
+                  : <Register setUserData={setUserData}/>
+            }
+          />
+          <Route
+            path="/studentpages/:id"
+            element={
+              <PrivateStudentRoute >
+                <Basic />
+              </PrivateStudentRoute>
+            }
+          />
+          <Route
+            path="/chat"
+            element={
+              <PrivateStudentRoute>
+                <Message />
+              </PrivateStudentRoute>
+            }
+          />
+          <Route element={<PrivateRoute />}>
+            <Route path="/panel" element={<Panel setUserData={setUserData} />} />
+            <Route path="/expenses" element={<Expenses />} />
+            <Route path="/inputAndOutput" element={<InputAndOutput />} />
+            <Route path="/chat" element={<Message />} />
+            <Route path="/control" element={<Control />} />
+            <Route path="/course" element={<Course />} />
+            <Route path="/rooms" element={<Rooms />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/groups" element={<Groups />} />
+            <Route path="/students" element={<Students />} />
+            <Route path="/leads" element={<Leads />} />
+            <Route path="/paymentArchive" element={<PaymentArchive />} />
+            <Route path="/debtadStudents" element={<DebtadStudents />} />
+            <Route path="/student/:id" element={<StudentDetail />} />
+            <Route path="/group/:id" element={<GroupDetails />} />
+            <Route path="/course/:id" element={<CourseInfo />} />
+            <Route path="/users/:id" element={<UserInfo />} />
+            <Route path="/admin/:id" element={<Profile />} />
+          </Route>
+        </Routes>
+      </Router>
+    </>
   )
 }
 

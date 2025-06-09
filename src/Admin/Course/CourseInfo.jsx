@@ -368,7 +368,6 @@ const CourseInfo = () => {
             </SidebarProvider>
 
             <div className="CourseInfo">
-                <SidebarPanel />
 
                 <div
                     className={style.info}

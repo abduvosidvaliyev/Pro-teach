@@ -29,50 +29,30 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const database = getDatabase(app);
 
-function SignUpForm() {
-    const [formData, setFormData] = useState({
-        name: '',
-        surname: '',
-        group: '',
-        secretPass: ''
-    });
-    const [isRegistered, setIsRegistered] = useState(false);
-    const [active, setActive] = useState(false);
+function SignUpForm({ setUserData }) {
+    const navigate = useNavigate()
     const [loginName, setLoginName] = useState('');
     const [loginSecretPass, setLoginSecretPass] = useState('');
-    const [loading, setLoading] = useState(false); // Loader holati
+    const [loading, setLoading] = useState(false);
     const [GetAdmins, setGetAdmins] = useState([])
-    const navigate = useNavigate()
+    const [GetStudents, setGetStudents] = useState([])
 
     useEffect(() => {
         const adminsRef = ref(database, "Admins")
-
         onValue(adminsRef, (snapshot) => {
             const data = snapshot.val()
 
             setGetAdmins(Object.values(data || []))
         })
+
+        const studentsRef = ref(database, "Students")
+        onValue(studentsRef, (snapshot) => {
+            const data = snapshot.val()
+
+            setGetStudents(Object.values(data || []))
+        })
     }, [])
 
-
-    useEffect(() => {
-        // Check local storage for saved login state and data
-        const savedData = localStorage.getItem('userData');
-        if (savedData) {
-            const parsedData = JSON.parse(savedData);
-            setFormData(parsedData);
-            setIsRegistered(true);
-        }
-    }, []);
-
-    const handleToggle = () => {
-        setActive(!active);
-    };
-
-    // const handleChange = (e) => {
-    //     const { id, value } = e.target;
-    //     setFormData({ ...formData, [id]: value });
-    // };
 
     const handleLogin = () => {
         if ((loginName && loginSecretPass) !== "") {
@@ -83,20 +63,37 @@ function SignUpForm() {
                 admin.parol.toString() === loginSecretPass
             );
 
-            console.log(Admin)
-
             if (Admin) {
-                const store = localStorage.setItem("UserData", JSON.stringify({
+                localStorage.setItem("UserData", JSON.stringify({
+                    id: Admin.id,
                     login: Admin.login,
                     parol: Admin.parol
                 }))
+                setUserData(localStorage.getItem("UserData"))
                 navigate("/panel")
                 setLoginName("")
                 setLoginSecretPass("")
                 setLoading(false)
             }
             else {
-                console.log("Kirtilgan ma'lumot noto'g'ri yoki yo'q!")
+                const Students = GetStudents.find((studet) =>
+                    typeof studet.login === "string" &&
+                    typeof studet.parol !== "undefined" &&
+                    studet.login.toLowerCase() === loginName.toLowerCase() &&
+                    studet.parol.toString() === loginSecretPass
+                );
+
+                if (Students) {
+                    localStorage.setItem("StudentData", JSON.stringify({
+                        id: Students.id,
+                        login: Students.login,
+                        parol: Students.parol
+                    }))
+                    navigate(`/studentpages/${Students.id}`)
+                    setLoginName("")
+                    setLoginSecretPass("")
+                    setLoading(false)
+                }
             }
         }
         else {
@@ -104,180 +101,20 @@ function SignUpForm() {
         }
     };
 
-    const handleLogout = () => {
-        // Clear local storage and reset state
-        localStorage.removeItem('userData');
-        setFormData({
-            name: '',
-            surname: '',
-            group: '',
-            secretPass: ''
-        });
-        setIsRegistered(false);
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setLoading(true); // Loaderni yoqish
-        const { name, surname, group, secretPass } = formData;
-
-        if (name && surname && group !== "Guruhingizni Tanlang" && secretPass) {
-            const secretPassesRef = ref(database, 'secretPass');
-
-            get(secretPassesRef).then((snapshot) => {
-                let validSecretPass = false;
-                let secretPassKey = null;
-
-                if (snapshot.exists()) {
-                    snapshot.forEach((childSnapshot) => {
-                        const storedSecretPass = childSnapshot.val();
-                        console.log("Checking storedSecretPass:", storedSecretPass);
-                        // Ensure secretPass is open and not used
-                        if (typeof storedSecretPass === 'object' &&
-                            storedSecretPass.secretPass === secretPass &&
-                            !storedSecretPass.isUsed &&
-                            storedSecretPass.open) {
-                            validSecretPass = true;
-                            secretPassKey = childSnapshot.key; // Capture the key for updating
-                        }
-                    });
-                }
-
-                if (!validSecretPass) {
-                    console.log("Entered secretPass:", secretPass);
-                    alert("Invalid SecretPass.");
-                    setLoading(false); // Loaderni o'chirish
-                    return;
-                }
-
-                const usersRef = ref(database, 'Users');
-
-                get(usersRef).then((snapshot) => {
-                    let userExists = false;
-
-                    if (snapshot.exists()) {
-                        snapshot.forEach((childSnapshot) => {
-                            const userData = childSnapshot.val();
-                            if (userData.name === name && userData.surname === surname) {
-                                userExists = true;
-                            }
-                        });
-                    }
-
-                    if (userExists) {
-                        alert("User with this name and surname already exists.");
-                        setLoading(false); // Loaderni o'chirish
-                    } else {
-                        const userKey = `${name}_${surname}_${group}_${secretPass}`;
-                        const userRef = ref(database, 'Users/' + userKey);
-                        alert('Akkaunt Muvaffaqiyatli  Yaratildi')
-                        set(userRef, {
-                            name: name,
-                            surname: surname,
-                            group: group,
-                            ball: 0,
-                            secretPass: secretPass
-                        }).then(() => {
-                            // Update the secretPass to mark it as used
-                            if (secretPassKey) {
-                                const secretPassRef = ref(database, `secretPass/${secretPassKey}`);
-                                set(secretPassRef, {
-                                    secretPass: secretPass,
-                                    isUsed: true,
-                                    open: false
-                                });
-                            }
-                            setIsRegistered(true);
-                        }).catch((error) => {
-                            console.error("Error saving data: ", error);
-                        }).finally(() => {
-                            setLoading(false); // Loaderni o'chirish
-                        });
-                    }
-                }).catch((error) => {
-                    console.error("Error checking data: ", error);
-                    setLoading(false); // Loaderni o'chirish
-                });
-            }).catch((error) => {
-                console.error("Error checking SecretPasses: ", error);
-                setLoading(false); // Loaderni o'chirish
-            });
-        } else {
-            alert("Please fill in all fields.");
-            setLoading(false); // Loaderni o'chirish
-        }
-    };
-
-    if (isRegistered) {
-        return (
-            <div>
-                <Basic formData={formData} />
-                <button onClick={handleLogout}>Logout</button>
-            </div>
-        );
-    }
-
-
     return (
         <div className={style.container}>
             <video autoPlay loop>
                 <source src={bgVideo} />
             </video>
-            {/* {active ?
-                < div className={style.signUp} >
-                    <div className={style.logo}></div>
-                    <span className={style.switch} onClick={handleToggle}>Login</span>
-                    <h1 className={style.signText}>Register<span>/</span>Yangi Akkaunt Ochish</h1>
-                    <form onSubmit={handleSubmit}>
-                        <div className={style.inps}>
-                            <input type="text" placeholder="Ismingizni Kiriting..." id="name" value={formData.name} onChange={handleChange} />
-                            <FontAwesomeIcon className={style.faCircle} icon={faCircleUser} />
-                        </div>
-                        <div className={style.inps}>
-                            <input type="text" placeholder="Familiyangizni Kiriting..." id="surname" value={formData.surname} onChange={handleChange} />
-                            <FontAwesomeIcon className={style.faCircle} icon={faCircleUser} />
-                        </div>
-                        <div className={style.inps}>
-                            <select id="group" value={formData.group} onChange={handleChange}>
-                                <option value="Guruhingizni Tanlang">Guruhingizni Tanlang</option>
-                                <option value="Web-1">Web-1</option>
-                                <option value="Web-2">Web-2</option>
-                                <option value="Web-3">Web-3</option>
-                                <option value="Web-4">Web-4</option>
-                                <option value="Web-5">Web-5</option>
-                                <option value="Web-6">Web-6</option>
-                                <option value="Web-7">Web-7</option>
-                                <option value="Web-8">Web-8</option>
-                                <option value="Web-9">Web-9</option>
-                                <option value="Web-10">Web-10</option>
-                            </select>
-                            <FontAwesomeIcon className={style.userLine} icon={faUsersLine} />
-                        </div>
-                        <div className={style.inps}>
-                            <input
-                                type="password"
-                                placeholder="SecretPassni Kiriting..."
-                                id="secretPass"
-                                value={formData.secretPass}
-                                onChange={handleChange}
-                            />
-                            <FontAwesomeIcon className={style.faKey} icon={faKey} />
-                        </div>
-                        <button type="submit">Ro'yhatdan O'tish</button>
-                        {loading && <div className={style.loader}>Loading...</div>} 
-                    </form>
-                </div>
-                : ""} */}
 
             <div className={style.signIn}>
                 <div className={style.logo}></div>
-                <span className={style.switch} onClick={handleToggle}>Register</span>
                 <h1 className={style.signText}>Login<span>/</span>Akkauntga Kirish</h1>
                 <div className={style.form}>
                     <div className={style.inps}>
                         <input
                             type="text"
-                            placeholder='Ismingizni Kiriting'
+                            placeholder='Login Kiriting'
                             value={loginName}
                             onChange={(e) => setLoginName(e.target.value)}
                         />
@@ -289,6 +126,7 @@ function SignUpForm() {
                             placeholder='Parol Kiriting'
                             value={loginSecretPass}
                             onChange={(e) => setLoginSecretPass(e.target.value)}
+                            onKeyUp={(e) => e.key === "Enter" ? handleLogin() : ""}
                         />
                         <FontAwesomeIcon className={style.faKey} icon={faKey} />
                     </div>

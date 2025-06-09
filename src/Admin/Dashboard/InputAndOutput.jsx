@@ -450,7 +450,6 @@ const InputAndOutput = () => {
     return (
         <>
             <div className="InputAndOutput">
-                <SidebarPanel />
 
                 <div
                     className="w-full"

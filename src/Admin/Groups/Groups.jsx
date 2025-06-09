@@ -546,7 +546,6 @@ function Groups() {
       </SidebarProvider>
 
       <div>
-        <SidebarPanel />
 
         <div
           className={style.main}

@@ -509,8 +509,6 @@ const Expenses = () => {
             </SidebarProvider>
 
             <div className="Expenses">
-                <SidebarPanel />
-
                 <div
                     className="expenses p-6 flex flex-col gap-5"
                     style={{

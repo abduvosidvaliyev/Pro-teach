@@ -76,6 +76,7 @@ import { Input } from "./input";
 import { Label } from "./UiLabel";
 import { AddNotify } from "./Toast"
 import { ToastContainer } from "react-toastify";
+import ProfileCard from "../../Admin/Profile/ProfileCard";
 
 const timeSlots = Array.from({ length: 13 }).map((_, i) => ({
   time: `${(i + 8).toString().padStart(2, "0")}:00`,
@@ -143,7 +144,7 @@ const getCurrentDate = () => {
   return `${year}-${month}-${day}`;
 };
 
-export default function Dashboard({ data }) {
+export default function Dashboard({ data, setUserData }) {
   const navigate = useNavigate();
   const [groupsData, setGroupsData] = useState([]);
   const [roomData, setRoomsData] = useState([]);
@@ -616,7 +617,7 @@ export default function Dashboard({ data }) {
         {/* Payment */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">IT Ta'lim Markazi CRM</h1>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
             <Button
               className="bg-green-600 hover:bg-green-700 text-white"
               onClick={(e) => {
@@ -631,6 +632,7 @@ export default function Dashboard({ data }) {
               <Receipt className="w-4 h-4 mr-2" />
               To'lovlar tarixi
             </Button>
+            <ProfileCard setUserData={setUserData}/>
           </div>
         </div>
         {/* KPI Section */}

@@ -83,7 +83,6 @@ function Control() {
 
   return (
     <div className="control">
-      <SidebarPanel />
       <div
         className={style.mainControl}
         style={{

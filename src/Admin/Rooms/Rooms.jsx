@@ -271,7 +271,6 @@ const Rooms = () => {
       </SidebarProvider>
 
       <div className="Rooms">
-        <SidebarPanel />
 
         <div
           className={`${style.rooms} px-10`}

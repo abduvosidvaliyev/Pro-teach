@@ -365,7 +365,6 @@ const PaymentArchive = () => {
             }
 
             <div className="PaymentArchive">
-                <SidebarPanel />
 
                 <div
                     className="payment-archive p-6 flex flex-col gap-4 justify-start items-start"

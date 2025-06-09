@@ -4,9 +4,10 @@ import { IoStatsChartSharp } from "react-icons/io5";
 import { GrMoney } from "react-icons/gr";
 import React, { useState, useEffect } from "react";
 import style from './Sidebar.module.css'
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export function SidebarPanel() {
+  const navigate = useNavigate()
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [activeDropdown, setactiveDropdown] = useState(null);
   const [ActiveDropdown, setActiveDropdown] = useState(false);
@@ -27,10 +28,19 @@ export function SidebarPanel() {
     setActiveDropdown(!ActiveDropdown)
   }
 
+  const handleOpenProfile = () => {
+    const userData = JSON.parse(localStorage.getItem("UserData"));
+    if (userData && userData.id) {
+      navigate(`/admin/${userData.id}`);
+    } else {
+      console.log("Ma'lumot topilmadi!")
+    }
+  }
+
   return (
     <>
       <div
-        className={style.toggleBtn}
+        className={`${style.toggleBtn} ${isCollapsed ? style.btn : ""}`}
         onClick={() => {
           toggleSidebar()
           setActiveDropdown(false)
@@ -42,8 +52,7 @@ export function SidebarPanel() {
         }}
       >
         <i
-          className={`fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-left"
-            } ${style.toggleIcon}`}
+          className={`fas fa-chevron-right ${style.toggleIcon}`}
         ></i>
       </div>
       <div className={`${style.sidebar} ${isCollapsed ? style.collapsed : ""}`}>
@@ -95,7 +104,7 @@ export function SidebarPanel() {
               onClick={() => {
                 if (isCollapsed) {
                   setIsCollapsed(false)
-                  toggledropDown()
+                  setTimeout(() => toggledropDown(0), 500);
                 } else {
                   toggledropDown()
                 }
@@ -180,6 +189,12 @@ export function SidebarPanel() {
                   <i className="fa-solid fa-user-group"></i>
                   Xodimlar
                 </Link>
+              </li>
+              <li>
+                <h4 onClick={handleOpenProfile} className={style.dropdownItem}>
+                  <i className="fa-solid fa-user"></i>
+                  Profil
+                </h4>
               </li>
             </ul>
           </li>

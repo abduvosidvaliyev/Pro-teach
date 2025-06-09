@@ -117,7 +117,8 @@
   transition: background 0.3s ease;
 }
 
-.dropdownMenu li a {
+.dropdownMenu li a,
+h4 {
   color: white;
   padding: 10px 20px;
   text-decoration: none;
@@ -132,7 +133,7 @@
   background-color: #6c63ff;
 }
 
-.dropdownItem{
+.dropdownItem {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -162,6 +163,7 @@
 
   transition: max-height 0.5s ease;
 }
+
 /* Sidebar collapse styles */
 .sidebar.collapsed {
   width: 80px;
@@ -197,20 +199,26 @@
 }
 
 .toggleBtn {
-  width: 20px;
-  height: 20px;
-  background: #6c63ff;
+  width: 30px;
+  height: 59px;
+  background: #EE8E46;
   color: #fff;
-  border-radius: 50%;
   display: flex;
-  justify-content: center;
-  align-items: center;  
+  justify-content: start;
+  align-items: center;
   cursor: pointer;
   transition: transform 0.3s ease;
-  position: absolute; 
-  left: -10px;
+  position: absolute;
+  left: 0px;
   z-index: 10;
-  top: 20px;
+  top: 43.8%;
+  padding-left: 3px;
+  clip-path: polygon(0 0, 50% 15%, 50% 85%, 0% 100%);
+  position: fixed;
+}
+
+.toggleBtn.btn {
+  background: linear-gradient(45deg, #2b2d42, #3a3a52);
 }
 
 .toggleBtn .toggleIcon {
@@ -237,13 +245,13 @@
   transform-origin: top;
 }
 
-.dropDownOpen{
+.dropDownOpen {
   top: 150px;
 
   transition: top 0.2s ease;
 }
 
-.dropDownClose{
+.dropDownClose {
   top: 0;
 
   transition: top 0.3s 0.1s ease;

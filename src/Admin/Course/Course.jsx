@@ -228,7 +228,6 @@ const Course = () => {
             </SidebarProvider>
 
             <div className="Course">
-                <SidebarPanel />
 
                 <div
                     className={style.course}

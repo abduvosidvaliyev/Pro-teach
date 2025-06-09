@@ -360,7 +360,6 @@ const Users = () => {
             </SidebarProvider>
 
             <div className="Users">
-                <SidebarPanel />
 
                 <div
                     className={style.users}

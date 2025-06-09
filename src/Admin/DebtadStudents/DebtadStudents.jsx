@@ -111,8 +111,6 @@ const DebtadStudents = () => {
 
     return (
         <div className="DebtedStudents">
-            <SidebarPanel />
-
             <div
                 className="flex flex-col items-center gap-3 p-6"
                 style={{

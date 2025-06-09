@@ -475,7 +475,6 @@ const StudentDetail = () => {
         </Sidebar>
       </SidebarProvider>
       <div>
-        <SidebarPanel />
 
         <div
           className={style.main}

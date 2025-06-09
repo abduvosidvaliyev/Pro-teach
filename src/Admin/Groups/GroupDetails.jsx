@@ -462,7 +462,6 @@ function GroupDetails() {
 
   return (
     <div>
-      <SidebarPanel />
       <div
         className={style.main}
         style={{

@@ -526,7 +526,6 @@ function Students() {
 
 
       <div>
-        <SidebarPanel />
         <div
           className={style.main}
           style={{
