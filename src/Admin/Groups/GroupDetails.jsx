@@ -457,7 +457,7 @@ function GroupDetails() {
   }
 
   if (!groupInfo) {
-    return <div>Loading...</div>; // Ma'lumotlar yuklanayotganida yuklanishni ko'rsatish
+    return <div>Loading...</div>; 
   }
 
   return (
