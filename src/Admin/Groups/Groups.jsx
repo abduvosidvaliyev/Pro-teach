@@ -130,9 +130,6 @@ function Groups() {
   const [openTeacher, setOpenTeacher] = React.useState(false)
   const [valueTeacher, setValueTeacher] = React.useState("")
   const [open, setOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
   const [openRoom, setOpenRoom] = React.useState(false)
   const [valueRoom, setValueRoom] = React.useState("")
   const [isAdd, setIsAdd] = useState(true);
@@ -143,11 +140,7 @@ function Groups() {
   const [groupInfo, setGroupInfo] = useState();
   const [groupsData, setGroupsData] = useState([]);
   const [studentsData, setStudentsData] = useState([]);
-  const [newGroupName, setNewGroupName] = useState("");
-  const [newPrice, setNewPrice] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newStudentName, setNewStudentName] = useState("");
-  const [newStudentNumber, setNewStudentNumber] = useState("");
   const [students, setStudents] = useState([]);
   const [selectedDays, setSelectedDays] = useState([]);
   const [LessonTime, setLessonTime] = useState([])
@@ -335,7 +328,6 @@ function Groups() {
   }, [AddGroup.courses])
 
   const addGroup = () => {
-    console.log(AddGroup);
     if ((AddGroup.groupName && AddGroup.courses && LessonStartTime && AddGroup.rooms && AddGroup.teachers) !== "" && AddGroup.selectedDays != []) {
 
       const lessonTimeRange = getLessonTimeRange(
@@ -350,7 +342,7 @@ function Groups() {
         duration: lessonTimeRange
       })
         .then(() => {
-          setIsAdd(false)
+          setOpen(false);
           setAddGroup({
             groupName: "",
             courses: "",
@@ -370,14 +362,6 @@ function Groups() {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted");
-    setOpen(false);
-  };
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
 
   function handleGroupClick(groupName, id) {
     const groupData = groupsData.find((group) => group.groupName === groupName);
@@ -402,12 +386,11 @@ function Groups() {
     <>
       <ToastContainer />
       <SidebarProvider>
-        {isOpen && (
+        {open && (
           <div
             className="fixed w-full h-[100vh] z-30  inset-0 backdrop-blur-[2px] bg-black/50 transition-all duration-900 ease-in-out"
             onClick={() => {
               setOpen(false);
-              toggleSidebar();
             }}
           ></div>
         )}
@@ -426,7 +409,6 @@ function Groups() {
               size="icon"
               onClick={() => {
                 setOpen(false);
-                toggleSidebar();
               }}
               className="rounded-full hover:bg-gray-100"
             >
@@ -437,7 +419,6 @@ function Groups() {
 
           <SidebarContent>
             <form
-              onSubmit={handleSubmit}
               className="space-y-6 p-6 text-left "
             >
               <div className="space-y-6">
@@ -531,14 +512,13 @@ function Groups() {
 
               <Button
                 type="submit"
-                className="w-full bg-black hover:opacity-80 text-white"
-                onClick={() => {
-                  setOpen(false);
-                  toggleSidebar();
+                className="bg-blue-800 text-white"
+                onClick={(e) => {
+                  e.preventDefault();
                   addGroup();
                 }}
               >
-                Saqlash
+                Qo'shish
               </Button>
             </form>
           </SidebarContent>

@@ -6,7 +6,8 @@ import {
   ref,
   set,
   onValue,
-  update,
+  remove,
+  get
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
 
@@ -26,7 +27,7 @@ const analytics = getAnalytics(app);
 const database = getDatabase(app);
 
 import { useState, useEffect } from "react";
-import { X, Clock, Plus } from "lucide-react";
+import { X, Plus } from "lucide-react";
 
 import {
   Sidebar,
@@ -36,96 +37,227 @@ import {
 } from "./sidebar";
 import { Button } from "./button";
 import { Input } from "./input";
-import { Checkbox } from "./checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./select";
+
 import { Label } from "./UiLabel";
 import { cn } from "../../lib/utils";
+import SelectReact from "react-select"
+import style from "../../Sidebar.module.css";
+import { AddNotify } from "./Toast";
 
-const daysOfWeek = [
-  { id: "du", label: "Du" },
-  { id: "se", label: "Se" },
-  { id: "chor", label: "Chor" },
-  { id: "pay", label: "Pay" },
-  { id: "ju", label: "Ju" },
-  { id: "shan", label: "Shan" },
-  { id: "yak", label: "Yak" },
-];
+const getCurrentMonth = () => {
+  const now = new Date();
+  const currentMonthAndYear = now.toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+  return currentMonthAndYear;
+};
 
+// Oy oxirigacha tanlangan kunlar sonini hisoblash
+function countWeekdaysToEndOfMonth(selectedDays, fromDate = new Date()) {
+  const dayMapping = {
+    du: 1, // Dushanba
+    se: 2, // Seshanba
+    chor: 3, // Chorshanba
+    pay: 4, // Payshanba
+    ju: 5, // Juma
+    shan: 6, // Shanba
+    yak: 0, // Yakshanba
+  };
+  const result = {};
+  selectedDays.forEach((d) => (result[d] = 0));
+  const year = fromDate.getFullYear();
+  const month = fromDate.getMonth();
+  const startDay = fromDate.getDate();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let day = startDay; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    selectedDays.forEach((d) => {
+      if (dayOfWeek === dayMapping[d]) {
+        result[d]++;
+      }
+    });
+  }
+  return result;
+}
 
+// Butun oy bo‘yicha tanlangan kunlar sonini hisoblash
+function countWeekdaysInMonth(selectedDays, fromDate = new Date()) {
+  const dayMapping = {
+    du: 1,
+    se: 2,
+    chor: 3,
+    pay: 4,
+    ju: 5,
+    shan: 6,
+    yak: 0,
+  };
+  const result = {};
+  selectedDays.forEach((d) => (result[d] = 0));
+  const year = fromDate.getFullYear();
+  const month = fromDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    selectedDays.forEach((d) => {
+      if (dayOfWeek === dayMapping[d]) {
+        result[d]++;
+      }
+    });
+  }
+  return result;
+}
 
-export function CourseSidebar() {
-  const [teachersData, setTeachersData] = useState([]);
-  const [roomsData, setRoomsData] = useState([]);
+export const CourseSidebar = ({ groupInfo }) => {
+  const [Leads, setLeads] = useState([])
+  const [Students, setStudents] = useState([])
+  const [firstLead, setFirstLead] = useState({})
+  const [Course, setCourse] = useState([])
+  const [firstCourse, setFirstCourse] = useState({})
   const [open, setOpen] = useState(false);
-  const [selectedDays, setSelectedDays] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [AddStudent, setAddStudent] = useState({
+    studentName: "",
+    login: "",
+    parol: ""
+  })
 
-  const handleDayChange = (day) => {
-    setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
-  };
+  useEffect(() => {
+    const LeadsRef = ref(database, "leads")
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle form submission logic here
-    console.log("Form submitted");
-    setOpen(false);
-  };
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
+    onValue(LeadsRef, (snapshot) => {
+      const data = snapshot.val();
+      setLeads(Object.values(data || {}))
+    });
 
-    useEffect(() => {
-      const coursesRef = ref(database, "Teachers");
-      onValue(coursesRef, (snapshot) => {
-        const data = snapshot.val();
-        const teacherData = Object.keys(data).map((key) => ({
-          id: key,
-          label: key,
-          name: data[key].name,
-        }));
-        setTeachersData(teacherData);
+    const StudentsRef = ref(database, "Students");
+    onValue(StudentsRef, (snapshot) => {
+      const data = snapshot.val();
+
+      setStudents(Object.values(data || {}));
+    });
+
+    const CourseRef = ref(database, "Courses");
+    onValue(CourseRef, (snapshot) => {
+      const data = snapshot.val();
+
+      setCourse(Object.values(data || {}));
+    });
+  }, []);
+
+  useEffect(() => {
+    const lead = Leads.find((lead) => lead.name === AddStudent.studentName);
+
+    setFirstLead(lead || {});
+  }, [AddStudent.studentName, Leads]);
+
+  useEffect(() => {
+    const course = Course.find(course => course.name === groupInfo?.courses)
+
+    setFirstCourse(course || {});
+  }, [groupInfo?.courses, Course]);
+  
+
+  const addStudent = () => {
+    if ((AddStudent.studentName && AddStudent.parol && AddStudent.login) === "") {
+      alert("Ma'lumotlarni to'ldiring");
+      return
+    }
+
+    const date = new Date().toISOString().split("T")[0];
+    const today = new Date();
+
+    // Guruh ma'lumotlarini olish
+    const groupRef = ref(database, `Groups/${groupInfo?.groupName}`);
+    get(groupRef)
+      .then((groupSnapshot) => {
+        if (groupSnapshot.exists()) {
+          const currentMonth = getCurrentMonth();
+          const courseFee = firstCourse?.courseFee || 0;
+          const groupData = groupSnapshot.val();
+          const selectedDays = groupData.selectedDays || [];
+
+          const remainingLessonDays = countWeekdaysToEndOfMonth(selectedDays, today);
+          const remainingLessonDaysCount = Object.values(remainingLessonDays).reduce(
+            (sum, count) => Number(sum) + Number(count),
+            0
+          );
+
+          // Har bir dars uchun narxni hisoblash
+          const totalLessonDays = countWeekdaysInMonth(selectedDays, today);
+          const totalLessonDaysCount = Object.values(totalLessonDays).reduce(
+            (sum, count) => Number(sum) + Number(count),
+            0
+          );
+          const perLessonCost = courseFee / (totalLessonDaysCount || 1);
+
+          // Studentni Firebase-ga qo'shish
+          set(ref(database, `Students/${AddStudent.studentName}`), {
+            attendance: {
+              [currentMonth]: {
+                _empty: true,
+              },
+            },
+            id: Students.length + 1,
+            balance: 0,
+            group: groupInfo?.groupName,
+            studentName: AddStudent.studentName,
+            studentNumber: firstLead.phone,
+            login: AddStudent.login,
+            parol: AddStudent.parol,
+            status: "Faol",
+            addedDate: date,
+            perLessonCost,
+            remainingLessonDaysCount,
+            studentHistory: [
+              {
+                date: date,
+                title: "Ro'yxatdan o'tdi",
+                description: `${AddStudent.studentName} ${groupInfo?.groupName} guruhiga qo'shildi.`,
+              },
+            ],
+            paymentHistory: []
+          })
+            .then(() => {
+              setOpen(false);
+              remove(ref(database, `leads/${firstLead.name}`))
+              setAddStudent({
+                studentName: "",
+                login: "",
+                parol: ""
+              })
+              AddNotify({ AddTitle: "O'quvchi qo'shildi" })
+            })
+            .catch((error) => {
+              console.error(error)
+            })
+        } else {
+          alert("Guruh topilmadi");
+        }
+      })
+      .catch((error) => {
+        console.error(error);
       });
-
-      const coursesRef2 = ref(database, "Rooms");
-      onValue(coursesRef2, (snapshot) => {
-        const data = snapshot.val();
-        const roomData = Object.keys(data).map((key) => ({
-          id: key,
-          label: key,
-          name: data[key].name,
-        }));
-        setRoomsData(roomData);
-      });
-    }, []);
-   
+  }
 
   return (
     <SidebarProvider>
       <Button
         onClick={() => {
           setOpen(true);
-          toggleSidebar();
         }}
         className=" h-10 w-10 rounded-full p-0 border border-blue-500 bg-white hover:bg-blue-50"
         variant="outline"
       >
         <Plus className="h-5 w-5 text-blue-500" />
-        <span className="sr-only">Yangi kurs qo'shish</span>
+        <span className="sr-only">Guruhga yangi o'quvchi qo'shish</span>
       </Button>
-      {isOpen && (
+      {open && (
         <div
-          className="fixed w-full  h-[100vh] z-30  inset-0 backdrop-blur-sm transition-all duration-900 ease-in-out"
+          className="fixed w-full  h-[100vh] z-30 bg-black/50 inset-0 backdrop-blur-[2px] transition-all duration-900 ease-in-out"
           onClick={() => {
             setOpen(false);
-            toggleSidebar();
           }}
         ></div>
       )}
@@ -138,13 +270,12 @@ export function CourseSidebar() {
         collapsible="none"
       >
         <SidebarHeader className="flex  items-center justify-between border border-gray-300 p-4">
-          <h2 className="text-xl font-semibold">Yangi kurs qo'shish</h2>
+          <h2 className="text-xl font-semibold">Guruhga yangi o'quvchi qo'shish</h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => {
               setOpen(false);
-              toggleSidebar();
             }}
             className="rounded-full hover:bg-gray-100"
           >
@@ -154,99 +285,44 @@ export function CourseSidebar() {
         </SidebarHeader>
 
         <SidebarContent>
-          <form onSubmit={handleSubmit} className="space-y-6 p-6 text-left ">
+          <form className="space-y-6 p-6 text-left ">
             <div className="space-y-6">
-              <Label htmlFor="courseName">Kurs nomi</Label>
-              <Input
-                id="courseName"
-                placeholder="Kurs nomini kiriting"
+              <Label htmlFor="studentName">O'quvchi</Label>
+              <SelectReact
+                id="studentName"
+                placeholder="O'quvchini tanlang..."
+                options={Leads.map((lead) => ({ value: lead.name, label: lead.name }))}
                 className="w-full"
-                required
+                onChange={(e) => setAddStudent({ ...AddStudent, studentName: e.value })}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="teacher">O'qituvchi</Label>
-              <Select>
-                <SelectTrigger id="teacher" className="w-full">
-                  <SelectValue placeholder="O'qituvchini tanlang..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {teachersData.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id}>
-                      {teacher.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="price">Narxi</Label>
+              <Label htmlFor="login">Login</Label>
               <Input
-                id="price"
-                placeholder="Narxini kiriting"
-                className="w-full"
-                required
+                id="login"
+                placeholder="Loginni kiriting"
+                className={style.input}
+                onChange={(e) => setAddStudent({ ...AddStudent, login: e.target.value })}
               />
             </div>
 
             <div className="space-y-3">
-              <Label>Dars kunlari</Label>
-              <div className="flex flex-wrap gap-3">
-                {daysOfWeek.map((day) => (
-                  <div key={day.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={day.id}
-                      checked={selectedDays.includes(day.id)}
-                      onCheckedChange={() => handleDayChange(day.id)}
-                    />
-                    <Label
-                      htmlFor={day.id}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {day.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Dars vaqti</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="relative">
-                  <Input type="time" className="w-full pl-10" required />
-                  <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                </div>
-                <div className="relative">
-                  <Input type="time" className="w-full pl-10" required />
-                  <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="room">Xona</Label>
-              <Select>
-                <SelectTrigger id="room" className="w-full">
-                  <SelectValue placeholder="Xonani tanlang..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {roomsData.map((room) => (
-                    <SelectItem key={room.id} value={room.id}>
-                      {room.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="parol">Parol</Label>
+              <Input
+                id="parol"
+                type="password"
+                placeholder="Parolni kiriting"
+                className={style.input}
+                onChange={(e) => setAddStudent({ ...AddStudent, parol: e.target.value })}
+              />
             </div>
 
             <Button
-              type="submit"
-              className="w-full bg-black hover:opacity-80 text-white"
+              onClick={(e) => (e.preventDefault(), addStudent())}
+              className="bg-blue-800 text-white"
             >
-              Saqlash
+              Qo'shish
             </Button>
           </form>
         </SidebarContent>

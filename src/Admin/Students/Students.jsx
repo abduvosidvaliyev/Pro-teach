@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useNavigate, Link, data } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import style from "./Students.module.css";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
@@ -14,7 +14,6 @@ import {
   remove,
   get
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
-import { SidebarPanel } from "../../Sidebar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -33,7 +32,6 @@ import {
 } from "@/components/ui/table";
 import {
   Search,
-  MoreVertical,
   FileSpreadsheet,
   MessageSquare,
   Plus,
@@ -81,14 +79,6 @@ function Students() {
       year: "numeric",
     });
     return currentMonthAndYear;
-  };
-
-  const getCurrentDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
   };
 
   const getCurrentMonthDates = (selectedDays) => {
@@ -182,23 +172,18 @@ function Students() {
   const [isAdd, setIsAdd] = useState(true);
   const [studentInfo, setStudentInfo] = useState("");
   const [studentsData, setStudentsData] = useState([]);
-  const [newStudentName, setNewStudentName] = useState("");
-  const [newStudentNumber, setNewStudentNumber] = useState();
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
-  const [dates, setDates] = useState(getCurrentDate());
   const [groupsData, setGroupsData] = useState([]);
   const [paymentHistory, setPaymentHistory] = useState([]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [students, setStudents] = useState([]);
   const [teachersData, setTeachersData] = useState([]);
   const [Group, setGroup] = useState([])
   const [GetLeads, setGetLeads] = useState([])
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedStudentName, setSelectedStudentName] = useState("");
   const [courses, setCourses] = useState([]);
   const [AddStudent, setAddStudent] = useState({
     name: "",
     group: "",
+    login: "",
+    parol: ""
   })
   const [firstLeads, setfirstLeads] = useState({})
   const [GetFilterStudent, setGetFilterStudent] = useState([])
@@ -217,12 +202,6 @@ function Students() {
     setIsAdd(!isAdd);
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
 
   useEffect(() => {
     const studentsRef = ref(database, "Students");
@@ -234,7 +213,7 @@ function Students() {
 
   useEffect(() => {
     const studentsRef = ref(database, `Payments/${currentMonth}`);
-    const unsubscribe = onValue(studentsRef, (snapshot) => {
+    onValue(studentsRef, (snapshot) => {
       const data = snapshot.val();
       setPaymentHistory(data ? Object.values(data) : []);
     });
@@ -250,7 +229,7 @@ function Students() {
 
   useEffect(() => {
     const teachersRef = ref(database, `Teachers`);
-    const unsubscribe = onValue(teachersRef, (snapshot) => {
+    onValue(teachersRef, (snapshot) => {
       const data = snapshot.val();
       setTeachersData(data);
     });
@@ -303,8 +282,6 @@ function Students() {
     if ((AddStudent.name && AddStudent.group) === "") {
       return
     }
-    const selectedDays = ["du", "se", "pay"]; // Guruhning tanlangan kunlari
-    const dates = getCurrentMonthDates(selectedDays); // Kunlarni hisoblash
 
     const date = new Date().toISOString().split("T")[0]; // Qo'shilgan sana
     const today = new Date(); // Bugungi sana
@@ -345,6 +322,8 @@ function Students() {
             group: AddStudent.group,
             studentName: AddStudent.name,
             studentNumber: firstLeads.phone,
+            login: AddStudent.login,
+            parol: AddStudent.parol,
             status: "Faol",
             addedDate: date,
             perLessonCost,
@@ -363,9 +342,11 @@ function Students() {
               remove(ref(database, `leads/${firstLeads.name}`))
               setAddStudent({
                 name: "",
-                group: ""
+                group: "",
+                login: "",
+                parol: ""
               })
-              AddNotify()
+              AddNotify({ AddTitle: "O'quvchi qo'shildi!" })
             })
             .catch((error) => {
               console.error(error)
@@ -393,6 +374,7 @@ function Students() {
       setGroup([group])
     })
   }, [studentsData, groupsData])
+
 
   // const filterStudent = studentsData.filter((student) => student.name.toLowerCase().includes(value))
   const filterStudents = (value) => {
@@ -451,11 +433,17 @@ function Students() {
   const currentPayments = useMemo(() => {
     const start = currentPage * PER_PAGE;
     return allPayments.slice(start, start + PER_PAGE);
-  }, [allPayments, currentPage]);
+  }, [allPayments, currentPage, PER_PAGE]);
 
   const handlePageClick = ({ selected }) => {
     setCurrentPage(selected);
   };
+
+  const uniquePayment = [...new Map(currentPayments.map(item => [item.id, item])).values()];
+
+  useEffect(() => {
+    setGetFilterStudent(studentsData.sort((a, b) => a.id - b.id));
+  }, [studentsData]);
 
   return (
     <>
@@ -501,6 +489,26 @@ function Students() {
                 />
               </div>
               <div className="flex flex-col gap-3">
+                <Label htmlFor="login" className="text-xs text-gray-500">Login</Label>
+                <Input
+                  id="login"
+                  type="text"
+                  className={style.inputSearch}
+                  placeholder="O'quvchi uchun login"
+                  onChange={(e) => setAddStudent({ ...AddStudent, login: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="parol" className="text-xs text-gray-500">Parol</Label>
+                <Input
+                  id="parol"
+                  type="text"
+                  className={style.inputSearch}
+                  placeholder="O'quvchi uchun parol"
+                  onChange={(e) => setAddStudent({ ...AddStudent, parol: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-3">
                 <Label htmlFor="coursePrice" className="text-xs text-gray-500">Guruh nomi</Label>
                 <SelectReact
                   id="coursePrice"
@@ -527,7 +535,7 @@ function Students() {
 
       <div>
         <div
-          className={style.main}
+          className={`${style.main} ${PER_PAGE === 5 ? style.Main : ""}`}
           style={{
             marginLeft: "var(--sidebar-width, 250px)",
             width: "var(--sidebar-width), 100%",
@@ -677,57 +685,63 @@ function Students() {
               </div>
 
               {/* Table */}
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Ism familiya</TableHead>
-                    <TableHead>Baho</TableHead>
-                    <TableHead>Telefon raqam</TableHead>
-                    <TableHead>Guruhlar</TableHead>
-                    <TableHead>O'qituvchi</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className={`${PER_PAGE >= 10 ? "h-[500px] overflow-auto w-full" : ""}`}>
+                <Table className=" h-[100px] overflow-auto">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Ism familiya</TableHead>
+                      <TableHead>Baho</TableHead>
+                      <TableHead>Telefon raqam</TableHead>
+                      <TableHead>Guruhlar</TableHead>
+                      <TableHead>O'qituvchi</TableHead>
+                    </TableRow>
+                  </TableHeader>
 
-                <TableBody>
-                  {studentsData.length > 0 ? (
-                    currentPayments.map((student) => {
-                      return (
-                        <TableRow
-                          onClick={(event) =>
-                            handleLinkClick(event, student, student.id, student.studentName)
-                          }
-                          key={student.id}
-                        >
-                          <TableCell>{student.id}</TableCell>
-                          <TableCell>{student.studentName}</TableCell>
-                          <TableCell>{student.grade}</TableCell>
-                          <TableCell>{student.studentNumber}</TableCell>
-                          <TableCell>
-                            <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                              {student.group}
-                            </span>
-                          </TableCell>
-                          {
-                            groupsData.length > 0 ? (
-                              [groupsData.find(item => item.groupName.toLowerCase() === student.group.toLowerCase())].map((group => {
-                                return (
-                                  <TableCell>
-                                    {group.teachers}
-                                  </TableCell>
-                                )
-                              }))
-                            ) : ""
-                          }
-                        </TableRow>
-                      )
-                    })) : ""
-                  }
-                </TableBody>
-              </Table>
+                  <TableBody>
+                    {studentsData.length > 0 ? (
+                      uniquePayment.map((student) => {
+                        return (
+                          <TableRow
+                            onClick={(event) =>
+                              handleLinkClick(event, student, student.id, student.studentName)
+                            }
+                            key={student.id}
+                          >
+                            <TableCell>{student.id}</TableCell>
+                            <TableCell>{student.studentName}</TableCell>
+                            <TableCell>{student.grade}</TableCell>
+                            <TableCell>{student.studentNumber}</TableCell>
+                            <TableCell>
+                              <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                {student.group}
+                              </span>
+                            </TableCell>
+                            {
+                              groupsData.length > 0 ? (
+                                [groupsData.find(item => item.groupName.toLowerCase() === student.group.toLowerCase())].map((group => {
+                                  return (
+                                    <TableCell>
+                                      {group.teachers}
+                                    </TableCell>
+                                  )
+                                }))
+                              ) : ""
+                            }
+                          </TableRow>
+                        )
+                      })) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center">Ma'lumot yo'q</TableCell>
+                      </TableRow>
+                    )
+                    }
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Paginations */}
-              <div className="flex items-center gap-3 self-end">
+              <div className="flex items-center gap-3 self-end pt-10">
                 <Select
                   value={String(PER_PAGE)}
                   onValueChange={val => {
@@ -750,7 +764,6 @@ function Students() {
                 <ReactPaginate
                   pageCount={pageCount}
                   onPageChange={handlePageClick}
-                  forcePage={currentPage}
                   previousLabel={<FiChevronLeft />}
                   nextLabel={<FiChevronRight />}
                   breakLabel="..."

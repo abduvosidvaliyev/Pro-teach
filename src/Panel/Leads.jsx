@@ -36,6 +36,7 @@ import {
 import { Modal } from "../components/ui/modal"
 import { useNavigate } from "react-router-dom"
 import { ToastContainer } from "react-toastify"
+import style from "./Panel.module.css"
 
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -147,7 +148,11 @@ export default function LeadsPage() {
   const [roomsData, setRoomsData] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth())
   const [newUser, setnewUser] = useState({})
-  const [selectedOptions, setSelectedOptions] = useState([]);
+  const [selectedOptions, setSelectedOptions] = useState({
+    login: "",
+    parol: "",
+    group: ""
+  });
   const [openModal, setopenModal] = useState(false)
   const [firstInformation, setfirstInformation] = useState({})
   const [isOpen, setIsOpen] = useState(false);
@@ -228,90 +233,91 @@ export default function LeadsPage() {
     })
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const today = new Date();
-      const dayOfWeek = today.toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase();
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     const today = new Date();
+  //     const dayOfWeek = today.toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase();
 
-      const studentsRef = ref(database, `Students`);
-      get(studentsRef)
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            const studentsData = snapshot.val();
+  //     const studentsRef = ref(database, `Students`);
+  //     get(studentsRef)
+  //       .then((snapshot) => {
+  //         if (snapshot.exists()) {
+  //           const studentsData = snapshot.val();
 
-            // Har bir o'quvchini tekshirish
-            Object.entries(studentsData).forEach(([studentName, studentData]) => {
-              if (studentData.status === "Faol") {
-                const currentBalance = studentData.balance || 0;
-                const perLessonCost = studentData.perLessonCost || 0;
-                const groupName = studentData.group;
+  //           // Har bir o'quvchini tekshirish
+  //           Object.entries(studentsData).forEach(([studentName, studentData]) => {
+  //             if (studentData.status === "Faol") {
+  //               const currentBalance = studentData.balance || 0;
+  //               const perLessonCost = studentData.perLessonCost || 0;
+  //               const groupName = studentData.group;
 
-                if (!groupName) {
-                  console.error(`Group name not found for student: ${studentName}`);
-                  return;
-                }
+  //               if (!groupName) {
+  //                 console.error(`Group name not found for student: ${studentName}`);
+  //                 return;
+  //               }
 
-                // Guruh ma'lumotlarini olish
-                const groupRef = ref(database, `Groups/${groupName}`);
-                get(groupRef)
-                  .then((groupSnapshot) => {
-                    if (groupSnapshot.exists()) {
-                      const groupData = groupSnapshot.val();
-                      const selectedDays = groupData.selectedDays || [];
+  //               // Guruh ma'lumotlarini olish
+  //               const groupRef = ref(database, `Groups/${groupName}`);
+  //               get(groupRef)
+  //                 .then((groupSnapshot) => {
+  //                   if (groupSnapshot.exists()) {
+  //                     const groupData = groupSnapshot.val();
+  //                     const selectedDays = groupData.selectedDays || [];
 
-                      // Agar bugungi kun dars kuni bo'lsa
-                      if (selectedDays.includes(dayOfWeek)) {
-                        const updatedBalance = currentBalance - perLessonCost;
+  //                     // Agar bugungi kun dars kuni bo'lsa
+  //                     if (selectedDays.includes(dayOfWeek)) {
+  //                       const updatedBalance = currentBalance - perLessonCost;
 
-                        console.log(
-                          `Daily deduction for ${studentName}: ${perLessonCost}`
-                        );
-                        console.log(
-                          `Updated Balance for ${studentName}: ${updatedBalance}`
-                        );
+  //                       console.log(
+  //                         `Daily deduction for ${studentName}: ${perLessonCost}`
+  //                       );
+  //                       console.log(
+  //                         `Updated Balance for ${studentName}: ${updatedBalance}`
+  //                       );
 
-                        // Firebase-ni yangilash
-                        const studentRef = ref(database, `Students/${studentName}`);
-                        update(studentRef, { balance: updatedBalance })
-                          .then(() => {
-                            console.log(
-                              `Balance updated for ${studentName} for today's lesson.`
-                            );
-                          })
-                          .catch((error) => {
-                            console.error(
-                              `Error updating balance for ${studentName}:`,
-                              error
-                            );
-                          });
-                      }
-                    } else {
-                      console.error(
-                        `Group data not found for group: ${groupName}`
-                      );
-                    }
-                  })
-                  .catch((error) => {
-                    console.error(
-                      `Error fetching group data for group: ${groupName}`,
-                      error
-                    );
-                  });
-              }
-            });
-          } else {
-            console.error("No students found in Firebase.");
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching students data:", error);
-        });
-    }, 1000 * 60 * 60 * 24); // Har kuni tekshirish
+  //                       // Firebase-ni yangilash
+  //                       const studentRef = ref(database, `Students/${studentName}`);
+  //                       update(studentRef, { balance: updatedBalance })
+  //                         .then(() => {
+  //                           console.log(
+  //                             `Balance updated for ${studentName} for today's lesson.`
+  //                           );
+  //                         })
+  //                         .catch((error) => {
+  //                           console.error(
+  //                             `Error updating balance for ${studentName}:`,
+  //                             error
+  //                           );
+  //                         });
+  //                     }
+  //                   } else {
+  //                     console.error(
+  //                       `Group data not found for group: ${groupName}`
+  //                     );
+  //                   }
+  //                 })
+  //                 .catch((error) => {
+  //                   console.error(
+  //                     `Error fetching group data for group: ${groupName}`,
+  //                     error
+  //                   );
+  //                 });
+  //             }
+  //           });
+  //         } else {
+  //           console.error("No students found in Firebase.");
+  //         }
+  //       })
+  //       .catch((error) => {
+  //         console.error("Error fetching students data:", error);
+  //       });
+  //   }, 1000 * 60 * 60 * 24); // Har kuni tekshirish
 
-    return () => clearInterval(interval); // Komponent unmount bo'lganda intervalni tozalash
-  }, []);
+  //   return () => clearInterval(interval); // Komponent unmount bo'lganda intervalni tozalash
+  // }, []);
 
   // state to store new lead data 
+
   const [newLead, setNewLead] = useState({
     name: "",
     phone: "",
@@ -384,13 +390,15 @@ export default function LeadsPage() {
       date: date
     })
       .then(() => {
-        AddNotify()
+        AddNotify({AddTitle: "Qo'shildi"})
         setNewLead({ name: "", phone: "", status: "Kutyabdi", time: "", notes: "" })
       })
   }
 
 
   const filteredLeads = filterStatus === "all" ? leads : leads.filter((lead) => lead.status === filterStatus)
+
+  console.log(selectedOptions)    
 
   // delate leads
   const handleDeleteLead = (name) => {
@@ -400,23 +408,26 @@ export default function LeadsPage() {
     remove(leadRef)
       .then(() => {
         setopenDelateModal(false)
+        DelateNotify({DelateTitle: "Lead o'chirildi!"})
       })
       .catch((error) => {
         console.error(error)
       })
-  }
+  }  
 
   // add to group
   const handleAddToGroup = () => {
-    if (!selectedOptions.groups?.label) {
+    if ((selectedOptions.group && selectedOptions.login && selectedOptions.parol) === "") {
       alert("Iltimos, guruhni tanlang!");
       return;
     }
+
+
     const date = new Date().toISOString().split("T")[0]; // Qo'shilgan sana
     const today = new Date(); // Bugungi sana
 
     // Guruh ma'lumotlarini olish
-    const groupRef = ref(database, `Groups/${selectedOptions.groups.label}`);
+    const groupRef = ref(database, `Groups/${selectedOptions.group.label}`);
     get(groupRef)
       .then((groupSnapshot) => {
         if (groupSnapshot.exists()) {
@@ -452,9 +463,11 @@ export default function LeadsPage() {
             id: Students.length + 1
             ,
             balance: 0, // Boshlang'ich balansni 0 qilib qo'yamiz
-            group: selectedOptions.groups.label,
+            group: selectedOptions.group.label,
             studentName: newUser.name,
             studentNumber: newUser.phone,
+            login: selectedOptions.login,
+            parol: selectedOptions.parol,
             status: "Faol",
             addedDate: date, // Qo'shilgan sana
             perLessonCost, // Har bir dars uchun narxni saqlaymiz
@@ -463,7 +476,7 @@ export default function LeadsPage() {
               {
                 date: newUser.date, // newUserning sanasi
                 title: "Ro'yxatdan o'tdi",
-                description: `${newUser.name} ${selectedOptions.groups.label} guruhiga qo'shildi.`,
+                description: `${newUser.name} ${selectedOptions.group} guruhiga qo'shildi.`,
               },
             ],
             paymentHistory: []
@@ -471,7 +484,7 @@ export default function LeadsPage() {
             .then(() => {
               handleDeleteLead(newUser.name)
               setIsOpen(false)
-              AddNotify()
+              AddNotify({AddTitle: "Guruhga qo'shildi!"})
             })
             .catch((error) => {
               console.error(error)
@@ -489,15 +502,7 @@ export default function LeadsPage() {
       });
   };
 
-  const handleSelectChange = (selectedOption, actionMeta) => {
-    setSelectedOptions((prevState) => ({
-      ...prevState,
-      [actionMeta.name]: selectedOption, // To'liq obyektni saqlaymiz
-    }));
-  };
-
   const toggleSidebar = (id) => {
-    setIsOpen(!isOpen);
     const newUser = leads.find(user => user.id === id)
 
     setnewUser(newUser)
@@ -586,30 +591,30 @@ export default function LeadsPage() {
             <h3 className="text-md font-semibold">
               ID: {firstInformation.id}
             </h3>
-            <h4 className="text-md font-semibold">
+            <h5 className="text-md font-semibold">
               Ismi: {firstInformation.name}
-            </h4>
-            <h4 className="text-md font-semibold">
+            </h5>
+            <h5 className="text-md font-semibold">
               Telefon raqami: {firstInformation.phone}
-            </h4>
-            <h4 className="text-md font-semibold">
+            </h5>
+            <h5 className="text-md font-semibold">
               Qaysi soha: {firstInformation.course}
-            </h4>
-            <h4 className="text-md font-semibold">
+            </h5>
+            <h5 className="text-md font-semibold">
               Bizni qanday topdi: {firstInformation.source}
-            </h4>
-            <h4 className="text-md font-semibold">
+            </h5>
+            <h5 className="text-md font-semibold">
               Statusi: {firstInformation.status}
-            </h4>
-            <h4 className="text-md font-semibold">
+            </h5>
+            <h5 className="text-md font-semibold">
               Qachon royhatga olingan: {firstInformation.date}
-            </h4>
-            <h4 className="text-md font-semibold">
+            </h5>
+            <h5 className="text-md font-semibold">
               Qaysi payt: {firstInformation.time}
-            </h4>
-            <h4 className="text-md font-semibold">
+            </h5>
+            <h5 className="text-md font-semibold">
               Bu yerga kelishiga nima sabab: {firstInformation.notes}
-            </h4>
+            </h5>
           </div>
         }
       /> : ""}
@@ -637,7 +642,7 @@ export default function LeadsPage() {
             className="fixed w-full h-[100vh] z-30  inset-0 backdrop-blur-[2px] bg-black/50 transition-all duration-900 ease-in-out"
             onClick={() => {
               setOpen(false);
-              toggleSidebar();
+              setIsOpen(false);
             }}
           ></div>
         )}
@@ -665,16 +670,33 @@ export default function LeadsPage() {
 
           <SidebarContent>
             <form
-              onSubmit={handleSubmit}
               className="space-y-6 p-6 text-left "
             >
               <div className="space-y-2">
+                <Label htmlFor="login">Login</Label>
+                <Input
+                  id="login"
+                  type="text"
+                  className={style.input}
+                  placeholder="O'quvchi uchun login"
+                  onChange={(e) => setSelectedOptions({ ...selectedOptions, login: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="parol">Parol</Label>
+                <Input
+                  id="parol"
+                  type="text"
+                  className={style.input}
+                  placeholder="O'quvchi uchun login"
+                  onChange={(e) => setSelectedOptions({ ...selectedOptions, parol: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="courseSelect">Guruh tanlash</Label>
                 <SelectReact
-                  value={selectedOptions.groups} // Bu obyekt bo'lishi kerak: { label, value }
-                  onChange={(selectedOption) =>
-                    handleSelectChange(selectedOption, { name: "groups" })
-                  }
+                  value={selectedOptions.groups}
+                  onChange={(e) => setSelectedOptions({ ...selectedOptions, group: e })}
                   options={GroupData.map((group) => ({
                     label: group.groupName,
                     value: group.id, // value qo'shildi
@@ -686,7 +708,6 @@ export default function LeadsPage() {
                 className="w-full bg-black hover:opacity-80 text-white"
                 onClick={(event) => {
                   event.preventDefault(); // Prevent form submission
-                  setOpen(false);
                   toggleSidebar();
                   handleAddToGroup();
                 }}
@@ -923,6 +944,7 @@ export default function LeadsPage() {
                                 event.stopPropagation();
                                 setopenModal(false);
                                 setOpen(true);
+                                setIsOpen(true)
                                 toggleSidebar(lead.id);
                               }}
                             >

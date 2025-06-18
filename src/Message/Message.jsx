@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import back from '../assets/bac.mp4';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 import { getDatabase, ref, set, onValue, push, update } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 import styles from "./Message.module.css"
+import BasicNavbar from '../Basic/BasicNavbar';
 
 const firebaseConfig = {
     apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -22,99 +22,68 @@ const analytics = getAnalytics(app);
 const database = getDatabase(app);
 
 const Message = () => {
-    const location = useLocation();
-    const receivedData = location.state;  
-    { console.log(receivedData) }
-    const [messages, setMessages] = useState([]);
-    const [newMessage, setNewMessage] = useState('');
-    const [typing, setTyping] = useState(false);
-    const [otherUserTyping, setOtherUserTyping] = useState(false);
+    const StudentData = JSON.parse(localStorage.getItem("StudentData"))
+    const [Students, setStudents] = useState([])
+    const [Groups, setGroups] = useState([])
+    const [Student, setStudent] = useState({})
+    const [Group, setGroup] = useState({})
 
     useEffect(() => {
-        const messagesRef = ref(database, 'messages');
-        onValue(messagesRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                setMessages(Object.values(data));
-            }
-        });
+        const studentRef = ref(database, "Students")
 
-        const typingRef = ref(database, 'typing');
-        onValue(typingRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data && data.user !== receivedData) {
-                setOtherUserTyping(data.typing);
-            }
-        });
-    }, [receivedData]);
+        onValue(studentRef, (snapshot) => {
+            const data = snapshot.val()
 
-    const handleSendMessage = () => {
-        const messagesRef = ref(database, 'messages');
-        const newMessageRef = push(messagesRef);
-        set(newMessageRef, {
-            text: newMessage,
-            timestamp: Date.now(),
-            user: receivedData || 'Anonymous' // Foydalanuvchi ismi formData'dan olinadi yoki 'Anonymous'
-        });
-        setNewMessage('');
-        update(ref(database, 'typing'), { typing: false, user: receivedData });
-    };
+            setStudents(Object.values(data || []))
+        })
 
-    const handleTyping = (e) => {
-        setNewMessage(e.target.value);
-        if (!typing) {
-            setTyping(true);
-            update(ref(database, 'typing'), { typing: true, user: receivedData });
-        }
-        if (e.target.value === '') {
-            setTyping(false);
-            update(ref(database, 'typing'), { typing: false, user: receivedData });
-        }
-    };
+        const groupRef = ref(database, "Groups")
+
+        onValue(groupRef, (snapshot) => {
+            const data = snapshot.val()
+
+            setGroups(Object.values(data || []))
+        })
+    }, [])
+
+
+    useEffect(() => {
+        const student = Students.find(student => student.id === StudentData.id)
+
+        setStudent(student)
+    }, [StudentData, Students])
+
+    useEffect(() => {
+        const group = Groups.find(group => group.groupName === Student?.group)
+
+        setGroup(group)
+    }, [Student, Groups])
+
+    console.log(Group?.groupName)    
 
     return (
         <div>
             <video autoPlay loop>
                 <source src={back} />
             </video>
-            <aside className={styles.basicAside}>
-                <Link to="/">
-                <i className={`fa-solid fa-house ${styles.icon}`}></i>
-                </Link>
-                <i className={`fa-solid fa-layer-group ${styles.icon}`}></i>
-                <Link to="/chat">
-                    <i className={`fa-solid fa-message ${styles.icon}`}></i>
-                </Link>
-            </aside>
-            <div className={styles.chat}>
-                <div className={styles.chatContainer}>
-                    <div className={styles.chatHeader}>
-                        <h3>Chat</h3>
-                    </div>
-                    <div className="flex-1 p-2.5 overflow-y-auto flex flex-col gap-3.5">
-                        {messages.map((message, index) => (
-                            <div 
-                                key={index} 
-                                className={`flex items-end gap-2.5 ${message.user === receivedData ? 'justify-end' : 'justify-start'}`}
-                            >
-                                <img className="w-10 h-10 rounded-full object-cover" src="https://via.placeholder.com/40" alt="User" />
-                                <div className="max-w-[70%] p-2.5 rounded-lg relative text-sm leading-[1.4]">
-                                    <p>{message.text}</p>
-                                    <span className={styles.time}>{new Date(message.timestamp).toLocaleTimeString()}</span>
-                                </div>
-                            </div>
-                        ))}
-                        {otherUserTyping && <div className={styles.typingIndicator}>Yozmoqda...</div>}
-                    </div>
-                    <div className={styles.chatFooter}>
-                        <input
-                            type="text"
-                            placeholder="Xabar yozing..."
-                            value={newMessage}
-                            onInput={handleTyping}
-                        />
-                        <button onClick={handleSendMessage}>Yuborish</button>
-                    </div>
+            <div className="flex justify-between w-full">
+                <BasicNavbar />
+                <div className="w-[80%] px-2 flex flex-col h-screen">
+                    <nav className="w-full bg-[#ffffff17] px-4 shadow-xl border border-[#ffffff4d] rounded-b-[15px] backdrop-blur-[5px] h-[120px]">
+                        <div className="flex">
+                            {
+                                Group?.groupName ? (
+                                    <h3>
+                                        {Group?.groupName}
+                                    </h3>
+                                ) : (
+                                    <h3>
+                                        Yuklanmoqda!
+                                    </h3>
+                                )
+                            }
+                        </div>
+                    </nav>
                 </div>
             </div>
         </div>

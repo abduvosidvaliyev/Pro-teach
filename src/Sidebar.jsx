@@ -121,20 +121,20 @@ export function SidebarPanel() {
               ></i>
             </a>
             <ul className={`${style.dropdownMenu}`}>
-              <li>
-                <Link to="/expenses" className={style.dropdownItem}>
+              <li onClick={() => navigate("/expenses")}>
+                <Link className={style.dropdownItem}>
                   <GrMoney />
                   Xarajatlar
                 </Link>
               </li>
-              <li>
-                <Link to="/inputAndOutput" className={style.dropdownItem}>
+              <li onClick={() => navigate("/inputAndOutput")}>
+                <Link className={style.dropdownItem}>
                   <MdOutlineCurrencyExchange className="text-[20px]" />
                   Kirim va chiqim
                 </Link>
               </li>
-              <li>
-                <Link to="/debtadStudents" className={style.dropdownItem}>
+              <li onClick={() => navigate("/debtadStudents")}>
+                <Link className={style.dropdownItem}>
                   <HiOutlineCurrencyDollar className="text-[25px]" />
                   Qarzdorlar
                 </Link>
@@ -172,29 +172,29 @@ export function SidebarPanel() {
               ></i>
             </a>
             <ul className={style.dropdownMenu}>
-              <li>
-                <Link to="/course" className={style.dropdownItem}>
+              <li onClick={() => navigate("/course")}>
+                <Link className={style.dropdownItem}>
                   <i className="fa-regular fa-gem"></i>
                   Kurslar
                 </Link>
               </li>
-              <li>
-                <Link to="/rooms" className={style.dropdownItem}>
+              <li onClick={() => navigate("/rooms")}>
+                <Link className={style.dropdownItem}>
                   <i className="fa-solid fa-table-cells-large"></i>
                   Xonalar
                 </Link>
               </li>
-              <li>
-                <Link to="/users" className={style.dropdownItem}>
+              <li onClick={() => navigate("/users")}>
+                <Link className={style.dropdownItem}>
                   <i className="fa-solid fa-user-group"></i>
                   Xodimlar
                 </Link>
               </li>
-              <li>
-                <h4 onClick={handleOpenProfile} className={style.dropdownItem}>
+              <li onClick={handleOpenProfile}>
+                <Link className={style.dropdownItem}>
                   <i className="fa-solid fa-user"></i>
                   Profil
-                </h4>
+                </Link>
               </li>
             </ul>
           </li>

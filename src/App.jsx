@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Register from '../src/Register&Login/Register.jsx'
 import Basic from '../src/Basic/Basic.jsx'
 import Panel from '../src/Panel/Panel.jsx'
@@ -26,15 +26,24 @@ import { PrivateRoute, PrivateStudentRoute } from "./Register&Login/PrivateRoute
 import { Profile } from "./Admin/Profile/Profile.jsx";
 import { SidebarPanel } from "./Sidebar.jsx";
 
-function App() {
-  const [userData, setUserData] = useState(localStorage.getItem("UserData"))
+function SidebarWrapper({ userData }) {
+  const location = useLocation();
+  // Faqat /leads bo‘lmaganda SidebarPanel chiqadi
+  if (userData && location.pathname !== "/leads") {
+    return <SidebarPanel />;
+  }
+  return null;
+}
 
-  const studentData = localStorage.getItem("StudentData")
+function App() {
+  const [userData, setUserData] = useState(JSON.parse(localStorage.getItem("UserData")))
+
+  const studentData = JSON.parse(localStorage.getItem("StudentData"))
 
   return (
     <>
       <Router>
-        {userData && <SidebarPanel />}
+        <SidebarWrapper userData={userData} />
         <Routes>
           <Route
             path="/"
@@ -43,7 +52,7 @@ function App() {
                 ? <Navigate to={`/studentpages/${studentData.id}`} replace />
                 : userData
                   ? <Navigate to="/panel" replace />
-                  : <Register setUserData={setUserData}/>
+                  : <Register setUserData={setUserData} />
             }
           />
           <Route
@@ -55,7 +64,7 @@ function App() {
             }
           />
           <Route
-            path="/chat"
+            path="/studentchat"
             element={
               <PrivateStudentRoute>
                 <Message />
@@ -66,7 +75,6 @@ function App() {
             <Route path="/panel" element={<Panel setUserData={setUserData} />} />
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/inputAndOutput" element={<InputAndOutput />} />
-            <Route path="/chat" element={<Message />} />
             <Route path="/control" element={<Control />} />
             <Route path="/course" element={<Course />} />
             <Route path="/rooms" element={<Rooms />} />

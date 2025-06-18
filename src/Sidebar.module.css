@@ -117,8 +117,7 @@
   transition: background 0.3s ease;
 }
 
-.dropdownMenu li a,
-h4 {
+.dropdownMenu li a {
   color: white;
   padding: 10px 20px;
   text-decoration: none;
@@ -255,4 +254,8 @@ h4 {
   top: 0;
 
   transition: top 0.3s 0.1s ease;
+}
+
+.input::placeholder{
+  color: #8b8b8b !important;
 }
