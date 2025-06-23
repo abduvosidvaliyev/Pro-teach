@@ -1,0 +1,55 @@
+.table:hover::-webkit-scrollbar {
+    background: #ccc;
+}
+
+.table::-webkit-scrollbar {
+    width: 4px;
+    border-radius: 10px;
+}
+
+.table::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+}
+
+.table::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 10px;
+}
+
+.table:hover::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #b1a3b6, #8d6cb7, #b1a3b6);
+}
+
+.input::placeholder {
+    color: #8b8b8b;
+}
+
+.inputMessage::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.inputMessage::placeholder {
+    color: #333;
+}
+
+.textCard {
+    &:hover::-webkit-scrollbar {
+        background: #cecece58;
+    }
+
+    &:hover::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #b1a3b6, #8d6cb7, #b1a3b6);
+    }
+}
+
+.textCard::-webkit-scrollbar {
+    width: 5px;
+    border-radius: 10px;
+}
+
+.textCard::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 10px;
+}

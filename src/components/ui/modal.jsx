@@ -23,9 +23,9 @@ export function Modal({ isOpen, onClose,  positionTop, title, children }) {
       <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-50" onClick={onClose} />
 
       {/* Modal */}
-      <div className={`fixed ${positionTop} left-[550px]  w-full max-w-[425px] bg-white rounded-lg shadow-lg z-60 p-6`}>
+      <div className={`fixed ${positionTop} left-[550px] w-full max-w-[425px] bg-white rounded-lg shadow-lg z-60 p-6`}>
         <div className="text-center mb-6">
-          <h2 className="text-xl font-semibold">{title}</h2>
+          <h2 className="text-lg font-semibold">{title}</h2>
         </div>
 
         {children}
