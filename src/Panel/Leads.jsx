@@ -390,15 +390,21 @@ export default function LeadsPage() {
       date: date
     })
       .then(() => {
-        AddNotify({AddTitle: "Qo'shildi"})
-        setNewLead({ name: "", phone: "", status: "Kutyabdi", time: "", notes: "" })
+        AddNotify({ AddTitle: "Qo'shildi" })
+        setNewLead({
+          name: "",
+          phone: "",
+          status: "Kutyabdi",
+          time: "",
+          notes: "",
+          source: "",
+          course: ""
+        })
       })
   }
 
 
   const filteredLeads = filterStatus === "all" ? leads : leads.filter((lead) => lead.status === filterStatus)
-
-  console.log(selectedOptions)    
 
   // delate leads
   const handleDeleteLead = (name) => {
@@ -408,12 +414,12 @@ export default function LeadsPage() {
     remove(leadRef)
       .then(() => {
         setopenDelateModal(false)
-        DelateNotify({DelateTitle: "Lead o'chirildi!"})
+        DelateNotify({ DelateTitle: "Lead o'chirildi!" })
       })
       .catch((error) => {
         console.error(error)
       })
-  }  
+  }
 
   // add to group
   const handleAddToGroup = () => {
@@ -483,15 +489,17 @@ export default function LeadsPage() {
           })
             .then(() => {
               handleDeleteLead(newUser.name)
+              setSelectedOptions({
+                group: "",
+                login: "",
+                parol: ""
+              })
               setIsOpen(false)
-              AddNotify({AddTitle: "Guruhga qo'shildi!"})
+              AddNotify({ AddTitle: "Guruhga qo'shildi!" })
             })
             .catch((error) => {
               console.error(error)
             })
-
-
-          // Leadni Firebase-dan o'chirish
         }
         else {
           console.error("Group data not found in Firebase.");
@@ -865,7 +873,9 @@ export default function LeadsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredLeads.map((lead, index) => (
+                    {filteredLeads
+                    .sort((a, b) => b.name - a.name)
+                    .map((lead, index) => (
                       <TableRow key={lead.id} onClick={() => { OpenModal(lead.id), setOpenChengeStatus(false), setOpenChengeCourse(null) }}>
                         <TableCell className="font-medium">{lead.name}</TableCell>
                         <TableCell>{lead.phone}</TableCell>
@@ -990,7 +1000,7 @@ export default function LeadsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="source">Manba</Label>
-                      <Select onValueChange={handleSourceChange} defaultValue={newLead.source}>
+                      <Select onValueChange={handleSourceChange} value={newLead.source}>
                         <SelectTrigger>
                           <SelectValue placeholder="Manba tanlang" />
                         </SelectTrigger>
@@ -1008,7 +1018,7 @@ export default function LeadsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="course">Kurs</Label>
-                      <Select onValueChange={handleCourseChange} defaultValue={newLead.course}>
+                      <Select onValueChange={handleCourseChange} value={newLead.course}>
                         <SelectTrigger>
                           <SelectValue placeholder="Kurs tanlang" />
                         </SelectTrigger>
@@ -1027,7 +1037,7 @@ export default function LeadsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="time">Vaqt</Label>
-                      <Select onValueChange={handleTimeChange} defaultValue={newLead.time}>
+                      <Select onValueChange={handleTimeChange} value={newLead.time}>
                         <SelectTrigger>
                           <SelectValue placeholder="Vaqt tanlang" />
                         </SelectTrigger>

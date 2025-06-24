@@ -160,7 +160,7 @@ export const CourseSidebar = ({ groupInfo }) => {
   
 
   const addStudent = () => {
-    if ((AddStudent.studentName && AddStudent.parol && AddStudent.login) === "") {
+    if ((AddStudent.studentName) === "") {
       alert("Ma'lumotlarni to'ldiring");
       return
     }
