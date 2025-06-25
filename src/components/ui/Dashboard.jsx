@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 import {
@@ -59,16 +59,13 @@ import {
 import { ScrollArea, ScrollBar } from "./scroll-area";
 import { cn } from "../../lib/utils";
 import {
-  TrendingUp,
   Users,
-  GraduationCap,
   DollarSign,
   Award,
   AlertTriangle,
   UserPlus,
   CreditCard,
   Receipt,
-  Wallet
 } from "lucide-react";
 import { Button } from "./button";
 import { Modal } from "./modal";
@@ -77,6 +74,7 @@ import { Label } from "./UiLabel";
 import { AddNotify } from "./Toast"
 import { ToastContainer } from "react-toastify";
 import ProfileCard from "../../Admin/Profile/ProfileCard";
+import { FaArrowRightLong } from "react-icons/fa6";
 
 const timeSlots = Array.from({ length: 13 }).map((_, i) => ({
   time: `${(i + 8).toString().padStart(2, "0")}:00`,
@@ -152,7 +150,6 @@ export default function Dashboard({ data, setUserData }) {
   const [CourseAbout, setCourseAbout] = useState([]);
   const [courseSchedule, setCourseSchedule] = useState([]); // Ertangi kun uchun jadval
   const [OpenModal, setOpenModal] = useState(false)
-  const [StudentKeys, setStudentKeys] = useState({});
   const [TakeStudents, setTakeStudents] = useState([])
   const [SearchStudens, setSearchStudens] = useState([]);
   const [balance, setbalance] = useState(0)
@@ -224,7 +221,6 @@ export default function Dashboard({ data, setUserData }) {
       const studentsArray = data ? Object.values(data) : [];
 
       setTakeStudents(studentsArray);
-      setStudentKeys(Object.keys(data || {}));
     });
 
     return () => unsubscribe(); // Kuzatuvni tozalash
@@ -288,7 +284,6 @@ export default function Dashboard({ data, setUserData }) {
 
     // Kursni mavjud bo'lsa, qiymatini qo'shish, aks holda yangi kurs qo'shish
     const existingCourse = acc.find((item) => item.name === courseName);
-    console.log(acc);
     if (existingCourse) {
       existingCourse.value += courseValue;
     } else {
@@ -361,7 +356,6 @@ export default function Dashboard({ data, setUserData }) {
     const todayDay = new Date().toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase(); // Bugungi kunni aniqlash
 
     const filteredGroups = filterGroupsByDay(groupsData, todayDay); // Bugungi kundagi guruhlarni filtrlash
-    // console.log("Bugungi guruhlar:", filteredGroups); // Konsolda filtrlash natijasini ko'rsatish
 
     // Bugungi kun uchun courseSchedule ni yangilash
     const filteredSchedule = filteredGroups.map((group, index) => {
@@ -370,8 +364,9 @@ export default function Dashboard({ data, setUserData }) {
         return null;
       }
 
-      const duration = calculateDuration(group.duration); // Calculate duration from group.duration
-      const [startHour] = group.duration.split("-")[0].split(":").map(Number); // Extract start hour
+      const duration = calculateDuration(group.duration);
+      const [startHour] = group.duration.split("-")[0].split(":").map(Number);
+      console.log(startHour)      
       return {
         id: group.id,
         name: group.groupName,
@@ -382,7 +377,7 @@ export default function Dashboard({ data, setUserData }) {
         startHour,
         selectedDays: group.selectedDays,
       };
-    }).filter(Boolean); // Filter out null values
+    }).filter(Boolean);
 
     // Bugungi kun uchun jadvalni yangilash
     setCourseSchedule(filteredSchedule);
@@ -519,6 +514,8 @@ export default function Dashboard({ data, setUserData }) {
     }
   };
 
+  console.log(courseSchedule)
+
   return (
     <>
       <ToastContainer />
@@ -632,14 +629,14 @@ export default function Dashboard({ data, setUserData }) {
               <Receipt className="w-4 h-4 mr-2" />
               To'lovlar tarixi
             </Button>
-            <ProfileCard setUserData={setUserData}/>
+            <ProfileCard setUserData={setUserData} />
           </div>
         </div>
+
         {/* KPI Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card
             className="bg-gradient-to-br cursor-pointer from-pink-50 to-pink-100"
-            onClick={() => navigate("/leads")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Yangi Lidlar</CardTitle>
@@ -647,9 +644,12 @@ export default function Dashboard({ data, setUserData }) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-pink-700">{leadsData === 0 ? 0 : leadsData.length}</div>
-              <p className="text-xs text-pink-600 mt-1 flex items-center">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                O'tgan haftaga nisbatan +15%
+              <p
+                className="w-28 text-xs text-pink-700 hover:border-b hover:border-b-pink-500 transition-all flex items-center gap-1 cursor-pointer"
+                onClick={() => navigate("/leads")}
+              >
+                Batafsil ma'lumot
+                <FaArrowRightLong />
               </p>
             </CardContent>
           </Card>
@@ -666,16 +666,11 @@ export default function Dashboard({ data, setUserData }) {
                   new Intl.NumberFormat('uz-UZ').format(balance) + " so'm"
                 }
               </div>
-              <p className="text-xs text-blue-600 mt-1 flex items-center">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                O'tgan oyga nisbatan +12.5%
-              </p>
             </CardContent>
           </Card>
 
           <Card
             className="bg-gradient-to-br cursor-pointer from-green-50 to-green-100"
-            onClick={() => navigate("/students")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
@@ -687,16 +682,18 @@ export default function Dashboard({ data, setUserData }) {
               <div className="text-2xl font-bold text-green-700">
                 {TakeStudents.length}
               </div>
-              <p className="text-xs text-green-600 mt-1 flex items-center">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                +8.2% saqlanish darajasi
+              <p
+                className="w-28 text-xs text-green-700 hover:border-b hover:border-b-green-500 transition-all flex items-center gap-1 cursor-pointer"
+                onClick={() => navigate("/students")}
+              >
+                Batafsil ma'lumot
+                <FaArrowRightLong />
               </p>
             </CardContent>
           </Card>
 
           <Card
             className="bg-gradient-to-br cursor-pointer from-indigo-50 to-indigo-100"
-            onClick={() => navigate("/groups")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Faol Guruhlar</CardTitle>
@@ -704,16 +701,18 @@ export default function Dashboard({ data, setUserData }) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-indigo-700">{groupsData.length}</div>
-              <p className="text-xs text-indigo-600 mt-1 flex items-center">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                O'tgan oyga nisbatan +2 ta
+              <p
+                className="w-28 text-xs text-indigo-700 hover:border-b hover:border-b-indigo-500 transition-all flex items-center gap-1 cursor-pointer"
+                onClick={() => navigate("/groups")}
+              >
+                Batafsil ma'lumot
+                <FaArrowRightLong />
               </p>
             </CardContent>
           </Card>
 
           <Card
-            className="bg-gradient-to-br cursor-pointer from-amber-50 to-amber-100"
-            onClick={() => navigate("/debtadStudents")}
+            className="bg-gradient-to-br from-amber-50 to-amber-100"
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
@@ -723,9 +722,12 @@ export default function Dashboard({ data, setUserData }) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-amber-700">{DebtorStudent.length}</div>
-              <p className="text-xs text-amber-600 mt-1 flex items-center">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                O'tgan oyga nisbatan -3 ta
+              <p
+                className="w-28 text-xs text-amber-700 hover:border-b hover:border-b-amber-500 transition-all flex items-center gap-1 cursor-pointer"
+                onClick={() => navigate("/debtadStudents")}
+              >
+                Batafsil ma'lumot
+                <FaArrowRightLong />
               </p>
             </CardContent>
           </Card>
@@ -779,7 +781,7 @@ export default function Dashboard({ data, setUserData }) {
                 <div className="flex flex-col">
                   {roomData.map((room) => (
                     <div
-                      key={room.value} // Use a unique property like `room.value` as the key
+                      key={room.value}
                       className="flex min-h-[100px] border-b border-gray-300"
                     >
                       <div className="flex-none w-[100px] border-r border-gray-300 bg-muted/20 p-2">
@@ -789,10 +791,10 @@ export default function Dashboard({ data, setUserData }) {
                         {courseSchedule
                           .filter((course) => course.room === room.label)
                           .map((course) => {
-                            const isToday = new Date().toDateString() === new Date(course.date).toDateString();
+                            const isToday = new Date().toDateString() === new Date(course.date).toDateString();                            
                             return (
                               <div
-                                key={course.id} // Ensure each course also has a unique key
+                                key={course.id} 
                                 className={cn(
                                   " group absolute flex flex-col transition-all duration-300 cursor-pointer rounded-lg border p-2 text-sm hover:shadow-md",
                                   isCoursePast(course)
@@ -817,7 +819,7 @@ export default function Dashboard({ data, setUserData }) {
                                 <div className="font-semibold">{course.name}</div>
                                 <div className="text-xs text-muted-foreground">{course.instructor}</div>
                                 <div className="text-xs font-medium text-primary">Guruh: {course.groupId}</div>
-                                <div className="text-xs p-0 m-0 text-gray-800 mt-1">
+                                <div className="text-xs p-0 m-0 text-gray-800 mt-1 capitalize">
                                   {course.selectedDays ? course.selectedDays.join(", ") : "Noma'lum"}
                                 </div>
                                 {isCoursePast(course) && (

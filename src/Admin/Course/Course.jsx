@@ -7,10 +7,8 @@ import {
     set,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 import { useEffect, useState } from "react";
-import React from "react";
-import { SidebarPanel } from "../../Sidebar";
 import style from './Course.module.css';
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Card, CardContent, CardHeader } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +16,6 @@ import CardBg1 from "./Images/ChatGPT Image Apr 7, 2025, 02_01_46 PM.png";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
 import { X } from "lucide-react";
 import { Label } from "../../components/ui/UiLabel";
-// import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import SelectReact from "react-select";
 import { Textarea } from "../../components/ui/textarea";

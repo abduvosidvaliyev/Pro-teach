@@ -717,25 +717,21 @@ function Students() {
                                 {student.group}
                               </span>
                             </TableCell>
-                            {
-                              groupsData.length > 0 ? (
-                                [groupsData.find(item => item.groupName.toLowerCase() === student.group.toLowerCase())].map((group => {
-                                  return (
-                                    <TableCell>
-                                      {group.teachers}
-                                    </TableCell>
-                                  )
-                                }))
-                              ) : ""
-                            }
+                            <TableCell>
+                              {
+                                (() => {
+                                  const group = groupsData.find(item => item.groupName && student.group && item.groupName.toLowerCase() === student.group.toLowerCase());
+                                  return group && group.teachers ? group.teachers : "";
+                                })()
+                              }
+                            </TableCell>
                           </TableRow>
                         )
                       })) : (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center">Ma'lumot yo'q</TableCell>
                       </TableRow>
-                    )
-                    }
+                    )}
                   </TableBody>
                 </Table>
               </div>
