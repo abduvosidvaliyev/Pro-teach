@@ -188,6 +188,7 @@ function Students() {
   const [firstLeads, setfirstLeads] = useState({})
   const [GetFilterStudent, setGetFilterStudent] = useState([])
   const [PER_PAGE, setPER_PAGE] = useState(10)
+  const [page, setpage] = useState(null)
 
   const [filters, setFilters] = useState({
     search: "",
@@ -207,7 +208,7 @@ function Students() {
     const studentsRef = ref(database, "Students");
     onValue(studentsRef, (snapshot) => {
       const data = snapshot.val();
-      setStudentsData(data ? Object.values(data) : []);
+      setStudentsData(Object.values(data || []));
     });
   }, []);
 
@@ -248,25 +249,6 @@ function Students() {
       setGetLeads(Object.values(data || {}))
     })
   }, []);
-
-  // const updatedStudents = useMemo(() => {
-  //   if (groupsData && studentsData.length > 0) {
-  //     return studentsData.map((student) => {
-  //       if (!groupsData[student.group]) {
-  //         return { ...student, group: "" };
-  //       }
-  //       return student;
-  //     });
-  //   }
-  //   return studentsData;
-  // }, [groupsData, studentsData]);
-
-  // useEffect(() => {
-  //   updatedStudents.forEach((student) => {
-  //     const studentRef = ref(database, `Students/${student.studentName}`);
-  //     update(studentRef, { group: student.group });
-  //   });
-  // }, [updatedStudents]);
 
   useEffect(() => {
     setGetFilterStudent(studentsData.sort((a, b) => a.id - b.id));
@@ -375,14 +357,17 @@ function Students() {
     })
   }, [studentsData, groupsData])
 
-
-  // const filterStudent = studentsData.filter((student) => student.name.toLowerCase().includes(value))
   const filterStudents = (value) => {
+    if (value === "") {
+      setCurrentPage(page)
+    }
     const filterStudent = studentsData.filter((student) => student.studentName.toLowerCase().includes(value.toLowerCase()) ||
-      value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "" ||
-        value === "To'langan"
-        ? Number(student.balance) >= 0
-        : Number(student.balance) < 0)
+      value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "" )
+    setGetFilterStudent(value == "" ? studentsData : filterStudent)
+  }
+
+  const filterStudent = (value) => {
+    const filterStudent = studentsData.filter((student) => value === "To'langan" ? Number(student.balance) >= 0 : Number(student.balance) < 0)
     setGetFilterStudent(value == "" ? studentsData : filterStudent)
   }
 
@@ -420,6 +405,11 @@ function Students() {
     setGetFilterStudent(value == "" ? studentsData : filteredStudents)
   }
 
+  const filStudent = (value) => {
+    const filterStudent = studentsData.filter((student) => value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "" )
+    setGetFilterStudent(value == "" ? studentsData : filterStudent)
+  }
+
   const [currentPage, setCurrentPage] = useState(0);
 
   // Barcha student yozuvlarini flat qilish
@@ -439,7 +429,19 @@ function Students() {
     setCurrentPage(selected);
   };
 
-  const uniquePayment = [...new Map(currentPayments.map(item => [item.id, item])).values()];
+  const [uniquePayment, setUniquePayment] = useState([])
+
+  useEffect(() => {
+    if (currentPayments.length === 0 && currentPage > 0) {
+      setCurrentPage(0);
+    }
+  }, [currentPayments, currentPage]);
+
+  useEffect(() => {
+    const uniquePayment = [...new Map(currentPayments.map(item => [item.id, item])).values()];
+
+    setUniquePayment(uniquePayment)
+  }, [GetFilterStudent, PER_PAGE, currentPayments])
 
   useEffect(() => {
     setGetFilterStudent(studentsData.sort((a, b) => a.id - b.id));
@@ -560,8 +562,9 @@ function Students() {
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Qidirish"
-                    onChange={(e) => filterStudents(e.target.value)}
-                    className={`pl-8 w-[200px] ${style.input}`}
+                    onChange={e => filterStudents(e.target.value)}
+                    className={`pl-8 w-[200px] ${style.inputSearch}`}
+                    onClick={() => setpage(currentPage)}
                   />
                 </div>
 
@@ -604,16 +607,16 @@ function Students() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-white">
-                    <DropdownMenuItem onClick={() => filterStudents("")}>
+                    <DropdownMenuItem onClick={() => filStudent("")}>
                       Barchasi
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filterStudents("Faol")}>
+                    <DropdownMenuItem onClick={() => filStudent("Faol")}>
                       Faol
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filterStudents("Muzlatilgan")}>
+                    <DropdownMenuItem onClick={() => filStudent("Muzlatilgan")}>
                       Muzlatilgan
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filterStudents("Nofaol")}>
+                    <DropdownMenuItem onClick={() => filStudent("Nofaol")}>
                       Nofaol
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -628,13 +631,13 @@ function Students() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-white">
-                    <DropdownMenuItem onClick={() => filterStudents("")}>
+                    <DropdownMenuItem onClick={() => filterStudent("")}>
                       Barchasi
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filterStudents("To'langan")}>
+                    <DropdownMenuItem onClick={() => filterStudent("To'langan")}>
                       To'langan
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filterStudents("To'lanmagan")}>
+                    <DropdownMenuItem onClick={() => filterStudent("To'lanmagan")}>
                       To'lanmagan
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -710,7 +713,7 @@ function Students() {
                           >
                             <TableCell>{student.id}</TableCell>
                             <TableCell>{student.studentName}</TableCell>
-                            <TableCell>{student.grade}</TableCell>
+                            <TableCell>{student.ball}</TableCell>
                             <TableCell>{student.studentNumber}</TableCell>
                             <TableCell>
                               <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">

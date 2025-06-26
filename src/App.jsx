@@ -40,6 +40,8 @@ function App() {
 
   const studentData = JSON.parse(localStorage.getItem("StudentData"))
 
+  const month = new Date().getMonth()
+
   return (
     <>
       <Router>
@@ -84,7 +86,7 @@ function App() {
             <Route path="/leads" element={<Leads />} />
             <Route path="/paymentArchive" element={<PaymentArchive />} />
             <Route path="/debtadStudents" element={<DebtadStudents />} />
-            <Route path="/student/:id" element={<StudentDetail />} />
+            <Route path="/student/:id" element={<StudentDetail month={month}/>} />
             <Route path="/group/:id" element={<GroupDetails />} />
             <Route path="/course/:id" element={<CourseInfo />} />
             <Route path="/users/:id" element={<UserInfo />} />

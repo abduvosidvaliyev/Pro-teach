@@ -514,8 +514,6 @@ export default function Dashboard({ data, setUserData }) {
     }
   };
 
-  console.log(courseSchedule)
-
   return (
     <>
       <ToastContainer />

@@ -22,7 +22,6 @@ import { Tabs } from "./Tabs";
 import CourseGrid from "./CourseGrid";
 import { Comments } from "./Comments";
 import { StudentHistory } from "./StudentHistory";
-import { SidebarPanel } from "../../Sidebar";
 import { Textarea } from "../../components/ui/textarea";
 import { Modal } from "../../components/ui/modal";
 import {
@@ -59,7 +58,7 @@ const getCurrentMonth = () => {
   return now.toLocaleString("en-US", { month: "long", year: "numeric" }); // Masalan: "April 2025"
 };
 
-const StudentDetail = () => {
+const StudentDetail = ({ month }) => {
   const location = useLocation();
   const courseData = location.state?.student;
 
@@ -74,11 +73,8 @@ const StudentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [students, setStudents] = useState(courseData);
-  const [isAdd, setIsAdd] = useState(true);
   const [student, setStudent] = useState([])
   const [studentsData, setStudentsData] = useState([]);
-  const [newStudentName, setNewStudentName] = useState("");
-  const [newStudentNumber, setNewStudentNumber] = useState("");
   const [editingStudent, setEditingStudent] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [activeTab, setActiveTab] = useState("groups");
@@ -96,7 +92,24 @@ const StudentDetail = () => {
     name: "",
     birthday: "",
     number: "",
+    login: "",
+    parol: ""
   })
+
+  // useEffect(() => {
+  //   const studentsRef = ref(database, "Students")
+    
+  //   get(studentsRef).then((snapshot) => {
+  //     const data = snapshot.val()
+  //     const students = Object.values(data || []).map((student) => {
+  //       const studentref = ref(database, `Students/${student.studentName}`)
+
+  //       update(studentref, {balance: (Number(student.balance) || 0) - 400000})
+  //     })
+  //   })
+
+  // }, [month])
+
 
   const handlePayment = () => {
     if (!paymentAmount || isNaN(paymentAmount)) {
@@ -347,6 +360,8 @@ const StudentDetail = () => {
       studentName: newKey,
       birthday: chengeStudentInfo.birthday,
       studentNumber: chengeStudentInfo.number,
+      login: chengeStudentInfo.login,
+      parol: chengeStudentInfo.parol,
     };
 
     try {
@@ -452,6 +467,42 @@ const StudentDetail = () => {
               />
             </div>
             <div className="flex flex-col gap-3">
+              <Label htmlFor="login">
+                Login
+              </Label>
+              <Input
+                id="login"
+                type="text"
+                className={style.input}
+                placeholder="Login"
+                value={chengeStudentInfo.login}
+                onChange={(e) =>
+                  setchengeStudentInfo({
+                    ...chengeStudentInfo,
+                    login: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="parol">
+                Parol
+              </Label>
+              <Input
+                id="parol"
+                type="text"
+                className={style.input}
+                placeholder="Parol"
+                value={chengeStudentInfo.parol}
+                onChange={(e) =>
+                  setchengeStudentInfo({
+                    ...chengeStudentInfo,
+                    parol: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-3">
               <Label htmlFor="date">
                 Tug'ilgan sanasi
               </Label>
@@ -493,11 +544,8 @@ const StudentDetail = () => {
               {/* Balance Header */}
               <div className="bg-[#6366F1] p-4 rounded-t-lg font-bold flex justify-end">
                 <span className={`bg-white px-3 py-1 rounded-full text-sm ${student.balance > 0 ? "text-green-500" : "text-red-500"}`}>
-                  {new Intl.NumberFormat("uz-UZ", {
-                    style: "currency",
-                    currency: "UZS",
-                    minimumFractionDigits: 0,
-                  }).format(parseFloat(student.balance || 0).toFixed(2))}
+                  {new Intl.NumberFormat("uz-UZ").format(student.balance)} so'm
+
                 </span>
               </div>
 
@@ -532,7 +580,6 @@ const StudentDetail = () => {
                     {student.addedDate || "Ma'lumot mavjud emas"}
                   </p>
                 </div>
-
 
                 {/* Action Buttons */}
                 <div className="space-y-3">
@@ -575,6 +622,8 @@ const StudentDetail = () => {
                           name: student.studentName || "",
                           birthday: student.birthday || "",
                           number: student.studentNumber || "",
+                          login: student.login || "",
+                          parol: student.parol || "",
                         });
                         setIsEditModalOpen(true); // Update onClick handler
                       }}

@@ -393,7 +393,7 @@ const GroupDetails = () => {
         duration: lessonTimeRange
       })
         .then(() => {
-          setIsAdd(false)
+          setOpen(false);
           setAddGroup({
             groupName: "",
             courses: "",
@@ -403,7 +403,6 @@ const GroupDetails = () => {
           })
           setLessonStartTime("")
           AddNotify({ AddTitle: "Guruh qo'shildi!" })
-          setOpen(false);
         })
         .catch((error) => {
           console.error("Error adding group to Firebase:", error);
@@ -462,16 +461,11 @@ const GroupDetails = () => {
     }
   };
 
-
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
 
   const handleGroupUpdate = async () => {
-    if (groupsData.find(group => group.groupName === groupChenge.groupName)) {
-      alert("Bunday guruh mavjud");
-      return;
-    }
 
     const groupAbout = {
       groupName: groupChenge.groupName,
@@ -499,7 +493,7 @@ const GroupDetails = () => {
         if (oldKey === newKey) {
           // Faqat qiymatlarni yangilash
           await update(ref(database, `Groups/${oldKey}`), { ...groupAbout, duration: lessonTimeRange });
-        } else {
+        } else if (oldKey !== newKey && !groupsData.find(group => group.groupName === groupChenge.groupName)) {
           // Eski key ostidagi ma'lumotlarni olib, yangi keyga yozish
           const oldRef = ref(database, `Groups/${oldKey}`);
           const snapshot = await get(oldRef);
@@ -632,10 +626,6 @@ const GroupDetails = () => {
     </div>;
   }
 
-  const handleSelectMonth = (month) => {
-    setSelectedMonth(month);
-  }
-
   return (
     <div>
       {
@@ -692,7 +682,7 @@ const GroupDetails = () => {
         <div className={style.groupAbout}>
           <h2>Guruhlar soni: {groupsData.length}</h2>
           <SidebarProvider>
-            {isOpen && (
+            {open && (
               <div
                 className="fixed w-full h-[100vh] z-30  inset-0 backdrop-blur-[2px] bg-black/50 transition-all duration-900 ease-in-out"
                 onClick={() => {
