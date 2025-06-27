@@ -169,6 +169,19 @@ function Students() {
     return result;
   }
 
+  // useEffect(() => {
+  //   const studentsRef = ref(database, "Students")
+
+  //   get(studentsRef).then((snapshot) => {
+  //     const data = snapshot.val()
+  //     const students = Object.values(data || []).map((student) => {
+  //       const studentref = ref(database, `Students/${ student.studentName }`)
+
+  //       update(studentref, { balance: 0 })
+  //     })
+  //   })
+  // }, [])
+
   const [isAdd, setIsAdd] = useState(true);
   const [studentInfo, setStudentInfo] = useState("");
   const [studentsData, setStudentsData] = useState([]);
@@ -362,7 +375,7 @@ function Students() {
       setCurrentPage(page)
     }
     const filterStudent = studentsData.filter((student) => student.studentName.toLowerCase().includes(value.toLowerCase()) ||
-      value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "" )
+      value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "")
     setGetFilterStudent(value == "" ? studentsData : filterStudent)
   }
 
@@ -406,7 +419,7 @@ function Students() {
   }
 
   const filStudent = (value) => {
-    const filterStudent = studentsData.filter((student) => value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "" )
+    const filterStudent = studentsData.filter((student) => value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "")
     setGetFilterStudent(value == "" ? studentsData : filterStudent)
   }
 

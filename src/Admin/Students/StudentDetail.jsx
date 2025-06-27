@@ -58,7 +58,7 @@ const getCurrentMonth = () => {
   return now.toLocaleString("en-US", { month: "long", year: "numeric" }); // Masalan: "April 2025"
 };
 
-const StudentDetail = ({ month }) => {
+const StudentDetail = () => {
   const location = useLocation();
   const courseData = location.state?.student;
 
@@ -95,21 +95,6 @@ const StudentDetail = ({ month }) => {
     login: "",
     parol: ""
   })
-
-  // useEffect(() => {
-  //   const studentsRef = ref(database, "Students")
-    
-  //   get(studentsRef).then((snapshot) => {
-  //     const data = snapshot.val()
-  //     const students = Object.values(data || []).map((student) => {
-  //       const studentref = ref(database, `Students/${student.studentName}`)
-
-  //       update(studentref, {balance: (Number(student.balance) || 0) - 400000})
-  //     })
-  //   })
-
-  // }, [month])
-
 
   const handlePayment = () => {
     if (!paymentAmount || isNaN(paymentAmount)) {
@@ -323,19 +308,26 @@ const StudentDetail = ({ month }) => {
 
   const handleDelateStudent = () => {
     const student = studentsData.find((student) => student.id === Number(id))
-    console.log(student, studentsData, id);
 
     const findStudentRef = ref(database, `Students/${student.studentName}`)
 
     remove(findStudentRef)
       .then(() => {
-        setOpenDelateModal(false)
-        DelateNotify()
-        navigate("/students")
+        get(ref(database, "Students")).then(snapshot => {
+          const data = snapshot.val() || [];
+          const studentsArr = Object.values(data);
+          studentsArr.forEach((student, i) => {
+            const studentIdRef = ref(database, `Students/${student.studentName}`);
+            update(studentIdRef, { id: i + 1 });
+          });
+          setOpenDelateModal(false);
+          DelateNotify({ DelateTitle: "O'quvchi o'chirildi!" });
+          navigate("/students");
+        });
       })
       .catch((error) => {
-        console.error(error)
-      })
+        console.error(error);
+      });
   }
 
   const formatPhoneNumber = (value) => {

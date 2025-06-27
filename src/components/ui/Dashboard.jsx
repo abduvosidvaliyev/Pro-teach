@@ -366,7 +366,7 @@ export default function Dashboard({ data, setUserData }) {
 
       const duration = calculateDuration(group.duration);
       const [startHour] = group.duration.split("-")[0].split(":").map(Number);
-      console.log(startHour)      
+      console.log(startHour)
       return {
         id: group.id,
         name: group.groupName,
@@ -635,6 +635,7 @@ export default function Dashboard({ data, setUserData }) {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card
             className="bg-gradient-to-br cursor-pointer from-pink-50 to-pink-100"
+            onClick={() => navigate("/leads")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Yangi Lidlar</CardTitle>
@@ -669,6 +670,7 @@ export default function Dashboard({ data, setUserData }) {
 
           <Card
             className="bg-gradient-to-br cursor-pointer from-green-50 to-green-100"
+            onClick={() => navigate("/students")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
@@ -692,6 +694,7 @@ export default function Dashboard({ data, setUserData }) {
 
           <Card
             className="bg-gradient-to-br cursor-pointer from-indigo-50 to-indigo-100"
+            onClick={() => navigate("/groups")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Faol Guruhlar</CardTitle>
@@ -711,6 +714,7 @@ export default function Dashboard({ data, setUserData }) {
 
           <Card
             className="bg-gradient-to-br from-amber-50 to-amber-100"
+            onClick={() => navigate("/debtadStudents")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
@@ -789,10 +793,10 @@ export default function Dashboard({ data, setUserData }) {
                         {courseSchedule
                           .filter((course) => course.room === room.label)
                           .map((course) => {
-                            const isToday = new Date().toDateString() === new Date(course.date).toDateString();                            
+                            const isToday = new Date().toDateString() === new Date(course.date).toDateString();
                             return (
                               <div
-                                key={course.id} 
+                                key={course.id}
                                 className={cn(
                                   " group absolute flex flex-col transition-all duration-300 cursor-pointer rounded-lg border p-2 text-sm hover:shadow-md",
                                   isCoursePast(course)

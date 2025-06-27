@@ -1,3 +1,15 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import {
+  getDatabase,
+  ref,
+  set,
+  onValue,
+  update,
+  get,
+  remove,
+} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Register from '../src/Register&Login/Register.jsx'
@@ -26,6 +38,22 @@ import { PrivateRoute, PrivateStudentRoute } from "./Register&Login/PrivateRoute
 import { Profile } from "./Admin/Profile/Profile.jsx";
 import { SidebarPanel } from "./Sidebar.jsx";
 
+const firebaseConfig = {
+  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
+  authDomain: "project-pro-7f7ef.firebaseapp.com",
+  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
+  projectId: "project-pro-7f7ef",
+  storageBucket: "project-pro-7f7ef.firebasestorage.app",
+  messagingSenderId: "782106516432",
+  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
+  measurementId: "G-WV8HFBFPND",
+};
+
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const database = getDatabase(app);
+
+
 function SidebarWrapper({ userData }) {
   const location = useLocation();
   // Faqat /leads bo‘lmaganda SidebarPanel chiqadi
@@ -40,7 +68,60 @@ function App() {
 
   const studentData = JSON.parse(localStorage.getItem("StudentData"))
 
-  const month = new Date().getMonth()
+  useEffect(() => {
+    const currentMonth = new Date().getMonth();
+    const savedMonth = localStorage.getItem("lastDeductedMonth");
+
+    if (savedMonth === null || Number(savedMonth) !== currentMonth) {
+      const studentsRef = ref(database, "Students");
+      const groupsRef = ref(database, "Groups");
+      const coursesRef = ref(database, "Courses");
+
+      Promise.all([
+        get(studentsRef),
+        get(groupsRef),
+        get(coursesRef),
+      ]).then(([studentsSnap, groupsSnap, coursesSnap]) => {
+        const students = studentsSnap.val() || {};
+        const groups = groupsSnap.val() || {};
+        const courses = coursesSnap.val() || {};
+
+        const updatePromises = Object.entries(students).map(([studentId, student]) => {
+          const studentGroup = student.group;
+          const matchedGroupEntry = Object.entries(groups).find(
+            ([, groupData]) => groupData.groupName && groupData.groupName.toLowerCase() === studentGroup?.toLowerCase()
+          );
+          if (!matchedGroupEntry) return Promise.resolve();
+
+          const [, matchedGroup] = matchedGroupEntry;
+          // Har doim massiv bo‘lishini ta’minlaymiz
+          const coursesArray = Array.isArray(matchedGroup.courses)
+            ? matchedGroup.courses
+            : matchedGroup.courses
+              ? [matchedGroup.courses]
+              : [];
+
+          const totalPrice = coursesArray.reduce((sum, courseName) => {
+            const matchedCourseEntry = Object.entries(courses).find(
+              ([, course]) => course.name && course.name.toLowerCase() === courseName.toLowerCase()
+            );
+            const price = matchedCourseEntry ? Number(matchedCourseEntry[1].price) : 0;
+            return sum + Number(price || 0);
+          }, 0);
+
+          const studentRef = ref(database, `Students/${studentId}`);
+          return update(studentRef, {
+            balance: (Number(student.balance) || 0) - totalPrice,
+          });
+        });
+
+        // Barcha update tugagandan keyin localStorage ga yozamiz
+        Promise.all(updatePromises).then(() => {
+          localStorage.setItem("lastDeductedMonth", currentMonth.toString());
+        });
+      });
+    }
+  }, []);
 
   return (
     <>
@@ -86,7 +167,7 @@ function App() {
             <Route path="/leads" element={<Leads />} />
             <Route path="/paymentArchive" element={<PaymentArchive />} />
             <Route path="/debtadStudents" element={<DebtadStudents />} />
-            <Route path="/student/:id" element={<StudentDetail month={month}/>} />
+            <Route path="/student/:id" element={<StudentDetail />} />
             <Route path="/group/:id" element={<GroupDetails />} />
             <Route path="/course/:id" element={<CourseInfo />} />
             <Route path="/users/:id" element={<UserInfo />} />
