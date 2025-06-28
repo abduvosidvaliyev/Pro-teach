@@ -212,6 +212,11 @@ function Students() {
     teacher: "",
   });
 
+  const [CourseValue, setCourseValue] = useState("all")
+  const [StatusValue, setStatusValue] = useState("Faol")
+  const [PaymentValue, setPaymentValue] = useState("To'langan")
+  const [TeacherValue, setTeacherValue] = useState("all")
+
   const toggleIsAdd = () => {
     setIsAdd(!isAdd);
   };
@@ -376,15 +381,15 @@ function Students() {
     }
     const filterStudent = studentsData.filter((student) => student.studentName.toLowerCase().includes(value.toLowerCase()) ||
       value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "")
-    setGetFilterStudent(value == "" ? studentsData : filterStudent)
+    setGetFilterStudent(value === "" ? studentsData : filterStudent)
   }
 
-  const filterStudent = (value) => {
-    const filterStudent = studentsData.filter((student) => value === "To'langan" ? Number(student.balance) >= 0 : Number(student.balance) < 0)
-    setGetFilterStudent(value == "" ? studentsData : filterStudent)
-  }
+  useEffect(() => {
+    const filterStudent = studentsData.filter((student) => PaymentValue === "To'langan" ? Number(student.balance) >= 0 : Number(student.balance) < 0)
+    setGetFilterStudent(PaymentValue === "all" ? studentsData : filterStudent)
+  }, [PaymentValue])
 
-  const filter = (value) => {
+  useEffect(() => {
     const filteredStudents = studentsData.filter(student => {
       const group = groupsData.find(item => item.groupName.toLowerCase() === student.group.toLowerCase());
 
@@ -392,16 +397,17 @@ function Students() {
 
       // Agar group.courses massiv bo‘lsa
       const finishFilter = Array.isArray(group.courses)
-        ? group.courses.includes(value)
-        : group.courses === value
+        ? group.courses.includes(CourseValue)
+        : group.courses === CourseValue
 
       return finishFilter;
     });
 
-    setGetFilterStudent(value == "" ? studentsData : filteredStudents)
-  };
+    setGetFilterStudent(CourseValue === "all" ? studentsData : filteredStudents)
+  }, [CourseValue])
 
-  const filterTeachers = (value) => {
+
+  useEffect(() => {
     const filteredStudents = studentsData.filter(student => {
       const group = groupsData.find(item => item.groupName.toLowerCase() === student.group.toLowerCase());
 
@@ -409,19 +415,19 @@ function Students() {
 
       // Agar group.courses massiv bo‘lsa
       const finishFilter = Array.isArray(group.teachers)
-        ? group.teachers.includes(value)
-        : group.teachers === value
+        ? group.teachers.includes(TeacherValue)
+        : group.teachers === TeacherValue
 
       return finishFilter;
     });
 
-    setGetFilterStudent(value == "" ? studentsData : filteredStudents)
-  }
+    setGetFilterStudent(TeacherValue === "all" ? studentsData : filteredStudents)
+  }, [TeacherValue])
 
-  const filStudent = (value) => {
-    const filterStudent = studentsData.filter((student) => value === "Faol" ? student.status === "Faol" : value === "Nofaol" ? student.status === "Nofaol" : value === "Muzlatilgan" ? student.status === "Muzlatilgan" : "")
-    setGetFilterStudent(value == "" ? studentsData : filterStudent)
-  }
+  useEffect(() => {
+    const filterStudent = studentsData.filter((student) => StatusValue === "Faol" ? student.status === "Faol" : StatusValue === "Nofaol" ? student.status === "Nofaol" : StatusValue === "Muzlatilgan" ? student.status === "Muzlatilgan" : "")
+    setGetFilterStudent(StatusValue == "all" ? studentsData : filterStudent)
+  }, [StatusValue])
 
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -581,106 +587,80 @@ function Students() {
                   />
                 </div>
 
-                {/* Courses Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      {filters.course || "Kurslar"}{" "}
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-white">
-                    <DropdownMenuItem
-                      onClick={() => filterStudents("")}
-                    >
+                <Select defaultValue="all" onValueChange={setCourseValue}>
+                  <SelectTrigger className="w-auto">
+                    <SelectValue placeholder="Kurs bo'yicha" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="all">
                       Barchasi
-                    </DropdownMenuItem>
-                    {
-                      courses.length > 0 ? (
-                        courses.map((course) => (
-                          <DropdownMenuItem onClick={() => filter(course.name)}>
-                            {course.name}
-                          </DropdownMenuItem>
-                        ))
-                      ) : (
-                        <DropdownMenuItem>
-                          No courses available
-                        </DropdownMenuItem>
-                      )
-                    }
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </SelectItem>
+                    {courses.map((course) => (
+                      <SelectItem value={course.name}>
+                        {course.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                {/* Group Status Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      {filters.groupStatus || "Guruhdagi holati"}{" "}
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-white">
-                    <DropdownMenuItem onClick={() => filStudent("")}>
+                <Select defaultValue="Faol" onValueChange={setStatusValue}>
+                  <SelectTrigger className="w-auto">
+                    <SelectValue placeholder="Status bo'yicha" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="all">
                       Barchasi
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filStudent("Faol")}>
+                    </SelectItem>
+                    <SelectItem value="Faol">
                       Faol
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filStudent("Muzlatilgan")}>
-                      Muzlatilgan
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filStudent("Nofaol")}>
+                    </SelectItem>
+                    <SelectItem value="Nofaol">
                       Nofaol
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </SelectItem>
+                    <SelectItem value="Muzlatilgan">
+                      Muzlatilgan
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
 
-                {/* Payment Status Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      {filters.paymentStatus || "To'lov holati"}{" "}
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-white">
-                    <DropdownMenuItem onClick={() => filterStudent("")}>
+                <Select defaultValue="To'langan" onValueChange={setPaymentValue}>
+                  <SelectTrigger className="w-auto">
+                    <SelectValue placeholder="Status bo'yicha" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="all">
                       Barchasi
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filterStudent("To'langan")}>
+                    </SelectItem>
+                    <SelectItem value="To'langan">
                       To'langan
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => filterStudent("To'lanmagan")}>
+                    </SelectItem>
+                    <SelectItem value="To'lanmagan">
                       To'lanmagan
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
 
-                {/* Teacher Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      {filters.teacher || "Ustoz"}{" "}
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-white">
-                    <DropdownMenuItem onClick={() => filterTeachers("")}>
+                <Select defaultValue="all" onValueChange={setTeacherValue}>
+                  <SelectTrigger className="w-auto">
+                    <SelectValue placeholder="O'qituvchi bo'yicha" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="all">
                       Barchasi
-                    </DropdownMenuItem>
+                    </SelectItem>
                     {teachersData && Object.keys(teachersData).length > 0 ? (
                       Object.values(teachersData).map((teacher, index) => (
-                        <DropdownMenuItem onClick={() => filterTeachers(teacher.name)}>
+                        <SelectItem value={teacher.name}>
                           {teacher.name}
-                        </DropdownMenuItem>
+                        </SelectItem>
                       ))
                     ) : (
-                      <DropdownMenuItem disabled>
+                      <SelectItem disabled>
                         No teachers available
-                      </DropdownMenuItem>
+                      </SelectItem>
                     )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </SelectContent>
+                </Select>
 
                 <div className="flex gap-2 ml-auto">
                   <Button

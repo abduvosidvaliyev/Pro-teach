@@ -70,57 +70,60 @@ function App() {
 
   useEffect(() => {
     const currentMonth = new Date().getMonth();
-    const savedMonth = localStorage.getItem("lastDeductedMonth");
+    const systemRef = ref(database, "System/lastDeductedMonth");
 
-    if (savedMonth === null || Number(savedMonth) !== currentMonth) {
-      const studentsRef = ref(database, "Students");
-      const groupsRef = ref(database, "Groups");
-      const coursesRef = ref(database, "Courses");
+    get(systemRef).then(snapshot => {
+      const savedMonth = snapshot.val();
+      if (savedMonth === null || Number(savedMonth) !== currentMonth) {
+        const studentsRef = ref(database, "Students");
+        const groupsRef = ref(database, "Groups");
+        const coursesRef = ref(database, "Courses");
 
-      Promise.all([
-        get(studentsRef),
-        get(groupsRef),
-        get(coursesRef),
-      ]).then(([studentsSnap, groupsSnap, coursesSnap]) => {
-        const students = studentsSnap.val() || {};
-        const groups = groupsSnap.val() || {};
-        const courses = coursesSnap.val() || {};
+        Promise.all([
+          get(studentsRef),
+          get(groupsRef),
+          get(coursesRef),
+        ]).then(([studentsSnap, groupsSnap, coursesSnap]) => {
+          const students = studentsSnap.val() || {};
+          const groups = groupsSnap.val() || {};
+          const courses = coursesSnap.val() || {};
 
-        const updatePromises = Object.entries(students).map(([studentId, student]) => {
-          const studentGroup = student.group;
-          const matchedGroupEntry = Object.entries(groups).find(
-            ([, groupData]) => groupData.groupName && groupData.groupName.toLowerCase() === studentGroup?.toLowerCase()
-          );
-          if (!matchedGroupEntry) return Promise.resolve();
+          const updatePromises = Object.entries(students).map(([studentId, student]) => {
+            if (student.status !== "Faol") return Promise.resolve();
 
-          const [, matchedGroup] = matchedGroupEntry;
-          // Har doim massiv bo‘lishini ta’minlaymiz
-          const coursesArray = Array.isArray(matchedGroup.courses)
-            ? matchedGroup.courses
-            : matchedGroup.courses
-              ? [matchedGroup.courses]
-              : [];
-
-          const totalPrice = coursesArray.reduce((sum, courseName) => {
-            const matchedCourseEntry = Object.entries(courses).find(
-              ([, course]) => course.name && course.name.toLowerCase() === courseName.toLowerCase()
+            const studentGroup = student.group;
+            const matchedGroupEntry = Object.entries(groups).find(
+              ([, groupData]) => groupData.groupName && groupData.groupName.toLowerCase() === studentGroup?.toLowerCase()
             );
-            const price = matchedCourseEntry ? Number(matchedCourseEntry[1].price) : 0;
-            return sum + Number(price || 0);
-          }, 0);
+            if (!matchedGroupEntry) return Promise.resolve();
 
-          const studentRef = ref(database, `Students/${studentId}`);
-          return update(studentRef, {
-            balance: (Number(student.balance) || 0) - totalPrice,
+            const [, matchedGroup] = matchedGroupEntry;
+            const coursesArray = Array.isArray(matchedGroup.courses)
+              ? matchedGroup.courses
+              : matchedGroup.courses
+                ? [matchedGroup.courses]
+                : [];
+
+            const totalPrice = coursesArray.reduce((sum, courseName) => {
+              const matchedCourseEntry = Object.entries(courses).find(
+                ([, course]) => course.name && course.name.toLowerCase() === courseName.toLowerCase()
+              );
+              const price = matchedCourseEntry ? Number(matchedCourseEntry[1].price) : 0;
+              return sum + Number(price || 0);
+            }, 0);
+
+            const studentRef = ref(database, `Students/${studentId}`);
+            return update(studentRef, {
+              balance: (Number(student.balance) || 0) - totalPrice,
+            });
+          });
+
+          Promise.all(updatePromises).then(() => {
+            set(systemRef, currentMonth);
           });
         });
-
-        // Barcha update tugagandan keyin localStorage ga yozamiz
-        Promise.all(updatePromises).then(() => {
-          localStorage.setItem("lastDeductedMonth", currentMonth.toString());
-        });
-      });
-    }
+      }
+    });
   }, []);
 
   return (
