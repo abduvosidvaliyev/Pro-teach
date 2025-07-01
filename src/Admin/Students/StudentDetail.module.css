@@ -51,12 +51,6 @@ body {
   background-color: rgb(125, 125, 125);
 }
 
-.studentActive img {
-  width: 300px;
-  border-radius: 50%;
-  align-self: center;
-}
-
 .crud {
   justify-self: centerd;
   align-self: flex-end;
@@ -176,6 +170,42 @@ body {
 }
 
 
-.input::placeholder{
+.input::placeholder {
   color: #8b8b8b !important;
+}
+
+.coment:hover::-webkit-scrollbar {
+  background: #8b8b8b30;
+}
+
+.coment:hover::-webkit-scrollbar-thumb {
+  background: #838383;
+}
+
+.coment::-webkit-scrollbar {
+  width: 7px;
+  background: transparent;
+  border-radius: 10px;
+}
+
+.coment::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.comentCancel {
+  height: 30px;
+  padding: 0px 4px !important;
+}
+
+.img:hover ~ .chengeImage{
+  bottom: 0 !important;
+}
+
+.chengeImage{
+  transition: 0.4s;
+
+  &:hover{
+    bottom: 0 !important;
+  }
 }

@@ -748,7 +748,7 @@ export default function Dashboard({ data, setUserData }) {
                 {new Date().getDate()}
               </div>
             </div>
-            <div className="text-center text-sm text-gray-600 mt-2">
+            <div className="text-center text-sm text-gray-600 mt-2 capitalize">
               {new Date().toLocaleDateString("uz-UZ", { weekday: "long" })}
             </div>
           </CardHeader>

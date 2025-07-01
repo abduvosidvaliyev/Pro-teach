@@ -1,3 +1,5 @@
+import { supabase } from '../../supabaseClient';
+import { uploadImage } from '../../uploadImage';
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation, data } from "react-router-dom";
 import style from "./StudentDetail.module.css";
@@ -31,10 +33,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import { FaArrowLeft, FaRegTrashAlt } from "react-icons/fa"
+import { FaArrowLeft, FaCamera, FaRegTrashAlt } from "react-icons/fa"
 import { DelateNotify, ChengeNotify, AddNotify } from "../../components/ui/Toast"
 import { ToastContainer } from "react-toastify";
-import { FiMinusCircle } from "react-icons/fi";
+import { FiDownload, FiMinusCircle, FiUpload } from "react-icons/fi";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
 import { Label } from "../../components/ui/UiLabel";
 
@@ -83,6 +85,7 @@ const StudentDetail = () => {
   const [groupsData, setGroupsData] = useState([]);
   const [groupName, setGroupName] = useState("");
   const [OpenDelateModal, setOpenDelateModal] = useState(false)
+  const [OpenImg, setOpenImg] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Added state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false); // To'lov modalining holati
   const [paymentAmount, setPaymentAmount] = useState(""); // To'lov miqdori
@@ -95,6 +98,40 @@ const StudentDetail = () => {
     login: "",
     parol: ""
   })
+
+  useEffect(() => {
+    const studentRef = ref(database, `Students`);
+    onValue(studentRef, (snapshot) => {
+      const data = snapshot.val();
+      setStudentsData(Object.values(data || {}));
+    });
+
+    const groupsRef = ref(database, "Groups");
+    onValue(groupsRef, (snapshot) => {
+      const data = snapshot.val();
+      setGroupsData(data ? Object.keys(data) : []);
+    });
+  }, []);
+
+  useEffect(() => {
+    const student = studentsData.find((s) => s.id === Number.parseInt(id));
+
+    setStudent(student)
+  }, [studentsData])
+
+  useEffect(() => {
+    if (student) {
+      const paymentsRef = ref(
+        database,
+        `Payments/${currentMonth}/${student.studentName}/studentPayment`
+      );
+      const unsubscribe = onValue(paymentsRef, (snapshot) => {
+        const data = snapshot.val();
+        setPayments(data ? Object.values(data) : []);
+      });
+      return () => unsubscribe();
+    }
+  }, [student, currentMonth]);
 
   const handlePayment = () => {
     if (!paymentAmount || isNaN(paymentAmount)) {
@@ -216,26 +253,6 @@ const StudentDetail = () => {
       });
   };
 
-  useEffect(() => {
-    const studentRef = ref(database, `Students`);
-    onValue(studentRef, (snapshot) => {
-      const data = snapshot.val();
-      setStudentsData(Object.values(data || {}));
-    });
-
-    const groupsRef = ref(database, "Groups");
-    onValue(groupsRef, (snapshot) => {
-      const data = snapshot.val();
-      setGroupsData(data ? Object.keys(data) : []);
-    });
-  }, []);
-
-  useEffect(() => {
-    const student = studentsData.find((s) => s.id === Number.parseInt(id));
-
-    setStudent(student)
-  }, [studentsData])
-
   const addStudentToGroup = () => {
     // Guruhdagi kunlarni olish
     const groupRef = ref(database, `Groups/${groupName}`);
@@ -291,20 +308,6 @@ const StudentDetail = () => {
   };
 
   const CloseDelateModal = () => setOpenDelateModal(false)
-
-  useEffect(() => {
-    if (student) {
-      const paymentsRef = ref(
-        database,
-        `Payments/${currentMonth}/${student.studentName}/studentPayment`
-      );
-      const unsubscribe = onValue(paymentsRef, (snapshot) => {
-        const data = snapshot.val();
-        setPayments(data ? Object.values(data) : []);
-      });
-      return () => unsubscribe();
-    }
-  }, [student, currentMonth]);
 
   const handleDelateStudent = () => {
     const student = studentsData.find((student) => student.id === Number(id))
@@ -381,6 +384,65 @@ const StudentDetail = () => {
     }
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      // Supabase'ga rasmni yuklaymiz
+      const imageUrl = await uploadImage(file);
+
+      // Firebase Realtime Database'dagi studentga rasm linkini yozamiz
+      const studentRef = ref(database, `Students/${student.studentName}`);
+      await update(studentRef, { image: imageUrl })
+        .then(() => {
+          AddNotify({ AddTitle: "Rasm yuklandi!" })
+        })
+        .catch((err) => {
+          console.error(err)
+        })
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleStudentImgChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const studentRef = ref(database, `Students/${student.studentName}`);
+
+      // 1. Firebase'dan eski rasm URL ni olamiz
+      const snapshot = await get(studentRef);
+      const oldImageUrl = snapshot.val()?.image;
+
+      // 2. Agar eski rasm Supabase'dan bo‘lsa — o‘chirib tashlaymiz
+      if (oldImageUrl?.includes('supabase.co')) {
+        const filePath = oldImageUrl.split('/').pop().split('?')[0]; // Fayl nomini ajratib olamiz
+        await supabase.storage.from('studentimages').remove([filePath]);
+      }
+
+      // 3. Yangi rasmni yuklaymiz
+      const newImageUrl = await uploadImage(file);
+
+      // 4. Firebasega yangi rasm linkini yozamiz
+      await update(studentRef, { image: newImageUrl })
+        .then(() => {
+          AddNotify({ AddTitle: "Rasm yangilandi!" })
+        })
+        .catch((err) => {
+          console.error(err)
+        })
+
+
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (!student) return <span>Not Found</span>
 
   return (
@@ -401,6 +463,18 @@ const StudentDetail = () => {
             </div>
           }
         /> : ""
+      }
+
+      {
+        OpenImg ? (
+          <div
+            className="w-full h-screen absolute bg-black/50 backdrop-blur-[2px] flex justify-center items-center z-40"
+            onClick={() => setOpenImg(false)}
+          >
+            <X className="absolute right-5 top-5 cursor-pointer" color="white" size={30} onClick={() => setOpenImg(false)} />
+            <img className="w-[300px] h-[300px] rounded-sm object-cover" src={student.image} alt="User image" />
+          </div>
+        ) : ""
       }
 
       <SidebarProvider>
@@ -544,10 +618,44 @@ const StudentDetail = () => {
               {/* Profile Content */}
               <div className="p-6 space-y-6">
                 {/* User Info */}
-                <div className="flex gap-4 items-start">
-                  <div className="w-16 h-16 bg-[#EEF2FF] text-[#6366F1] rounded-lg flex items-center justify-center text-2xl font-semibold">
-                    UM
-                  </div>
+                <div className="flex gap-4 items-center">
+                  {
+                    student.image !== "" ? (
+                      <div className="flex flex-col w-20 h-20 overflow-hidden relative">
+                        <img
+                          className={`${style.img} w-20 h-20 rounded-lg object-cover cursor-pointer`}
+                          src={student.image}
+                          onClick={() => setOpenImg(true)}
+                          alt="User image"
+                        />
+                        <Label
+                          className={`${style.chengeImage} bg-black/60 w-full h-5 absolute rounded-lg flex justify-center items-center cursor-pointer -bottom-6`}
+                          htmlFor="file"
+                        >
+                          <FaCamera size={15} color='#fff' />
+                        </Label>
+                        <Input
+                          id="file"
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => handleStudentImgChange(e)}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <Label htmlFor="file" className="w-20 h-20 pb-2 bg-[#e3e3e3] text-[#7e7e7e] cursor-pointer rounded-lg flex flex-col items-center justify-end text-sm font-semibold">
+                          <FiDownload size={20} />
+                          Yuklash
+                        </Label>
+                        <Input
+                          id="file"
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => handleFileUpload(e)}
+                        />
+                      </>
+                    )
+                  }
                   <div className="space-y-1">
                     <h3 className="text-xl font-med ium text-gray-900">
                       {student.studentName}
@@ -561,15 +669,15 @@ const StudentDetail = () => {
 
                 {/* Contact Info */}
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Telefon raqam :</p>
-                  <p className="text-gray-900 text-[18px]">
+                  <p className="text-xs text-gray-500">Telefon raqam :</p>
+                  <p className="text-gray-900 text-[17px]">
                     {student.studentNumber}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-500">Qo'shilgan sana :</p>
-                  <p className="text-gray-900 text-[18px]">
-                    {student.addedDate || "Ma'lumot mavjud emas"}
+                  <p className="text-xs text-gray-500">Tug'ilgan sana :</p>
+                  <p className="text-gray-900 text-[17px]">
+                    {student.birthday || "Ma'lumot mavjud emas"}
                   </p>
                 </div>
 
@@ -640,7 +748,7 @@ const StudentDetail = () => {
             <main className="w-full col-[1/4]">
               <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
               {activeTab === "groups" && student && <CourseGrid student={student} />}
-              {activeTab === "notes" && <Comments />}
+              {activeTab === "notes" && <Comments studentInfo={student} />}
               {activeTab === "history" && <StudentHistory student={student} />}
             </main>
           </div>
@@ -652,18 +760,6 @@ const StudentDetail = () => {
           title="Guruhga biriktirish"
         >
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm text-gray-500">Filial</label>
-              <Select defaultValue="khan-tech">
-                <SelectTrigger>
-                  <SelectValue placeholder="Filial tanlang" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="khan-tech">Khan tech Filliali</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm text-gray-500">Guruhni tanlang</label>
               <SelectReact

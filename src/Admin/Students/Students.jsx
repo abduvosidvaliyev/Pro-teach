@@ -11,6 +11,7 @@ import {
   set,
   onValue,
   update,
+  push,
   remove,
   get
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
@@ -81,103 +82,15 @@ function Students() {
     return currentMonthAndYear;
   };
 
-  const getCurrentMonthDates = (selectedDays) => {
-    const dates = [];
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    // Haftaning kunlari uchun mos keladigan IDlar
-    const dayMapping = {
-      du: 1, // Dushanba
-      se: 2, // Seshanba
-      chor: 3, // Chorshanba
-      pay: 4, // Payshanba
-      ju: 5, // Juma
-      shan: 6, // Shanba
-      yak: 0, // Yakshanba
-    };
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const dayOfWeek = date.getDay();
-
-      // Agar `selectedDays`da kun mavjud bo'lsa, uni qo'shamiz
-      if (selectedDays.some((selectedDay) => dayMapping[selectedDay] === dayOfWeek)) {
-        dates.push(`${day} ${date.toLocaleString("en-US", { month: "short" })}`);
-      }
-    }
-
-    return dates;
-  };
-
-  // Oy oxirigacha tanlangan kunlar sonini hisoblash
-  function countWeekdaysToEndOfMonth(selectedDays, fromDate = new Date()) {
-    const dayMapping = {
-      du: 1, // Dushanba
-      se: 2, // Seshanba
-      chor: 3, // Chorshanba
-      pay: 4, // Payshanba
-      ju: 5, // Juma
-      shan: 6, // Shanba
-      yak: 0, // Yakshanba
-    };
-    const result = {};
-    selectedDays.forEach((d) => (result[d] = 0));
-    const year = fromDate.getFullYear();
-    const month = fromDate.getMonth();
-    const startDay = fromDate.getDate();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    for (let day = startDay; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const dayOfWeek = date.getDay();
-      selectedDays.forEach((d) => {
-        if (dayOfWeek === dayMapping[d]) {
-          result[d]++;
-        }
-      });
-    }
-    return result;
-  }
-
-  // Butun oy bo‘yicha tanlangan kunlar sonini hisoblash
-  function countWeekdaysInMonth(selectedDays, fromDate = new Date()) {
-    const dayMapping = {
-      du: 1,
-      se: 2,
-      chor: 3,
-      pay: 4,
-      ju: 5,
-      shan: 6,
-      yak: 0,
-    };
-    const result = {};
-    selectedDays.forEach((d) => (result[d] = 0));
-    const year = fromDate.getFullYear();
-    const month = fromDate.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const dayOfWeek = date.getDay();
-      selectedDays.forEach((d) => {
-        if (dayOfWeek === dayMapping[d]) {
-          result[d]++;
-        }
-      });
-    }
-    return result;
-  }
-
   // useEffect(() => {
   //   const studentsRef = ref(database, "Students")
 
   //   get(studentsRef).then((snapshot) => {
   //     const data = snapshot.val()
   //     const students = Object.values(data || []).map((student) => {
-  //       const studentref = ref(database, `Students/${ student.studentName }`)
+  //       const studentref = ref(database, `Students/${student.studentName}/ball`)
 
-  //       update(studentref, { balance: 0 })
+  //       set(studentref, 0)
   //     })
   //   })
   // }, [])
@@ -202,15 +115,6 @@ function Students() {
   const [GetFilterStudent, setGetFilterStudent] = useState([])
   const [PER_PAGE, setPER_PAGE] = useState(10)
   const [page, setpage] = useState(null)
-
-  const [filters, setFilters] = useState({
-    search: "",
-    course: "",
-    groupStatus: "",
-    paymentStatus: "",
-    group: "",
-    teacher: "",
-  });
 
   const [CourseValue, setCourseValue] = useState("all")
   const [StatusValue, setStatusValue] = useState("Faol")
@@ -284,31 +188,12 @@ function Students() {
     }
 
     const date = new Date().toISOString().split("T")[0]; // Qo'shilgan sana
-    const today = new Date(); // Bugungi sana
 
     // Guruh ma'lumotlarini olish
     const groupRef = ref(database, `Groups/${AddStudent.group}`);
     get(groupRef)
       .then((groupSnapshot) => {
         if (groupSnapshot.exists()) {
-          const groupData = groupSnapshot.val();
-          const courseFee = groupData.price || 0;
-          const selectedDays = groupData.selectedDays || [];
-
-          // Oy oxirigacha bo'lgan dars kunlarini hisoblash
-          const remainingLessonDays = countWeekdaysToEndOfMonth(selectedDays, today);
-          const remainingLessonDaysCount = Object.values(remainingLessonDays).reduce(
-            (sum, count) => Number(sum) + Number(count),
-            0
-          );
-
-          // Har bir dars uchun narxni hisoblash
-          const totalLessonDays = countWeekdaysInMonth(selectedDays, today);
-          const totalLessonDaysCount = Object.values(totalLessonDays).reduce(
-            (sum, count) => Number(sum) + Number(count),
-            0
-          );
-          const perLessonCost = courseFee / (totalLessonDaysCount || 1);
 
           // Studentni Firebase-ga qo'shish
           set(ref(database, `Students/${AddStudent.name}`), {
@@ -325,9 +210,8 @@ function Students() {
             login: AddStudent.login,
             parol: AddStudent.parol,
             status: "Faol",
+            ball: 0,
             addedDate: date,
-            perLessonCost,
-            remainingLessonDaysCount,
             studentHistory: [
               {
                 date: date,
@@ -706,7 +590,7 @@ function Students() {
                           >
                             <TableCell>{student.id}</TableCell>
                             <TableCell>{student.studentName}</TableCell>
-                            <TableCell>{student.ball}</TableCell>
+                            <TableCell>{student.ball} bal</TableCell>
                             <TableCell>{student.studentNumber}</TableCell>
                             <TableCell>
                               <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">

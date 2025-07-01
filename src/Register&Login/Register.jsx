@@ -56,10 +56,17 @@ function SignUpForm({ setUserData }) {
 
     const handleLogin = () => {
         if ((loginName && loginSecretPass) !== "") {
+
+            if (!GetAdmins.find(admin => admin.parol.toString() !== loginSecretPass || admin.login !== loginName) &&
+                !GetStudents.find(admin => admin.parol.toString() !== loginSecretPass || admin.login !== loginName)
+            ) {
+                alert("Ushbu foydalanuvchi topilmadi!")
+            }
+
             const Admin = GetAdmins.find((admin) =>
                 typeof admin.login === "string" &&
                 typeof admin.parol !== "undefined" &&
-                admin.login.toLowerCase() === loginName.toLowerCase() &&
+                admin.login === loginName &&
                 admin.parol.toString() === loginSecretPass
             );
 

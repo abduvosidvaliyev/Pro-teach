@@ -70,74 +70,6 @@ const getCurrentMonth = () => {
   return now.toLocaleString("en-US", { month: "long", year: "numeric" }); // Masalan: "April 2025"
 };
 
-const countWeekdaysInMonth = (selectedDays, startDate) => {
-  const year = startDate.getFullYear();
-  const month = startDate.getMonth();
-  const lastDay = new Date(year, month + 1, 0).getDate();
-
-  const dayMapping = {
-    yak: 0, // Yakshanba
-    du: 1,  // Dushanba
-    se: 2,  // Seshanba
-    chor: 3, // Chorshanba
-    pay: 4, // Payshanba
-    ju: 5,  // Juma
-    sha: 6, // Shanba
-  };
-
-  let count = {};
-  selectedDays.forEach((day) => {
-    count[day] = 0; // Har bir kun uchun boshlang'ich qiymat
-  });
-
-  for (let day = 1; day <= lastDay; day++) {
-    const date = new Date(year, month, day);
-    const weekday = date.getDay();
-
-    for (const [key, value] of Object.entries(dayMapping)) {
-      if (selectedDays.includes(key) && weekday === value) {
-        count[key]++;
-      }
-    }
-  }
-
-  return count;
-};
-
-const countWeekdaysToEndOfMonth = (selectedDays, startDate) => {
-  const year = startDate.getFullYear();
-  const month = startDate.getMonth();
-  const lastDay = new Date(year, month + 1, 0).getDate();
-
-  const dayMapping = {
-    yak: 0, // Yakshanba
-    du: 1,  // Dushanba
-    se: 2,  // Seshanba
-    chor: 3, // Chorshanba
-    pay: 4, // Payshanba
-    ju: 5,  // Juma
-    sha: 6, // Shanba
-  };
-
-  let count = {};
-  selectedDays.forEach((day) => {
-    count[day] = 0; // Har bir kun uchun boshlang'ich qiymat
-  });
-
-  for (let day = startDate.getDate(); day <= lastDay; day++) {
-    const date = new Date(year, month, day);
-    const weekday = date.getDay();
-
-    for (const [key, value] of Object.entries(dayMapping)) {
-      if (selectedDays.includes(key) && weekday === value) {
-        count[key]++;
-      }
-    }
-  }
-
-  return count;
-};
-
 export default function LeadsPage() {
   const navigate = useNavigate()
   const [leads, setLeads] = useState([])
@@ -345,7 +277,6 @@ export default function LeadsPage() {
 
 
     const date = new Date().toISOString().split("T")[0]; // Qo'shilgan sana
-    const today = new Date(); // Bugungi sana
 
     // Guruh ma'lumotlarini olish
     const groupRef = ref(database, `Groups/${selectedOptions.group.label}`);
@@ -353,26 +284,6 @@ export default function LeadsPage() {
       .then((groupSnapshot) => {
         if (groupSnapshot.exists()) {
           const groupData = groupSnapshot.val();
-          const courseFee = groupData.price || 0; // Guruh narxi
-          const selectedDays = groupData.selectedDays || []; // Guruh dars kunlari
-
-          // Oy oxirigacha bo'lgan dars kunlarini hisoblash
-          const remainingLessonDays = countWeekdaysToEndOfMonth(selectedDays, today);
-          const remainingLessonDaysCount = Object.values(remainingLessonDays).reduce(
-            (sum, count) => sum + count,
-            0
-          );
-
-          // Har bir dars uchun narxni hisoblash
-          const totalLessonDays = countWeekdaysInMonth(selectedDays, today);
-          const totalLessonDaysCount = Object.values(totalLessonDays).reduce(
-            (sum, count) => sum + count,
-            0
-          );
-          const perLessonCost = courseFee / totalLessonDaysCount;
-
-          // Qolgan dars kunlari uchun umumiy to'lovni hisoblash
-          const totalDeduction = Math.round(perLessonCost * remainingLessonDaysCount);
 
           // Studentni Firebase-ga qo'shish
           set(ref(database, `Students/${newUser.name}`), {
@@ -390,9 +301,8 @@ export default function LeadsPage() {
             login: selectedOptions.login,
             parol: selectedOptions.parol,
             status: "Faol",
+            ball: 0,
             addedDate: date, // Qo'shilgan sana
-            perLessonCost, // Har bir dars uchun narxni saqlaymiz
-            remainingLessonDaysCount, // Qolgan dars kunlari soni
             studentHistory: [
               {
                 date: newUser.date, // newUserning sanasi
@@ -789,108 +699,108 @@ export default function LeadsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredLeads
-                    .sort((a, b) => b.name - a.name)
-                    .map((lead, index) => (
-                      <TableRow key={lead.id} onClick={() => { OpenModal(lead.id), setOpenChengeStatus(false), setOpenChengeCourse(null) }}>
-                        <TableCell className="font-medium">{lead.name}</TableCell>
-                        <TableCell>{lead.phone}</TableCell>
-                        <TableCell className="relative" onClick={(e) => { e.stopPropagation(), setOpenChengeStatus(false) }}>
-                          <Badge
-                            variant="outline"
-                            className={`
+                      .sort((a, b) => b.name - a.name)
+                      .map((lead, index) => (
+                        <TableRow key={lead.id} onClick={() => { OpenModal(lead.id), setOpenChengeStatus(false), setOpenChengeCourse(null) }}>
+                          <TableCell className="font-medium">{lead.name}</TableCell>
+                          <TableCell>{lead.phone}</TableCell>
+                          <TableCell className="relative" onClick={(e) => { e.stopPropagation(), setOpenChengeStatus(false) }}>
+                            <Badge
+                              variant="outline"
+                              className={`
                               ${lead.status === "Kelib ketdi" ?
-                                StatusColors["KelibKetdi"] :
-                                lead.status === "O'qiyabdi" ?
-                                  StatusColors["Oqiyabdi"] : StatusColors[lead.status]}  cursor-pointer
+                                  StatusColors["KelibKetdi"] :
+                                  lead.status === "O'qiyabdi" ?
+                                    StatusColors["Oqiyabdi"] : StatusColors[lead.status]}  cursor-pointer
                             `}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setOpenChengeStatus(OpenChengeStatus !== lead.id ? lead.id : null)
-                            }}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setOpenChengeStatus(OpenChengeStatus !== lead.id ? lead.id : null)
+                              }}
+                            >
+                              {lead.status}
+                              {
+                                OpenChengeStatus === lead.id ? (
+                                  <div className="p-3 text-black bg-white flex flex-col gap-2 rounded-lg border border-gray-300 absolute z-10 top-[50px] left-[10px]">
+                                    {
+                                      Status.map((status) => (
+                                        <h3
+                                          className={`
+                                      ${status === "O'qiyabdi" ?
+                                              StatusColors.Oqiyabdi :
+                                              status === "Kelib ketdi" ?
+                                                StatusColors.KelibKetdi :
+                                                StatusColors[status]}  rounded-md px-2 py-[2px] text-white cursor-pointer`}
+                                          onClick={() => handleChengeStatus(status, lead.name)}
+                                        >
+                                          {status}
+                                        </h3>
+                                      ))
+                                    }
+                                  </div>
+                                ) : ""
+                              }
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{lead.source}</TableCell>
+                          <TableCell
+                            onClick={(e) => (e.stopPropagation(), setOpenChengeCourse(OpenChengeCourse !== lead.id ? lead.id : null))}
+                            className="relative"
                           >
-                            {lead.status}
+                            <div className="flex items-center gap-1 p-[2px] pl-[5px] rounded-lg hover:bg-gray-200 cursor-pointer">
+                              {lead.course}
+                              {OpenChengeCourse !== lead.id ? <FaChevronDown /> : <FaChevronRight />}
+                            </div>
                             {
-                              OpenChengeStatus === lead.id ? (
+                              OpenChengeCourse === lead.id ? (
                                 <div className="p-3 text-black bg-white flex flex-col gap-2 rounded-lg border border-gray-300 absolute z-10 top-[50px] left-[10px]">
                                   {
-                                    Status.map((status) => (
+                                    GetCourse.map((course) => (
                                       <h3
-                                        className={`
-                                      ${status === "O'qiyabdi" ?
-                                            StatusColors.Oqiyabdi :
-                                            status === "Kelib ketdi" ?
-                                              StatusColors.KelibKetdi :
-                                              StatusColors[status]}  rounded-md px-2 py-[2px] text-white cursor-pointer`}
-                                        onClick={() => handleChengeStatus(status, lead.name)}
+                                        onClick={() => handleChengeCourse(course.name, lead.name)}
+                                        className="rounded-md px-2 py-[2px] cursor-pointer hover:bg-gray-200"
                                       >
-                                        {status}
+                                        {course.name}
                                       </h3>
                                     ))
                                   }
                                 </div>
                               ) : ""
                             }
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{lead.source}</TableCell>
-                        <TableCell
-                          onClick={(e) => (e.stopPropagation(), setOpenChengeCourse(OpenChengeCourse !== lead.id ? lead.id : null))}
-                          className="relative"
-                        >
-                          <div className="flex items-center gap-1 p-[2px] pl-[5px] rounded-lg hover:bg-gray-200 cursor-pointer">
-                            {lead.course}
-                            {OpenChengeCourse !== lead.id ? <FaChevronDown /> : <FaChevronRight />}
-                          </div>
-                          {
-                            OpenChengeCourse === lead.id ? (
-                              <div className="p-3 text-black bg-white flex flex-col gap-2 rounded-lg border border-gray-300 absolute z-10 top-[50px] left-[10px]">
-                                {
-                                  GetCourse.map((course) => (
-                                    <h3
-                                      onClick={() => handleChengeCourse(course.name, lead.name)}
-                                      className="rounded-md px-2 py-[2px] cursor-pointer hover:bg-gray-200"
-                                    >
-                                      {course.name}
-                                    </h3>
-                                  ))
-                                }
-                              </div>
-                            ) : ""
-                          }
-                        </TableCell>
-                        <TableCell>{lead.time}</TableCell>
-                        <TableCell>{lead.date}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setopenModal(false);
-                                setOpen(true);
-                                setIsOpen(true)
-                                toggleSidebar(lead.id);
-                              }}
-                            >
-                              <UserCheck className="w-4 h-4 mr-2" />
-                              Guruhga qo'shish
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="red"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                toggleDelateLead(lead.name);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              O'chirish
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>{lead.time}</TableCell>
+                          <TableCell>{lead.date}</TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setopenModal(false);
+                                  setOpen(true);
+                                  setIsOpen(true)
+                                  toggleSidebar(lead.id);
+                                }}
+                              >
+                                <UserCheck className="w-4 h-4 mr-2" />
+                                Guruhga qo'shish
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="red"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  toggleDelateLead(lead.name);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                O'chirish
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </CardContent>

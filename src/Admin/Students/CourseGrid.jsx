@@ -23,9 +23,6 @@ const CourseGrid = ({ student }) => {
   const [groupsData, setGroupsData] = useState(null); // Default qiymatni `null` qilib qo'ydik
   const [courseAbout, setCourseAbout] = useState([]);
 
-  const oddDays = ["Dushanba", "Chorshanba", "Juma"];
-  const evenDays = ["Seshanba", "Payshanba", "Shanba"];
-
   useEffect(() => {
     if (!student?.group) return;
 
@@ -55,18 +52,12 @@ const CourseGrid = ({ student }) => {
 
     const newStudent = {
       studentName: student.studentName,
-      name: student.group,
-      balance: "307,692.31",
-      dateRange: "2025-01-25/2025-09-25",
+      groupName: student.group,
+      balance: student.balance,
       teacher: groupsData.teachers || "Hali kiritilmagan",
-      time: courseAbout.duration || "Hali kiritilmagan",
-      days: student.days === "Juft kunlar" ? evenDays
-           : student.days === "Toq kunlar" ? oddDays
-           : ["Hali kiritilmagan"],
-      startDate: "2025-01-25",
-      endDate: "2025-01-25",
-      nextPayment: "2025-02-01",
-      paymentAmount: student.balance || 0,
+      payment: courseAbout.price || 0,
+      days: groupsData.selectedDays,
+      startDate: student.addedDate,
     };
 
     setCourses([newStudent]);
@@ -74,7 +65,7 @@ const CourseGrid = ({ student }) => {
 
   return (
     <div className={`grid ${groupsData ? "md:grid-cols-2" : "grid-cols-1"} gap-6 p-4`}>
-      {Array.isArray(courses) && courses.some(course => course.name) ? (
+      {Array.isArray(courses) && courses.some(course => course.groupName) ? (
         courses.map((course, index) => (
           <CourseCard key={index} course={course} />
         ))

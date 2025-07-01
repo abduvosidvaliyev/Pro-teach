@@ -53,63 +53,6 @@ const getCurrentMonth = () => {
   return currentMonthAndYear;
 };
 
-// Oy oxirigacha tanlangan kunlar sonini hisoblash
-function countWeekdaysToEndOfMonth(selectedDays, fromDate = new Date()) {
-  const dayMapping = {
-    du: 1, // Dushanba
-    se: 2, // Seshanba
-    chor: 3, // Chorshanba
-    pay: 4, // Payshanba
-    ju: 5, // Juma
-    shan: 6, // Shanba
-    yak: 0, // Yakshanba
-  };
-  const result = {};
-  selectedDays.forEach((d) => (result[d] = 0));
-  const year = fromDate.getFullYear();
-  const month = fromDate.getMonth();
-  const startDay = fromDate.getDate();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  for (let day = startDay; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dayOfWeek = date.getDay();
-    selectedDays.forEach((d) => {
-      if (dayOfWeek === dayMapping[d]) {
-        result[d]++;
-      }
-    });
-  }
-  return result;
-}
-
-// Butun oy bo‘yicha tanlangan kunlar sonini hisoblash
-function countWeekdaysInMonth(selectedDays, fromDate = new Date()) {
-  const dayMapping = {
-    du: 1,
-    se: 2,
-    chor: 3,
-    pay: 4,
-    ju: 5,
-    shan: 6,
-    yak: 0,
-  };
-  const result = {};
-  selectedDays.forEach((d) => (result[d] = 0));
-  const year = fromDate.getFullYear();
-  const month = fromDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dayOfWeek = date.getDay();
-    selectedDays.forEach((d) => {
-      if (dayOfWeek === dayMapping[d]) {
-        result[d]++;
-      }
-    });
-  }
-  return result;
-}
-
 export const CourseSidebar = ({ groupInfo }) => {
   const [Leads, setLeads] = useState([])
   const [Students, setStudents] = useState([])
@@ -166,7 +109,6 @@ export const CourseSidebar = ({ groupInfo }) => {
     }
 
     const date = new Date().toISOString().split("T")[0];
-    const today = new Date();
 
     // Guruh ma'lumotlarini olish
     const groupRef = ref(database, `Groups/${groupInfo?.groupName}`);
@@ -174,23 +116,6 @@ export const CourseSidebar = ({ groupInfo }) => {
       .then((groupSnapshot) => {
         if (groupSnapshot.exists()) {
           const currentMonth = getCurrentMonth();
-          const courseFee = firstCourse?.courseFee || 0;
-          const groupData = groupSnapshot.val();
-          const selectedDays = groupData.selectedDays || [];
-
-          const remainingLessonDays = countWeekdaysToEndOfMonth(selectedDays, today);
-          const remainingLessonDaysCount = Object.values(remainingLessonDays).reduce(
-            (sum, count) => Number(sum) + Number(count),
-            0
-          );
-
-          // Har bir dars uchun narxni hisoblash
-          const totalLessonDays = countWeekdaysInMonth(selectedDays, today);
-          const totalLessonDaysCount = Object.values(totalLessonDays).reduce(
-            (sum, count) => Number(sum) + Number(count),
-            0
-          );
-          const perLessonCost = courseFee / (totalLessonDaysCount || 1);
 
           // Studentni Firebase-ga qo'shish
           set(ref(database, `Students/${AddStudent.studentName}`), {
@@ -207,9 +132,8 @@ export const CourseSidebar = ({ groupInfo }) => {
             login: AddStudent.login,
             parol: AddStudent.parol,
             status: "Faol",
+            ball: 0,
             addedDate: date,
-            perLessonCost,
-            remainingLessonDaysCount,
             studentHistory: [
               {
                 date: date,
