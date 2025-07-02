@@ -65,7 +65,7 @@ const Course = () => {
 
     const handleCardClick = (id) => {
         navigate(`/course/${id}`);
-    };2
+    }; 2
 
     const handleAddGroup = (e) => {
         e.preventDefault();
@@ -146,15 +146,20 @@ const Course = () => {
                                 <Label htmlFor="coursePrice" className="text-xs text-gray-500">Narx</Label>
                                 <Input
                                     id="coursePrice"
+                                    value={addCourse.price}
                                     placeholder="Narxni kiriting"
                                     className={`${style.inputSearch}`}
                                     type="text"
-                                    onChange={(e) =>
+                                    onChange={(e) => {
+                                        const rawValue = e.target.value.replace(/\s/g, ""); // Bo'sh joylarni olib tashlash
+                                        if (isNaN(rawValue)) return; // Faqat raqamlarni qabul qilish
+
+                                        const formattedValue = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
                                         setaddCourse((prevState) => ({
                                             ...prevState,
-                                            price: e.target.value.replace(/\s+/g, ""),
+                                            price: formattedValue,
                                         }))
-                                    }
+                                    }}
                                 />
                             </div>
                             <div className="flex flex-col gap-3">

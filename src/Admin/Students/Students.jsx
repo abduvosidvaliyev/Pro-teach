@@ -181,9 +181,14 @@ function Students() {
     setfirstLeads(searchStudent)
   }, [AddStudent.name])
 
+  const handleStatusChenge = (name) => {
+    const studentRef = ref(database, `leads/${name}`)
+
+    update(studentRef, { status: "O'qiyabdi" })
+  }
 
   const addStudent = () => {
-    if ((AddStudent.name && AddStudent.group) === "") {
+    if ((AddStudent.name && AddStudent.group && AddStudent.login && AddStudent.parol) === "") {
       return
     }
 
@@ -207,6 +212,7 @@ function Students() {
             group: AddStudent.group,
             studentName: AddStudent.name,
             studentNumber: firstLeads.phone,
+            image: "",
             login: AddStudent.login,
             parol: AddStudent.parol,
             status: "Faol",
@@ -223,7 +229,7 @@ function Students() {
           })
             .then(() => {
               toggleIsAdd()
-              remove(ref(database, `leads/${firstLeads.name}`))
+              handleStatusChenge(firstLeads.name)
               setAddStudent({
                 name: "",
                 group: "",
@@ -383,13 +389,16 @@ function Students() {
                 <Label htmlFor="courseSelect" className="text-xs text-gray-500">Talaba ismi</Label>
                 <SelectReact
                   id="courseSelect"
+                  value={
+                    AddStudent.name
+                      ? { value: AddStudent.name, label: AddStudent.name }
+                      : null
+                  }
                   className={`${style.inputSearch}`}
                   placeholder="Studentni qidirish..."
-                  options={GetLeads.map((item) => ({ value: item.name, label: item.name }))}
+                  options={GetLeads.filter(item => item.status !== "O'qiyabdi").map((item) => ({ value: item.name, label: item.name }))}
                   onChange={(e) => (
-                    setAddStudent({ ...AddStudent, name: e.value }),
-                    console.log(e.value)
-
+                    setAddStudent({ ...AddStudent, name: e.value })
                   )}
                 />
               </div>
@@ -398,6 +407,7 @@ function Students() {
                 <Input
                   id="login"
                   type="text"
+                  value={AddStudent.login}
                   className={style.inputSearch}
                   placeholder="O'quvchi uchun login"
                   onChange={(e) => setAddStudent({ ...AddStudent, login: e.target.value })}
@@ -408,6 +418,7 @@ function Students() {
                 <Input
                   id="parol"
                   type="text"
+                  value={AddStudent.parol}
                   className={style.inputSearch}
                   placeholder="O'quvchi uchun parol"
                   onChange={(e) => setAddStudent({ ...AddStudent, parol: e.target.value })}
@@ -417,6 +428,11 @@ function Students() {
                 <Label htmlFor="coursePrice" className="text-xs text-gray-500">Guruh nomi</Label>
                 <SelectReact
                   id="coursePrice"
+                  value={
+                    AddStudent.group
+                      ? { value: AddStudent.group, label: AddStudent.group }
+                      : null
+                  }
                   placeholder="Guruhni qidirish..."
                   options={groupsData.map((item) => ({ value: item.groupName, label: item.groupName }))}
                   className={`${style.inputSearch}`}

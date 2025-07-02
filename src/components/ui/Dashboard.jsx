@@ -143,6 +143,8 @@ const getCurrentDate = () => {
 };
 
 export default function Dashboard({ data, setUserData }) {
+  const month = new Date().toISOString().slice(0, 7)
+
   const navigate = useNavigate();
   const [groupsData, setGroupsData] = useState([]);
   const [roomData, setRoomsData] = useState([]);
@@ -162,7 +164,7 @@ export default function Dashboard({ data, setUserData }) {
   })
 
   useEffect(() => {
-    const leadsRef = ref(database, "leads");
+    const leadsRef = ref(database, `leads`);
     onValue(leadsRef, (snapshot) => {
       const data = snapshot.val();
       const leadsArray = data ? Object.values(data) : 0;
@@ -244,7 +246,7 @@ export default function Dashboard({ data, setUserData }) {
     }
 
     const duration = calculateDuration(group.duration); // Calculate duration from group.duration
-    const [startHour] = group.duration.split("-")[0].split(":").map(Number); // Extract start hour
+    const startHour = normalizeTime(group.duration.split("-")[0]);
     const schedule = {
       id: group.id,
       name: group.groupName,
@@ -259,6 +261,9 @@ export default function Dashboard({ data, setUserData }) {
   }).filter(Boolean); // Filter out null values
 
 
+
+
+  
   // Populate time slots with courses
   courseScheduleData.forEach((course) => {
     const slotIndex = course.startHour - 8;
@@ -317,6 +322,13 @@ export default function Dashboard({ data, setUserData }) {
     },
   ];
 
+
+
+
+
+
+
+
   const [currentTime, setCurrentTime] = useState(getCurrentTimeSlot());
 
   useEffect(() => {
@@ -338,6 +350,7 @@ export default function Dashboard({ data, setUserData }) {
     const currentHour = new Date().getHours();
     return slotHour < currentHour;
   };
+
   const isCoursePast = (course) => {
     const currentHour = new Date().getHours();
     return course.startHour + course.duration <= currentHour;
@@ -346,11 +359,22 @@ export default function Dashboard({ data, setUserData }) {
   const handleCardClick = (groupId) => {
     navigate(`/group/${groupId}`);
   };
+
   const getTomorrow = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase();
   };
+
+  // dars boshlanish vaqtini formatlash
+  function normalizeTime(timeStr) {
+    let [h, m] = timeStr.replace(".", ":").split(":");
+    h = parseInt(h, 10);
+    m = parseInt(m || "0", 10);
+    if (m < 15) return h;
+    if (m < 45) return h + 0.5;
+    return h + 0.75;
+  }
 
   const handleShowTodayGroups = () => {
     const todayDay = new Date().toLocaleDateString("uz-UZ", { weekday: "short" }).toLowerCase(); // Bugungi kunni aniqlash
@@ -365,7 +389,7 @@ export default function Dashboard({ data, setUserData }) {
       }
 
       const duration = calculateDuration(group.duration);
-      const [startHour] = group.duration.split("-")[0].split(":").map(Number);
+      const startHour = normalizeTime(group.duration.split("-")[0]);
       console.log(startHour)
       return {
         id: group.id,
@@ -395,7 +419,7 @@ export default function Dashboard({ data, setUserData }) {
       }
 
       const duration = calculateDuration(group.duration); // Calculate duration from group.duration
-      const [startHour] = group.duration.split("-")[0].split(":").map(Number); // Extract start hour
+      const startHour = normalizeTime(group.duration.split("-")[0]);
       return {
         id: group.id,
         name: group.groupName,
@@ -453,7 +477,6 @@ export default function Dashboard({ data, setUserData }) {
     const selectedStudent = TakeStudents.filter((student) => student.studentName === studentName);
     setSearchStudens(selectedStudent); // Faqat bosilgan talaba bilan natijalarni yangilash
   };
-
 
   // Talabaga to'lov qilish funksiyasi
   const handleStudentFee = () => {
@@ -642,7 +665,7 @@ export default function Dashboard({ data, setUserData }) {
               <UserPlus className="h-4 w-4 text-pink-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-pink-700">{leadsData === 0 ? 0 : leadsData.length}</div>
+              <div className="text-2xl font-bold text-pink-700">Jami {leadsData === 0 ? 0 : leadsData.length} ta</div>
               <p
                 className="w-28 text-xs text-pink-700 hover:border-b hover:border-b-pink-500 transition-all flex items-center gap-1 cursor-pointer"
                 onClick={() => navigate("/leads")}

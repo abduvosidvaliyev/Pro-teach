@@ -10,7 +10,7 @@ import { MdDeleteOutline } from "react-icons/md";
 import SelectReact from "react-select";
 import style from "./Course.module.css";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
-import { UserPlus, X } from "lucide-react";
+import { GraduationCap, UserPlus, X } from "lucide-react";
 import { Label } from "../../components/ui/UiLabel";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -178,6 +178,20 @@ const CourseInfo = () => {
         setDelateOpen2(false);
     };
 
+    const getPrice = (course) => {
+        let price = 0
+        const findCourse = [course].map(item => {
+            const courseRef = ref(database, `Courses/${item}/price`)
+            onValue(courseRef, (snapshot) => {
+                const data = snapshot.val()
+
+                price = new Intl.NumberFormat("uz-UZ").format(data)
+            })
+        })
+
+        return price;
+    }
+
     const handleDeleteCourse = () => {
         const leadRef = ref(database, `Courses/${firstKey}`);
 
@@ -228,7 +242,7 @@ const CourseInfo = () => {
 
             <SidebarProvider>
                 {isOpen && (
-                    <div        
+                    <div
                         className="fixed w-full h-[100vh] bg-black/50 backdrop-blur-[2px] z-30 inset-0 transition-all duration-900 ease-in-out"
                         onClick={toggleSidebar}
                     ></div>
@@ -459,13 +473,48 @@ const CourseInfo = () => {
                             <TabsContent value="groups" className="pt-6">
                                 {
                                     FilterGroup.length > 0 ? (
-                                        <div className="flex flex-col gap-5">
-                                            {FilterGroup.map((group, index) => (
-                                                <div key={index} className="flex flex-col gap-2">
-                                                    <h1 className="text-lg font-semibold">{group.groupName}</h1>
-                                                    <p className="text-sm text-gray-500">{group.duration}</p>
-                                                </div>
-                                            ))}
+                                        <div className={`pt-6 ${FilterGroup.length > 0 ? "grid grid-cols-2 gap-5" : "flex justify-start"}`}>
+                                            {FilterGroup.map((group, index) => {
+                                                const groupStudentsCount = FilterStudent.filter(student => student.group === group.groupName).length;
+                                                const coursePrice = getPrice(group.courses)
+                                                return (
+                                                    <Card className="flex flex-col gap-5" key={index}>
+                                                        <CardHeader className="flex justify-between w-full items-start flex-row">
+                                                            <h1 className="text-lg">
+                                                                {group.groupName}
+                                                            </h1>
+                                                            <p className="text-sm">{groupStudentsCount} ta odam</p>
+                                                        </CardHeader>
+                                                        <CardContent className="grid grid-cols-2 gap-5">
+                                                            <div className="">
+                                                                <span className="text-sm/3 text-gray-400">O'qituvchi</span>
+                                                                <h4 className="text-base text-gray-950 flex gap-1">
+                                                                    <GraduationCap className="text-green-600" />
+                                                                    {group.teachers}
+                                                                </h4>
+                                                            </div>
+                                                            <div className="">
+                                                                <span className="text-sm/3 text-gray-400">Guruh narxi</span>
+                                                                <h4 className="text-base text-gray-950">
+                                                                    {coursePrice} so'm
+                                                                </h4>
+                                                            </div>
+                                                            <div className="">
+                                                                <span className="text-sm/3 text-gray-400">Guruh vaqti</span>
+                                                                <h4 className="text-base text-gray-950">
+                                                                    {group.duration} gacha
+                                                                </h4>
+                                                            </div>
+                                                            <div className="">
+                                                                <span className="text-sm/3 text-gray-400">Xona</span>
+                                                                <h4 className="text-base text-gray-950">
+                                                                    {group.rooms}
+                                                                </h4>
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                )
+                                            })}
                                         </div>
                                     ) : (
                                         <h1

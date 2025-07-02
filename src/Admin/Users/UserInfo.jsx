@@ -44,6 +44,7 @@ const UserInfo = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [firstTeacher, setfirstTeacher] = useState([]);
+  const [Course, setCourse] = useState([])
   const [TakeGroup, setTakeGroup] = useState([]);
   const [Takestudents, setTakeStudents] = useState([]);
   const [FilterGroup, setFilterGroup] = useState([]);
@@ -96,6 +97,7 @@ const UserInfo = () => {
 
       setTakeStudents(Object.values(data || {}));
     })
+
   }, [])
 
   useEffect(() => {
@@ -154,6 +156,33 @@ const UserInfo = () => {
     setDelateOpen1(false);
     setDelateOpen2(false);
   };
+
+  const formatPhoneNumber = (value) => {
+    const onlyDigits = value.replace(/\D/g, "").slice(0, 12); // faqat raqamlar va 12 ta belgigacha
+
+    let result = "+998";
+
+    if (onlyDigits.length > 3) result += " " + onlyDigits.slice(3, 5);
+    if (onlyDigits.length > 5) result += " " + onlyDigits.slice(5, 8);
+    if (onlyDigits.length > 8) result += " " + onlyDigits.slice(8, 10);
+    if (onlyDigits.length > 10) result += " " + onlyDigits.slice(10, 12);
+
+    return result;
+  };
+
+  const getPrice = (course) => {
+    let price = 0
+    const findCourse = [course].map(item => {
+      const courseRef = ref(database, `Courses/${item}/price`)
+      onValue(courseRef, (snapshot) => {
+        const data = snapshot.val()
+
+        price = new Intl.NumberFormat("uz-UZ").format(data)
+      })
+    })
+
+    return price;    
+  }
 
   const handleChengeToUser = () => {
     if ((chengeUser.name && chengeUser.number && chengeUser.email && chengeUser.job && chengeUser.address && chengeUser.young) === "") {
@@ -283,27 +312,12 @@ const UserInfo = () => {
                   type="text"
                   value={chengeUser.number || ""}
                   onChange={(e) => {
-                    let input = e.target.value;
 
-                    // Faqat raqamlar va "+" belgisini qabul qilish
-                    input = input.replace(/[^+\d]/g, "");
-
-                    // Formatlash: +XXX XX XXX XX XX
-                    if (input.startsWith("+")) {
-                      input = input.replace(
-                        /^(\+\d{1,3})(\d{1,2})?(\d{1,3})?(\d{1,2})?(\d{1,2})?/,
-                        (match, p1, p2, p3, p4, p5) =>
-                          [p1, p2, p3, p4, p5].filter(Boolean).join(" ")
-                      );
-                    }
-
-                    // Holatni yangilash
-                    setaddUser((prevState) => ({
+                    setchengeUser((prevState) => ({
                       ...prevState,
-                      number: input,
+                      number: formatPhoneNumber(e.target.value),
                     }));
                   }}
-                  maxLength={20} // Maksimal uzunlikni cheklash
                 />
               </div>
               <div className="flex flex-col gap-3">
@@ -400,7 +414,7 @@ const UserInfo = () => {
                 </h4>
                 <h4
                   className={`flex items-center gap-2 text-sm font-normal text-gray-400 ${CheckValue.value3 ? "text-gray-950" : "text-gray-400"
-                  }`}
+                    }`}
                 >
                   <Checkbox
                     id="checkbox3"
@@ -439,7 +453,7 @@ const UserInfo = () => {
 
 
       <div className="UserInfo">
-        <SidebarPanel />
+
         <div
           className={style.info}
           style={{
@@ -532,6 +546,7 @@ const UserInfo = () => {
                     FilterGroup.map((group, index) => {
                       // Ushbu guruhga tegishli talabalarni hisoblash
                       const groupStudentsCount = FilterStudent.filter(student => student.group === group.groupName).length;
+                      const coursePrice = getPrice(group.courses)
 
                       return (
                         <Card className="flex flex-col gap-5" key={index}>
@@ -552,7 +567,7 @@ const UserInfo = () => {
                             <div className="">
                               <span className="text-sm/3 text-gray-400">Guruh narxi</span>
                               <h4 className="text-base text-gray-950">
-                                {group.price} so'm
+                                {coursePrice} so'm
                               </h4>
                             </div>
                             <div className="">

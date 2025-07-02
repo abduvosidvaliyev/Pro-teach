@@ -831,7 +831,13 @@ const StudentDetail = () => {
               <Input
                 type="text"
                 value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
+                onChange={(e) => {
+                  const rawValue = e.target.value.replace(/\s/g, ""); // Bo'sh joylarni olib tashlash
+                  if (isNaN(rawValue)) return; // Faqat raqamlarni qabul qilish
+
+                  const formattedValue = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, " "); // Har 3 ta raqamdan keyin bo'sh joy qo'shish
+                  setPaymentAmount(formattedValue)
+                }}
               />
             </div>
             <div className="mt-6 flex gap-3 justify-center">
@@ -864,7 +870,13 @@ const StudentDetail = () => {
               <Input
                 type="text"
                 value={refundAmount}
-                onChange={(e) => setRefundAmount(e.target.value)}
+                onChange={(e) => {
+                  const rawValue = e.target.value.replace(/\s/g, ""); // Bo'sh joylarni olib tashlash
+                  if (isNaN(rawValue)) return; // Faqat raqamlarni qabul qilish
+
+                  const formattedValue = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, " "); // Har 3 ta raqamdan keyin bo'sh joy qo'shish
+                  setRefundAmount(formattedValue)
+                }}
               />
             </div>
             <div className="mt-6 flex gap-3 justify-center">

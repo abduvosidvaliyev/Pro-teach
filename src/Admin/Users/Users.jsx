@@ -1,5 +1,4 @@
 import style from './Users.module.css';
-import { SidebarPanel } from '../../Sidebar';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card } from '../../components/ui/card';
@@ -80,6 +79,20 @@ const Users = () => {
     const handleNextPage = (id) => {
         navigate(`/users/${id}`);
     };
+
+    const formatPhoneNumber = (value) => {
+        const onlyDigits = value.replace(/\D/g, "").slice(0, 12); // faqat raqamlar va 12 ta belgigacha
+
+        let result = "+998";
+
+        if (onlyDigits.length > 3) result += " " + onlyDigits.slice(3, 5);
+        if (onlyDigits.length > 5) result += " " + onlyDigits.slice(5, 8);
+        if (onlyDigits.length > 8) result += " " + onlyDigits.slice(8, 10);
+        if (onlyDigits.length > 10) result += " " + onlyDigits.slice(10, 12);
+
+        return result;
+    };
+
 
     const handleSearchUser = (value) => {
         const teacherRef = ref(database, "Teachers");
@@ -177,8 +190,9 @@ const Users = () => {
                             <div className="flex flex-col gap-3">
                                 <Label htmlFor="courseSelect" className="text-xs text-gray-500">Ism</Label>
                                 <Input
-                                    id="courseSelect"
                                     type="text"
+                                    id="courseSelect"
+                                    className={style.input}
                                     placeholder="Xodim nomi"
                                     value={addUser.name}
                                     onChange={(e) =>
@@ -192,8 +206,9 @@ const Users = () => {
                             <div className="flex flex-col gap-3">
                                 <Label htmlFor="courseDuration" className="text-xs text-gray-500">Yoshi</Label>
                                 <Input
-                                    id="courseDuration"
                                     type="number"
+                                    id="courseDuration"
+                                    className={style.input}
                                     value={addUser.young}
                                     placeholder="Xodim yoshi"
                                     onChange={(e) =>
@@ -207,39 +222,25 @@ const Users = () => {
                             <div className="flex flex-col gap-3">
                                 <Label htmlFor="coursePrice" className="text-xs text-gray-500">Telifon raqami</Label>
                                 <Input
-                                    id="coursePrice"
-                                    placeholder="Telefon raqami"
                                     type="text"
+                                    id="coursePrice"
+                                    className={style.input}
+                                    placeholder="Telefon raqami"
                                     value={addUser.number}
                                     onChange={(e) => {
-                                        let input = e.target.value;
-
-                                        // Faqat raqamlar va "+" belgisini qabul qilish
-                                        input = input.replace(/[^+\d]/g, "");
-
-                                        // Formatlash: +XXX XX XXX XX XX
-                                        if (input.startsWith("+")) {
-                                            input = input.replace(
-                                                /^(\+\d{1,3})(\d{1,2})?(\d{1,3})?(\d{1,2})?(\d{1,2})?/,
-                                                (match, p1, p2, p3, p4, p5) =>
-                                                    [p1, p2, p3, p4, p5].filter(Boolean).join(" ")
-                                            );
-                                        }
-
-                                        // Holatni yangilash
                                         setaddUser((prevState) => ({
                                             ...prevState,
-                                            number: input,
+                                            number: formatPhoneNumber(e.target.value),
                                         }));
                                     }}
-                                    maxLength={17} // Maksimal uzunlikni cheklash
                                 />
                             </div>
                             <div className="flex flex-col gap-3">
                                 <Label htmlFor="courseDuration" className="text-xs text-gray-500">Yo'nalishi</Label>
                                 <Input
-                                    id="courseDuration"
                                     type="text"
+                                    id="courseDuration"
+                                    className={style.input}
                                     value={addUser.job}
                                     placeholder="Xodim yo'nalishi"
                                     onChange={(e) =>
@@ -253,8 +254,9 @@ const Users = () => {
                             <div className="flex flex-col gap-3">
                                 <Label htmlFor="courseMonth" className="text-xs text-gray-500">E-mail address</Label>
                                 <Input
-                                    id="courseMonth"
                                     type="text"
+                                    id="courseMonth"
+                                    className={style.input}
                                     placeholder="E-mail Address"
                                     value={addUser.email}
                                     onChange={(e) =>
@@ -268,8 +270,9 @@ const Users = () => {
                             <div className="flex flex-col gap-3">
                                 <Label htmlFor="country" className="text-xs text-gray-500">Yashash joyi</Label>
                                 <Input
-                                    id="country"
                                     type="text"
+                                    id="country"
+                                    className={style.input}
                                     value={addUser.address}
                                     placeholder="Yashash joyi"
                                     onChange={(e) =>
@@ -375,7 +378,7 @@ const Users = () => {
                             <Input
                                 type="text"
                                 placeholder="Qidirish..."
-                                className="w-64 placeholder-gray-900"
+                                className={`${style.input} w-64 placeholder-gray-900`}
                                 onChange={(e) => handleSearchUser(e.target.value)}
                             />
                             <Button

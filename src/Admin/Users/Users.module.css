@@ -47,3 +47,7 @@
     cursor: pointer;
     padding-bottom: 9px;
 }
+
+.input::placeholder{
+    color: #8b8b8b !important;
+}

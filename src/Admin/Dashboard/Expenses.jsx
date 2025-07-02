@@ -415,7 +415,13 @@ const Expenses = () => {
                                     id="amount"
                                     type="text"
                                     value={object.amount}
-                                    onChange={(e) => setobject((prevState) => ({ ...prevState, amount: e.target.value }))}
+                                    onChange={(e) => {
+                                        const rawValue = e.target.value.replace(/\s/g, ""); // Bo'sh joylarni olib tashlash
+                                        if (isNaN(rawValue)) return; // Faqat raqamlarni qabul qilish
+
+                                        const formattedValue = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+                                        setobject((prevState) => ({ ...prevState, amount: formattedValue }))
+                                    }}
                                 />
                             </div>
 
@@ -611,7 +617,13 @@ const Expenses = () => {
                                             type="text"
                                             placeholder="Narxi"
                                             className={style.input}
-                                            onChange={(e) => setAddExpense((prevState) => ({ ...prevState, amount: e.target.value }))}
+                                            onChange={(e) => {
+                                                const rawValue = e.target.value.replace(/\s/g, ""); // Bo'sh joylarni olib tashlash
+                                                if (isNaN(rawValue)) return; // Faqat raqamlarni qabul qilish
+
+                                                const formattedValue = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+                                                setAddExpense((prevState) => ({ ...prevState, amount: formattedValue }))
+                                            }}
                                             value={AddExpense.amount}
                                         />
                                     </div>

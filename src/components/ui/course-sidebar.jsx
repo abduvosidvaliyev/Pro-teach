@@ -6,10 +6,9 @@ import {
   ref,
   set,
   onValue,
-  remove,
+  update,
   get
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
-
 
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -100,7 +99,12 @@ export const CourseSidebar = ({ groupInfo }) => {
 
     setFirstCourse(course || {});
   }, [groupInfo?.courses, Course]);
-  
+
+  const handleStatusChenge = (name) => {
+    const studentRef = ref(database, `leads/${name}`)
+
+    update(studentRef, { status: "O'qiyabdi" })
+  }
 
   const addStudent = () => {
     if ((AddStudent.studentName) === "") {
@@ -129,6 +133,7 @@ export const CourseSidebar = ({ groupInfo }) => {
             group: groupInfo?.groupName,
             studentName: AddStudent.studentName,
             studentNumber: firstLead.phone,
+            image: "",
             login: AddStudent.login,
             parol: AddStudent.parol,
             status: "Faol",
@@ -145,7 +150,7 @@ export const CourseSidebar = ({ groupInfo }) => {
           })
             .then(() => {
               setOpen(false);
-              remove(ref(database, `leads/${firstLead.name}`))
+              handleStatusChenge(firstLead.name)
               setAddStudent({
                 studentName: "",
                 login: "",

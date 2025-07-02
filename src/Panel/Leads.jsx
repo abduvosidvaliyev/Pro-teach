@@ -34,7 +34,7 @@ import {
   update
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 import { Modal } from "../components/ui/modal"
-import { useNavigate } from "react-router-dom"
+import { data, useNavigate } from "react-router-dom"
 import { ToastContainer } from "react-toastify"
 import style from "./Panel.module.css"
 
@@ -71,13 +71,17 @@ const getCurrentMonth = () => {
 };
 
 export default function LeadsPage() {
+  const date = new Date().toISOString().slice(0, 7)
+
   const navigate = useNavigate()
-  const [leads, setLeads] = useState([])
+  const [Leads, setLeads] = useState([])
+  const [leads, setleads] = useState([])
   const [Students, setStudents] = useState([])
   const [GroupData, setGroupData] = useState([]);
   const [teachersData, setTeachersData] = useState([]);
   const [GetCourse, setGetCourse] = useState([])
   const [roomsData, setRoomsData] = useState([]);
+  const [MonthKey, setMonthKey] = useState([])
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth())
   const [newUser, setnewUser] = useState({})
   const [selectedOptions, setSelectedOptions] = useState({
@@ -85,25 +89,44 @@ export default function LeadsPage() {
     parol: "",
     group: ""
   });
-  const [openModal, setopenModal] = useState(false)
   const [firstInformation, setfirstInformation] = useState({})
+  const [openModal, setopenModal] = useState(false)
   const [isOpen, setIsOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [openDelateModal, setopenDelateModal] = useState(false)
-  const [delateLead, setdelateLead] = useState("")
   const [OpenChengeStatus, setOpenChengeStatus] = useState(null)
   const [OpenChengeCourse, setOpenChengeCourse] = useState(null)
+  const [delateLead, setdelateLead] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [month, setMonth] = useState(date)
+
 
   const [tabs, setTabs] = useState("add")
 
+  const [newLead, setNewLead] = useState({
+    name: "",
+    phone: "",
+    status: "Kutyabdi",
+    source: "",
+    course: "",
+    time: "",
+    notes: "",
+  })
+
+  const [filterStatus, setFilterStatus] = useState("all")
+
+
   // read leads from firebase
   useEffect(() => {
-    const takeLeads = ref(database, "leads")
+    const takeLeads = ref(database, `leads`)
 
     onValue(takeLeads, (snapshot) => {
       const leads = snapshot.val()
 
       const formattedLeads = leads ? Object.values(leads) : [];
+      const key = [...new Set(formattedLeads.map(x => x.date.slice(0, 7)))];
+
+      setMonthKey(key)
       setLeads(formattedLeads);
     })
   }, [])
@@ -165,17 +188,11 @@ export default function LeadsPage() {
     })
   }, []);
 
-  const [newLead, setNewLead] = useState({
-    name: "",
-    phone: "",
-    status: "Kutyabdi",
-    source: "",
-    course: "",
-    time: "",
-    notes: "",
-  })
+  useEffect(() => {
+    const filterMonthLead = Leads.filter(lead => lead.date.slice(0, 7) === month)
 
-  const [filterStatus, setFilterStatus] = useState("all")
+    setleads(filterMonthLead)
+  }, [month, Leads])
 
   const handleNotesChange = (e) => {
     const { value } = e.target
@@ -187,19 +204,19 @@ export default function LeadsPage() {
     setNewLead({ ...newLead, name: value })
   }
 
-  const handlePhoneChange = (e) => {
-    let value = e.target.value.replace(/\D/g, ""); // Harflar va boshqa belgilarni olib tashlaymiz
+  const formatPhoneNumber = (value) => {
+    const onlyDigits = value.replace(/\D/g, "").slice(0, 12); // faqat raqamlar va 12 ta belgigacha
 
-    if (!value.startsWith("998 ")) {
-      value = "998 " + value.replace(/^998+/, "");
-    }
+    let result = "+998";
 
-    value = value.slice(0, 13); // Maksimal uzunlik 12 ta raqam bo‘lishi kerak
+    if (onlyDigits.length > 3) result += " " + onlyDigits.slice(3, 5);
+    if (onlyDigits.length > 5) result += " " + onlyDigits.slice(5, 8);
+    if (onlyDigits.length > 8) result += " " + onlyDigits.slice(8, 10);
+    if (onlyDigits.length > 10) result += " " + onlyDigits.slice(10, 12);
 
-    let formattedNumber = `+${value}`; // Har doim `+998` ko‘rinishda bo‘lsin
-
-    setNewLead({ ...newLead, phone: formattedNumber });
+    return result;
   };
+
 
   const handleSourceChange = (value) => {
     setNewLead({ ...newLead, source: value })
@@ -222,7 +239,7 @@ export default function LeadsPage() {
     }
 
     const id = leads.length + 1
-    const date = new Date().toISOString().split("T")[0]
+    const today = new Date().toISOString().split("T")[0]
 
     // push lead to firebase
     set(ref(database, `leads/${newLead.name}`), {
@@ -234,7 +251,7 @@ export default function LeadsPage() {
       course: newLead.course,
       notes: newLead.notes,
       time: newLead.time,
-      date: date
+      date: today
     })
       .then(() => {
         AddNotify({ AddTitle: "Qo'shildi" })
@@ -247,11 +264,19 @@ export default function LeadsPage() {
           source: "",
           course: ""
         })
+        // setMonth(date)
       })
   }
 
+  const handleStatusChenge = (name) => {
+    const studentRef = ref(database, `leads/${name}`)
 
-  const filteredLeads = filterStatus === "all" ? leads : leads.filter((lead) => lead.status === filterStatus)
+    update(studentRef, { status: "O'qiyabdi" })
+  }
+
+  const filteredLeads = leads
+    .filter(lead => filterStatus === "all" ? true : lead.status === filterStatus)
+    .filter(lead => lead.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   // delate leads
   const handleDeleteLead = (name) => {
@@ -267,6 +292,21 @@ export default function LeadsPage() {
         console.error(error)
       })
   }
+
+  // useEffect(() => {
+  //   const studentRef = ref(database, `Leads`)
+
+  //   get(studentRef)
+  //     .then((snapshot) => {
+  //       if (snapshot.exists()) {
+  //         const date = snapshot.val()
+
+  //         const setLeads = ref(database, "leads")
+  //         set(setLeads, date)
+  //       }
+  //     })
+  // }, [])
+
 
   // add to group
   const handleAddToGroup = () => {
@@ -292,12 +332,12 @@ export default function LeadsPage() {
                 _empty: true,
               },
             },
-            id: Students.length + 1
-            ,
+            id: Students.length + 1,
             balance: 0, // Boshlang'ich balansni 0 qilib qo'yamiz
             group: selectedOptions.group.label,
             studentName: newUser.name,
             studentNumber: newUser.phone,
+            image: "",
             login: selectedOptions.login,
             parol: selectedOptions.parol,
             status: "Faol",
@@ -313,7 +353,7 @@ export default function LeadsPage() {
             paymentHistory: []
           })
             .then(() => {
-              handleDeleteLead(newUser.name)
+              handleStatusChenge(newUser.name)
               setSelectedOptions({
                 group: "",
                 login: "",
@@ -662,6 +702,7 @@ export default function LeadsPage() {
               Lidlar ro'yxati
             </TabsTrigger>
           </TabsList>
+
           <TabsContent value="list" onClick={() => setOpenChengeStatus(false)}>
             <Card>
               <CardHeader>
@@ -669,20 +710,47 @@ export default function LeadsPage() {
                 <CardDescription>Barcha lidlar va ularning ma'lumotlari</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-end mb-4">
-                  <Select onValueChange={setFilterStatus} defaultValue={filterStatus}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Status bo'yicha filtrlash" />
+                <div className="flex justify-between mb-4">
+                  <Select defaultValue={`${date}`} onValueChange={setMonth}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Oy boyicha filterlash" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Barchasi</SelectItem>
-                      {statusData.map((status) => (
-                        <SelectItem value={status.name}>
-                          {status.name}
+                      {MonthKey.map((key) => (
+                        <SelectItem value={key}>
+                          {key}
                         </SelectItem>
                       ))}
+                      {
+                        MonthKey.find(key => key === date) ? ""
+                          : <SelectItem value={date}>
+                            {date}
+                          </SelectItem>
+                      }
                     </SelectContent>
                   </Select>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="text"
+                      value={searchTerm}
+                      className={style.input}
+                      placeholder="Ismi bo'yicha qidirish..."
+                      onChange={e => setSearchTerm(e.target.value)}
+                    />
+                    <Select onValueChange={setFilterStatus} defaultValue={filterStatus}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Status bo'yicha filtrlash" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Barchasi</SelectItem>
+                        {statusData.map((status) => (
+                          <SelectItem value={status.name}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <Table>
                   <TableHeader>
@@ -712,7 +780,7 @@ export default function LeadsPage() {
                                   StatusColors["KelibKetdi"] :
                                   lead.status === "O'qiyabdi" ?
                                     StatusColors["Oqiyabdi"] : StatusColors[lead.status]}  cursor-pointer
-                            `}
+                              `}
                               onClick={(event) => {
                                 event.stopPropagation()
                                 setOpenChengeStatus(OpenChengeStatus !== lead.id ? lead.id : null)
@@ -821,7 +889,17 @@ export default function LeadsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Telefon</Label>
-                      <Input id="phone" name="phone" value={newLead.phone} placeholder="+998" onChange={handlePhoneChange} required />
+                      <Input
+                        required
+                        id="phone"
+                        value={newLead.phone}
+                        onChange={(e) =>
+                          setNewLead({
+                            ...newLead,
+                            phone: formatPhoneNumber(e.target.value),
+                          })
+                        }
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="source">Manba</Label>
