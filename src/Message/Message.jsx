@@ -316,7 +316,7 @@ const Message = () => {
                 setdelateMessage(false)
             })
             .catch((error) => {
-                console.error(error)                
+                console.error(error)
             })
     }
 
@@ -467,22 +467,26 @@ const Message = () => {
                                                             {time}
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center gap-2 self-center select-none">
-                                                        <span
-                                                            className="p-2 rounded-full hover:bg-blue-500/20 transition-colors duration-200 group cursor-pointer"
-                                                            title="Tahrirlash"
-                                                            onClick={() => hendleMInfo(messeg.key, messeg.text)}
-                                                        >
-                                                            <GoPencil className="text-lg text-gray-500 group-hover:text-blue-600 transition-colors duration-200" />
-                                                        </span>
-                                                        <span
-                                                            className="p-2 rounded-full hover:bg-red-500/20 transition-colors duration-200 group cursor-pointer"
-                                                            title="O'chirish"
-                                                            onClick={() => { setmessageKey(messeg.key), setdelateMessage(true) }}
-                                                        >
-                                                            <FaTrash className="text-base text-gray-500 group-hover:text-red-600 transition-colors duration-200" />
-                                                        </span>
-                                                    </div>
+                                                    {
+                                                        messeg.id === StudentData.id ? (
+                                                            <div className="flex items-center gap-2 self-center select-none">
+                                                                <span
+                                                                    className="p-2 rounded-full hover:bg-blue-500/20 transition-colors duration-200 group cursor-pointer"
+                                                                    title="Tahrirlash"
+                                                                    onClick={() => hendleMInfo(messeg.key, messeg.text)}
+                                                                >
+                                                                    <GoPencil className="text-lg text-gray-500 group-hover:text-blue-600 transition-colors duration-200" />
+                                                                </span>
+                                                                <span
+                                                                    className="p-2 rounded-full hover:bg-red-500/20 transition-colors duration-200 group cursor-pointer"
+                                                                    title="O'chirish"
+                                                                    onClick={() => { setmessageKey(messeg.key), setdelateMessage(true) }}
+                                                                >
+                                                                    <FaTrash className="text-base text-gray-500 group-hover:text-red-600 transition-colors duration-200" />
+                                                                </span>
+                                                            </div>
+                                                        ) : ""
+                                                    }
                                                 </div>
                                             )
                                         })
