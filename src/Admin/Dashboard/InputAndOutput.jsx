@@ -1,13 +1,14 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
     getDatabase,
     ref,
-    set,
     onValue,
+    set,
     update,
+    get,
     remove
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+} from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -289,39 +290,39 @@ const InputAndOutput = () => {
     //                 </div>
 
     //                 {/* ReactPaginate */}
-                    <div className="self-end flex items-center gap-3">
-                        <Select
-                            value={String(PER_PAGE)}
-                            onValueChange={val => {
-                                setPER_PAGE(Number(val));
-                                setCurrentPage(0);
-                            }}
-                            defaultValue={String(pages[1].value)}
-                        >
-                            <SelectTrigger className="w-[120px]">
-                                <SelectValue placeholder="Qator sonini tanlash" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {pages.map((page) => (
-                                    <SelectItem key={page.value} value={String(page.value)}>
-                                        {page.value} tadan
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <ReactPaginate
-                            pageCount={pageCount}
-                            onPageChange={handlePageClick}
-                            forcePage={currentPage}
-                            previousLabel={<FiChevronLeft />}
-                            nextLabel={<FiChevronRight />}
-                            breakLabel="..."
-                            marginPagesDisplayed={1}
-                            pageRangeDisplayed={1}
-                            containerClassName="pagination"
-                            activeClassName="active"
-                        />
-                    </div>
+    <div className="self-end flex items-center gap-3">
+        <Select
+            value={String(PER_PAGE)}
+            onValueChange={val => {
+                setPER_PAGE(Number(val));
+                setCurrentPage(0);
+            }}
+            defaultValue={String(pages[1].value)}
+        >
+            <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Qator sonini tanlash" />
+            </SelectTrigger>
+            <SelectContent>
+                {pages.map((page) => (
+                    <SelectItem key={page.value} value={String(page.value)}>
+                        {page.value} tadan
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+        <ReactPaginate
+            pageCount={pageCount}
+            onPageChange={handlePageClick}
+            forcePage={currentPage}
+            previousLabel={<FiChevronLeft />}
+            nextLabel={<FiChevronRight />}
+            breakLabel="..."
+            marginPagesDisplayed={1}
+            pageRangeDisplayed={1}
+            containerClassName="pagination"
+            activeClassName="active"
+        />
+    </div>
     //             </div>
     //         );
     //     }

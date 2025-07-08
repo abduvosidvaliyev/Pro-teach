@@ -1,6 +1,5 @@
 import { HiOutlineCurrencyDollar } from "react-icons/hi2";
 import { MdOutlineCurrencyExchange } from "react-icons/md";
-import { IoStatsChartSharp } from "react-icons/io5";
 import { GrMoney } from "react-icons/gr";
 import React, { useState, useEffect } from "react";
 import style from './Sidebar.module.css'

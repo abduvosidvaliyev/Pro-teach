@@ -1,9 +1,16 @@
 import style from "./App.module.css"
 import back from '../assets/bac.mp4'
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import {
+    getDatabase,
+    ref,
+    onValue,
+    set,
+    update,
+    get
+} from "firebase/database";
 import BasicNavbar from "./BasicNavbar";
 import { useEffect, useState } from "react";
 import ProfileCard from "./StudentProfile/ProfileCard";

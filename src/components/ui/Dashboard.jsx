@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
   getDatabase,
   ref,
@@ -9,7 +9,7 @@ import {
   set,
   update,
   get
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+} from "firebase/database";
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
   authDomain: "project-pro-7f7ef.firebaseapp.com",
@@ -263,7 +263,7 @@ export default function Dashboard({ data, setUserData }) {
 
 
 
-  
+
   // Populate time slots with courses
   courseScheduleData.forEach((course) => {
     const slotIndex = course.startHour - 8;
@@ -984,23 +984,6 @@ export default function Dashboard({ data, setUserData }) {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Kurs Mashhurligi</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.coursePopularity}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="students" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>

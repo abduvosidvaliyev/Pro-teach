@@ -23,16 +23,18 @@ import {
   SidebarProvider,
 } from "../components/ui/sidebar";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
   getDatabase,
   ref,
-  set,
   onValue,
-  remove,
+  set,
+  update,
   get,
-  update
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+  remove
+} from "firebase/database";
+
 import { Modal } from "../components/ui/modal"
 import { data, useNavigate } from "react-router-dom"
 import { ToastContainer } from "react-toastify"

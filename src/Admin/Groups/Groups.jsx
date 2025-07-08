@@ -1,17 +1,19 @@
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  update,
+  push
+} from "firebase/database";
+
 import React, { useState, useEffect } from "react";
 import SelectReact from "react-select";
 import { data, Link, useNavigate } from "react-router-dom";
 import style from "./Group.module.css";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-import {
-  getDatabase,
-  ref,
-  set,
-  onValue,
-  update,
-  push,
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
 import {
   Sidebar,
   SidebarContent,

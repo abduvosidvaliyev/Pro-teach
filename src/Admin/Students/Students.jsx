@@ -3,18 +3,20 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import style from "./Students.module.css";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
   getDatabase,
   ref,
-  set,
   onValue,
+  set,
   update,
   push,
   remove,
   get
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+} from "firebase/database";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,

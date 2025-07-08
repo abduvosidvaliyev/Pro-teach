@@ -1,11 +1,14 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  update,
+  get
+} from "firebase/database";
+
 import { useEffect, useState } from "react";
 import style from './Course.module.css';
 import { Card, CardContent, CardHeader } from "../../components/ui/card";

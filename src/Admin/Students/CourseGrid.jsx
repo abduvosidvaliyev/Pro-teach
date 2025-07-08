@@ -1,6 +1,16 @@
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  update,
+  get
+} from "firebase/database";
+
+
 import React, { useState, useEffect } from 'react';
-import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js';
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
 import { CourseCard } from './CourseCard';
 import imageGotcha from '../../assets/gotcha.png';
 

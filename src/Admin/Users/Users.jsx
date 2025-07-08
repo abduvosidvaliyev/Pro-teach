@@ -5,14 +5,16 @@ import { Card } from '../../components/ui/card';
 import { useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
     getDatabase,
     ref,
     onValue,
     set,
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+    update,
+    get
+} from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",

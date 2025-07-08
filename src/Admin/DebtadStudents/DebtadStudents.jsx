@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
     getDatabase,
     ref,
@@ -8,7 +8,8 @@ import {
     set,
     update,
     get
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+} from "firebase/database";
+
 const firebaseConfig = {
     apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
     authDomain: "project-pro-7f7ef.firebaseapp.com",
@@ -127,7 +128,7 @@ const DebtadStudents = () => {
 
                 <Card className="w-full h-[100px] flex justify-start items-center p-5">
                     <h3 className="text-xl ">
-                        <span className="text-red-600">Jami qarz</span>: 
+                        <span className="text-red-600">Jami qarz</span>:
                         {new Intl.NumberFormat("uz-UZ", {
                             style: "currency",
                             currency: "UZS",

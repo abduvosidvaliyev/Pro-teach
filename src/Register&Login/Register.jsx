@@ -1,14 +1,20 @@
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  update,
+  get
+} from "firebase/database";
+
 import React, { useState, useEffect } from 'react';
 import style from './Reg.module.css';
-import Basic from '../Basic/Basic.jsx';
-import Message from '../Message/Message.jsx';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleUser, faKey, faUsersLine } from '@fortawesome/free-solid-svg-icons';
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 import bgVideo from '../assets/class.mp4';
 import { useNavigate } from 'react-router-dom';
 

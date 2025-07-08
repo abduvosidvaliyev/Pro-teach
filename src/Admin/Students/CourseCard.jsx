@@ -2,17 +2,17 @@ import { GraduationCap } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { useState, useEffect } from "react";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
   getDatabase,
   ref,
-  set,
   onValue,
+  set,
   update,
   get,
-  remove,
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+  remove
+} from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -585,7 +585,7 @@ export function CourseCard({ course }) {
           <div>
             <div className="text-sm text-gray-500">To'lov narxi</div>
             <div className="">
-              { new Intl.NumberFormat("uz-UZ").format(Number(course.payment)) } so'm
+              {new Intl.NumberFormat("uz-UZ").format(Number(course.payment))} so'm
             </div>
           </div>
         </div>

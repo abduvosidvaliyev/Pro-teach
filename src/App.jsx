@@ -1,21 +1,20 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
   getDatabase,
   ref,
-  set,
   onValue,
+  set,
   update,
   get,
-  remove,
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+  remove
+} from "firebase/database";
 
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Register from '../src/Register&Login/Register.jsx'
 import Basic from '../src/Basic/Basic.jsx'
 import Panel from '../src/Panel/Panel.jsx'
-import Templates from '../src/Templates.jsx'
 import Control from '../src/Admin/Control/Control.jsx'
 import Message from "../src/Message/Message.jsx";
 import Expenses from '../src/Admin/Dashboard/Expenses.jsx'

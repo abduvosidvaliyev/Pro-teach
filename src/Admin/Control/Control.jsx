@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import style from "./Control.module.css";
 import { Link } from "react-router-dom";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
   getDatabase,
   ref,
+  onValue,
   set,
-  push,
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
-import { SidebarPanel } from "../../Sidebar";
+  update,
+  get
+} from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",

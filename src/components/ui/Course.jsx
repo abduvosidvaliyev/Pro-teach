@@ -1,10 +1,13 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
     getDatabase,
     ref,
     onValue,
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+    set,
+    update,
+    get
+} from "firebase/database";
 import { useEffect, useState } from "react";
 const firebaseConfig = {
     apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -19,7 +22,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const database = getDatabase(app);  
+const database = getDatabase(app);
 
 const Course = () => {
     const [CourseData, setCourseData] = useState([])
@@ -29,7 +32,7 @@ const Course = () => {
         onValue(courseRef, (snapshot) => {
             const data = snapshot.val();
             const courseArray = Object.values(data);
-            
+
             setCourseData(courseArray);
         });
     }, [])
@@ -42,7 +45,7 @@ const Course = () => {
                 <div className="flex items-center gap-2">
                     <span className="font-semibold">Courses:</span>
                     {CourseData.map((course, index) => (
-                        <span key={index} className="text-gray-600">{course.name}</span>    
+                        <span key={index} className="text-gray-600">{course.name}</span>
                     ))}
                 </div>
                 <div className="flex items-center gap-2">

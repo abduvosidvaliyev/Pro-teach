@@ -1,6 +1,16 @@
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import {
+    getDatabase,
+    ref,
+    onValue,
+    set,
+    update,
+    get
+} from "firebase/database";
+
 import React, { useState, useEffect } from "react";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
 import { PaymentItem } from "../../components/ui/payment-item";
 import { HistoryItem } from "../../components/ui/history-item";
 import imageKnow from "../../assets/dont-know.png";

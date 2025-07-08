@@ -1,15 +1,16 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
   getDatabase,
   ref,
   onValue,
   set,
+  update,
   remove
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+} from "firebase/database";
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { SidebarPanel } from "../../Sidebar";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -181,7 +182,7 @@ const UserInfo = () => {
       })
     })
 
-    return price;    
+    return price;
   }
 
   const handleChengeToUser = () => {

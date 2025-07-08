@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import back from '../assets/bac.mp4';
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import {
+    getDatabase,
+    ref,
+    onValue,
+    set,
+    update,
+    get,
+    push,
+    remove
+} from "firebase/database";
 import BasicNavbar from '../Basic/BasicNavbar';
 import { FaSearch, FaTrash } from "react-icons/fa"
 import { FiUsers } from "react-icons/fi"

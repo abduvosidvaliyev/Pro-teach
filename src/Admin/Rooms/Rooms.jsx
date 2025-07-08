@@ -1,19 +1,19 @@
 import style from "./Rooms.module.css"
-import { SidebarPanel } from "../../Sidebar"
 import { Button } from "../../components/ui/button"
 import { FaPlus } from "react-icons/fa"
-import { GrEdit } from "react-icons/gr";
+import { GrEdit } from "react-icons/gr"
 import { FiTrash2 } from "react-icons/fi"
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import {
   getDatabase,
   ref,
-  set,
   onValue,
+  set,
+  update,
   remove
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+} from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",

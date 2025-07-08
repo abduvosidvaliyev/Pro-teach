@@ -1,18 +1,20 @@
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  update,
+  remove,
+  get
+} from "firebase/database";
+
 import { useState, useEffect } from "react";
 import { data, useNavigate, useParams } from "react-router-dom";
 import SelectReact from "react-select";
 import style from "./Group.module.css";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-import {
-  getDatabase,
-  ref,
-  set,
-  onValue,
-  update,
-  remove,
-  get
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
 import {
   Card,
   CardContent,
