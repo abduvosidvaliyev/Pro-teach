@@ -71,6 +71,7 @@ const ProfileCard = ({ setUserData }) => {
 
     const handleCloseUser = () => {
         localStorage.removeItem("UserData")
+        localStorage.removeItem("userData")
         window.location.reload()
         setUserData(null)
     }

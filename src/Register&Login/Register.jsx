@@ -1,19 +1,17 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  get
+    getDatabase,
+    ref,
+    onValue,
+    set,
+    update,
+    get
 } from "firebase/database";
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import style from './Reg.module.css';
-import '@fortawesome/fontawesome-free/css/all.min.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleUser, faKey, faUsersLine } from '@fortawesome/free-solid-svg-icons';
+import { FaEye, FaEyeSlash } from "react-icons/fa"
 
 import bgVideo from '../assets/class.mp4';
 import { useNavigate } from 'react-router-dom';
@@ -38,10 +36,12 @@ const database = getDatabase(app);
 function SignUpForm({ setUserData }) {
     const navigate = useNavigate()
     const [loginName, setLoginName] = useState('');
+    const [Logo, setLogo] = useState("")
     const [loginSecretPass, setLoginSecretPass] = useState('');
     const [loading, setLoading] = useState(false);
     const [GetAdmins, setGetAdmins] = useState([])
     const [GetStudents, setGetStudents] = useState([])
+    const [inputType, setinputType] = useState("password")
 
     useEffect(() => {
         const adminsRef = ref(database, "Admins")
@@ -57,8 +57,14 @@ function SignUpForm({ setUserData }) {
 
             setGetStudents(Object.values(data || []))
         })
-    }, [])
 
+        const systemRef = ref(database, "System/CompanyInfo/logo")
+        onValue(systemRef, (snapshot) => {
+            const data = snapshot.val()
+
+            setLogo(data)
+        })
+    }, [])
 
     const handleLogin = () => {
         if ((loginName && loginSecretPass) !== "") {
@@ -78,6 +84,11 @@ function SignUpForm({ setUserData }) {
 
             if (Admin) {
                 localStorage.setItem("UserData", JSON.stringify({
+                    id: Admin.id,
+                    login: Admin.login,
+                    parol: Admin.parol
+                }))
+                localStorage.setItem("userData", JSON.stringify({
                     id: Admin.id,
                     login: Admin.login,
                     parol: Admin.parol
@@ -102,6 +113,11 @@ function SignUpForm({ setUserData }) {
                         login: Students.login,
                         parol: Students.parol
                     }))
+                    localStorage.setItem("userData", JSON.stringify({
+                        id: Students.id,
+                        login: Students.login,
+                        parol: Students.parol
+                    }))
                     navigate(`/studentpages/${Students.id}`)
                     setLoginName("")
                     setLoginSecretPass("")
@@ -121,7 +137,9 @@ function SignUpForm({ setUserData }) {
             </video>
 
             <div className={style.signIn}>
-                <div className={style.logo}></div>
+                <div className={style.logo}>
+                    <img src={Logo} alt="" className="w-full h-full rounded-full" />
+                </div>
                 <h1 className={style.signText}>Login<span>/</span>Akkauntga Kirish</h1>
                 <div className={style.form}>
                     <div className={style.inps}>
@@ -131,17 +149,33 @@ function SignUpForm({ setUserData }) {
                             value={loginName}
                             onChange={(e) => setLoginName(e.target.value)}
                         />
-                        <FontAwesomeIcon className={style.faCircle} icon={faCircleUser} />
+
                     </div>
                     <div className={style.inps}>
                         <input
-                            type="password"
+                            type={inputType}
                             placeholder='Parol Kiriting'
                             value={loginSecretPass}
                             onChange={(e) => setLoginSecretPass(e.target.value)}
                             onKeyUp={(e) => e.key === "Enter" ? handleLogin() : ""}
                         />
-                        <FontAwesomeIcon className={style.faKey} icon={faKey} />
+                        {
+                            loginSecretPass
+                                ? (
+                                    inputType === "password"
+                                        ? <FaEye
+                                            className="absolute right-4 cursor-pointer text-white"
+                                            size={18}
+                                            onClick={() => setinputType("text")}
+                                        />
+                                        : <FaEyeSlash
+                                            className="absolute right-4 cursor-pointer text-white"
+                                            size={18}
+                                            onClick={() => setinputType("password")}
+                                        />
+                                )
+                                : ""
+                        }
                     </div>
                     <button onClick={handleLogin}>Tasdiqlash</button>
                     {loading && <div className={style.loader}>Loading...</div>} {/* Loader */}

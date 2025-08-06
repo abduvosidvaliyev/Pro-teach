@@ -69,6 +69,7 @@ const ProfileCard = () => {
 
     const handleCloseUser = () => {
         localStorage.removeItem("StudentData")
+        localStorage.removeItem("userData")
         window.location.reload()
     }
 

@@ -1,4 +1,4 @@
-import { HiOutlineCurrencyDollar } from "react-icons/hi2";
+  import { HiOutlineCurrencyDollar } from "react-icons/hi2";
 import { MdOutlineCurrencyExchange } from "react-icons/md";
 import { GrMoney } from "react-icons/gr";
 import React, { useState, useEffect } from "react";

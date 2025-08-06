@@ -39,7 +39,7 @@ const database = getDatabase(app);
 
 const Message = () => {
     const messageRef = useRef({})
-    const StudentData = JSON.parse(localStorage.getItem("StudentData"))
+    const StudentData = JSON.parse(localStorage.getItem("UserData"))
     const [Students, setStudents] = useState([])
     const [Groups, setGroups] = useState([])
     const [Message, setMessage] = useState([])

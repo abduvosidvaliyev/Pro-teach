@@ -36,6 +36,7 @@ import "./Panel/Toast.css"
 import { PrivateRoute, PrivateStudentRoute } from "./Register&Login/PrivateRoute.jsx";
 import { Profile } from "./Admin/Profile/Profile.jsx";
 import { SidebarPanel } from "./Sidebar.jsx";
+import Title from "./components/ui/Title.jsx";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
@@ -128,6 +129,7 @@ function App() {
   return (
     <>
       <Router>
+        <Title />
         <SidebarWrapper userData={userData} />
         <Routes>
           <Route
