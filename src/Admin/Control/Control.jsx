@@ -9,7 +9,7 @@ import { IoInformationCircleOutline, IoSettingsOutline } from "react-icons/io5";
 import { GrSchedule } from "react-icons/gr"
 import { TbLockPassword } from "react-icons/tb"
 import { ToastContainer } from "react-toastify";
-import Schedule from "./components/schedule";
+import Schedule from "./components/Schedule";
 import Info from "./components/Info";
 
 function Control() {
