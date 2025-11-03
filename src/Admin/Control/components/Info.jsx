@@ -9,8 +9,9 @@ import { onValueData, setData } from "../../../FirebaseData"
 import { AddNotify } from "../../../components/ui/Toast"
 import { uploadLogo } from "../../../uploadImage"
 import { useEffect, useState } from "react"
+import { X } from "lucide-react"
 
-const Info = ({ setImage, setOpenImg, setImg, Image }) => {
+const Info = () => {
 
     const [CompanyInfo, setCompanyInfo] = useState([])
     const [ChengeInfo, setChengeInfo] = useState({
@@ -20,6 +21,9 @@ const Info = ({ setImage, setOpenImg, setImg, Image }) => {
         logo: ""
     })
     const [click, setclick] = useState(false)
+    const [openImg, setOpenImg] = useState(false);
+    const [Img, setImg] = useState(false);
+    const [Image, setImage] = useState("")
 
     useEffect(() => {
         onValueData("System/CompanyInfo", (data) => {
@@ -105,6 +109,21 @@ const Info = ({ setImage, setOpenImg, setImg, Image }) => {
 
     return (
         <>
+
+            {openImg && (
+                <div className="flex fixed w-full h-screen top-0 left-0 bg-black/50 justify-center items-center z-30" onClick={() => setOpenImg(false)}>
+                    <X onClick={() => setOpenImg(false)} className="cursor-pointer absolute right-3 top-2 z-50 text-slate-100" />
+                    <img className="w-[50%] h-[550px]" src={Image} alt="" />
+                </div>
+            )}
+
+            {Img && (
+                <div className="flex fixed w-full h-screen top-0 left-0 bg-black/50 justify-center items-center z-30" onClick={() => setImg(false)}>
+                    <X onClick={() => setImg(false)} className="cursor-pointer absolute right-3 top-2 z-50 text-slate-100" />
+                    <img className="h-[550px] object-cover" src={ChengeInfo.logo} alt="" />
+                </div>
+            )}
+
             <h1 className="text-2xl font-semibold pb-6 border-b border-b-gray-200">
                 Kompaniya ma'lumotlari
             </h1>
