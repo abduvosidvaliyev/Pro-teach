@@ -1,15 +1,25 @@
-  import { HiOutlineCurrencyDollar } from "react-icons/hi2";
+import { HiOutlineCurrencyDollar } from "react-icons/hi2";
 import { MdOutlineCurrencyExchange } from "react-icons/md";
+import { BsFillBoxFill } from "react-icons/bs"
 import { GrMoney } from "react-icons/gr";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import style from './Sidebar.module.css'
 import { Link, useNavigate } from 'react-router-dom';
+import {onValueData} from "./FirebaseData"
 
 export function SidebarPanel() {
   const navigate = useNavigate()
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [activeDropdown, setactiveDropdown] = useState(null);
   const [ActiveDropdown, setActiveDropdown] = useState(false);
+  const [CompanyInfo, setCompanyInfo] = useState([])
+
+  useEffect(() => {
+    onValueData("System/CompanyInfo", (data) => {
+      setCompanyInfo(data || {})
+    })
+  }, []) 
+
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -55,10 +65,12 @@ export function SidebarPanel() {
         ></i>
       </div>
       <div className={`${style.sidebar} ${isCollapsed ? style.collapsed : ""}`}>
-        <div className={style.sidebarHeader}>
-          <h3 className={style.brand}>
-            <i className="fas fa-anchor"></i>
-            <span>MyApp</span>
+        <div className={`${style.sidebarHeader}`}>
+          <h3 className={`${style.brand} flex gap-3 translate-x-[6px]`}>
+            <BsFillBoxFill size={22}/>
+            <span>
+              {CompanyInfo?.name}
+            </span>
           </h3>
         </div>
         <ul className={style.navLinks}>

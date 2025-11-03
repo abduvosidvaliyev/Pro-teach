@@ -1,33 +1,7 @@
 import { GraduationCap } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { useState, useEffect } from "react";
-
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  get,
-  remove
-} from "firebase/database";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { onValueData, readData, updateData } from "../../FirebaseData"
 
 // const countWeekdaysInMonth = (selectedDays) => {
 //   const today = new Date();
@@ -278,11 +252,10 @@ export function CourseCard({ course }) {
   // const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // Hozirgi oy
 
   useEffect(() => {
-    const studentRef = ref(database, `Students/${course.studentName}`);
-    get(studentRef)
+    readData(`Students/${course.studentName}`)
       .then((snapshot) => {
-        if (snapshot.exists()) {
-          const studentData = snapshot.val();
+        if (snapshot) {
+          const studentData = snapshot;
           console.log("Fetched status from Firebase:", studentData.status); // Qo'shimcha log
           setStatus(studentData.status || "Nofaol"); // Firebase-dan statusni olish
         } else {
@@ -505,9 +478,7 @@ export function CourseCard({ course }) {
   // }, []);
 
   const handleStatusChange = (value) => {
-    const studentRef = ref(database, `Students/${course.studentName}`);
-
-    update(studentRef, { status: value })
+    updateData(`Students/${course.studentName}`, { status: value })
       .then(() => {
         setStatus(value); // Mahalliy state-ni ham yangilash
       })
@@ -598,12 +569,8 @@ const GroupDetails = () => {
   const [studentsData, setStudentsData] = useState([]);
 
   useEffect(() => {
-    const database = getDatabase();
-    const studentsRef = ref(database, "Students");
-
-    onValue(studentsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
+    onValueData("Students", (data) => {
+      if (data) {
         setStudentsData(data); // Ma'lumotlarni holatga yozish
       } else {
         console.error("No students data found.");

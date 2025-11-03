@@ -1,17 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-    update,
-    get,
-    remove
-} from "firebase/database";
-import { useEffect, useState } from "react";
+import { onValueData } from "../../FirebaseData";
 
-const database = getDatabase()
+import { useEffect, useState } from "react";
 
 const Title = () => {
 
@@ -20,28 +9,31 @@ const Title = () => {
     const [Admins, setAdmins] = useState([])
 
     useEffect(() => {
-        const systemRef = ref(database, 'System/CompanyInfo');
-        onValue(systemRef, (snapshot) => {
-            const data = snapshot.val()
-
+        onValueData('System/CompanyInfo', (data) => {
             setCompanyInfo(Object.values(data || {}));
         })
 
-        const adminRef = ref(database, "Admins")
-        onValue(adminRef, (snapshot) => {
-            const data = snapshot.val()
+        onValueData("Admins", (data) => {
             setAdmins(Object.values(data || {}))
         })
     }, [])
 
-    console.log(CompanyInfo);
-
     useEffect(() => {
-        let info = !UserData ? "Register" : Admins.find(item => item.login === UserData?.login && item.parol === UserData?.parol) ? "Admin Panel" : "Student Panel"
+        const defaultAppName = "Pro-Teach";
+        let info;
 
-        if (CompanyInfo) {
-            document.title = CompanyInfo[2] ? `${CompanyInfo[2]} - ${info}` : info
+        if (!UserData) {
+            info = "Register";
+        } else if (Admins.length === 0) {
+            // Adminlar hali yuklanmagan paytda default nomni ko'rsatish
+            info = defaultAppName;
+        } else {
+            const isAdmin = Admins.find(item => item.login === UserData?.login && item.parol === UserData?.parol);
+            info = isAdmin ? "Admin Panel" : "Student Panel";
         }
+
+        const appName = CompanyInfo?.[2] || null;
+        document.title = appName ? `${appName} - ${info}` : info;
     }, [CompanyInfo, Admins, UserData])
 
     return null

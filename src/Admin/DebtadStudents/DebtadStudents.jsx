@@ -1,29 +1,4 @@
 import { useState, useEffect } from "react";
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-    update,
-    get
-} from "firebase/database";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-export const database = getDatabase(app);
 
 import {
     Table,
@@ -34,13 +9,13 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-import { SidebarPanel } from "../../Sidebar"
 import { Card, CardContent, CardHeader } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import style from "./DabtedStudents.module.css"
 import { Button } from "../../components/ui/button";
 import { FileSpreadsheet, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { onValueData } from "../../FirebaseData";
 
 const DebtadStudents = () => {
     const navigate = useNavigate()
@@ -52,9 +27,7 @@ const DebtadStudents = () => {
 
     // Studentlarni olish
     useEffect(() => {
-        const studentRef = ref(database, "Students");
-        onValue(studentRef, (snapshot) => {
-            const data = snapshot.val();
+        onValueData("Students", (data) => {
             const students = data ? Object.values(data) : [];
             setGetStudents(students);
 
@@ -69,9 +42,7 @@ const DebtadStudents = () => {
 
     // Guruhlarni olish
     useEffect(() => {
-        const groupRef = ref(database, "Groups");
-        onValue(groupRef, (snapshot) => {
-            const data = snapshot.val();
+        onValueData("Groups", (data) => {
             setGroupsData(Object.values(data || {}));
         });
     }, []);

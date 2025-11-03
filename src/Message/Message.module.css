@@ -53,3 +53,11 @@
     background: transparent;
     border-radius: 10px;
 }
+
+.act .actions{
+    visibility: hidden;
+}
+
+.act:hover .actions{
+    visibility: visible;
+}

@@ -1,16 +1,4 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  get,
-  remove
-} from "firebase/database";
-
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Register from '../src/Register&Login/Register.jsx'
 import Basic from '../src/Basic/Basic.jsx'
@@ -37,21 +25,7 @@ import { PrivateRoute, PrivateStudentRoute } from "./Register&Login/PrivateRoute
 import { Profile } from "./Admin/Profile/Profile.jsx";
 import { SidebarPanel } from "./Sidebar.jsx";
 import Title from "./components/ui/Title.jsx";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { readData, setData, updateData } from "./FirebaseData.js";
 
 
 function SidebarWrapper({ userData }) {
@@ -61,7 +35,7 @@ function SidebarWrapper({ userData }) {
     return <SidebarPanel />;
   }
   return null;
-}
+} 
 
 function App() {
   const [userData, setUserData] = useState(JSON.parse(localStorage.getItem("UserData")))
@@ -70,23 +44,15 @@ function App() {
 
   useEffect(() => {
     const currentMonth = new Date().getMonth();
-    const systemRef = ref(database, "System/lastDeductedMonth");
 
-    get(systemRef).then(snapshot => {
-      const savedMonth = snapshot.val();
+    readData("System/lastDeductedMonth").then(savedMonth => {
       if (savedMonth === null || Number(savedMonth) !== currentMonth) {
-        const studentsRef = ref(database, "Students");
-        const groupsRef = ref(database, "Groups");
-        const coursesRef = ref(database, "Courses");
 
         Promise.all([
-          get(studentsRef),
-          get(groupsRef),
-          get(coursesRef),
-        ]).then(([studentsSnap, groupsSnap, coursesSnap]) => {
-          const students = studentsSnap.val() || {};
-          const groups = groupsSnap.val() || {};
-          const courses = coursesSnap.val() || {};
+          readData("Students"),
+          readData("Groups"),
+          readData("Courses"),
+        ]).then(([students, groups, courses]) => {
 
           const updatePromises = Object.entries(students).map(([studentId, student]) => {
             if (student.status !== "Faol") return Promise.resolve();
@@ -112,14 +78,13 @@ function App() {
               return sum + Number(price || 0);
             }, 0);
 
-            const studentRef = ref(database, `Students/${studentId}`);
-            return update(studentRef, {
+            updateData(`Students/${studentId}`, {
               balance: (Number(student.balance) || 0) - totalPrice,
-            });
+            })
           });
 
           Promise.all(updatePromises).then(() => {
-            set(systemRef, currentMonth);
+            setData("System/lastDeductedMonth", currentMonth);
           });
         });
       }

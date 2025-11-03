@@ -32,6 +32,7 @@ import { HiArrowLeftStartOnRectangle } from "react-icons/hi2";
 import { Modal } from "../../components/ui/modal";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { onValueData } from "../../FirebaseData"
 
 const ProfileCard = ({ setUserData }) => {
 
@@ -44,11 +45,7 @@ const ProfileCard = ({ setUserData }) => {
     const UserData = JSON.parse(localStorage.getItem("UserData"))
 
     useEffect(() => {
-        const adminRef = ref(database, "Admins")
-
-        onValue(adminRef, (snapshot) => {
-            const data = snapshot.val()
-
+        onValueData("Admins", (data) => {
             setGetAdmin(Object.values(data || []))
         })
     }, [])

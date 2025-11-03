@@ -4,32 +4,6 @@ import { FaPlus } from "react-icons/fa"
 import { GrEdit } from "react-icons/gr"
 import { FiTrash2 } from "react-icons/fi"
 
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  remove
-} from "firebase/database";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
-
 import {
   Table,
   TableBody,
@@ -44,6 +18,7 @@ import { Label } from "../../components/ui/UiLabel";
 import { Input } from "../../components/ui/input";
 import { X } from "lucide-react";
 import { Modal } from "../../components/ui/modal";
+import { deleteData, onValueData, setData } from "../../FirebaseData"
 
 const Rooms = () => {
   const [TakeRooms, setTakeRooms] = useState([]);
@@ -65,15 +40,10 @@ const Rooms = () => {
   const [delateId, setDelateId] = useState(Number);
 
   useEffect(() => {
-    const roomsRef = ref(database, "Rooms");
-
-    onValue(roomsRef, (snapshot) => {
-      const data = snapshot.val();
-
+    onValueData("Rooms", (data) => {
       setTakeKeys(Object.keys(data || {}));
       setTakeRooms(Object.values(data || {}));
     });
-
   }, []);
 
   const toggleSidebar = () => {
@@ -87,7 +57,7 @@ const Rooms = () => {
       return;
     }
 
-    set(ref(database, `Rooms/Room${TakeRooms.length + 1}`), {
+    setData(`Rooms/Room${TakeRooms.length + 1}`, {
       id: TakeRooms.length + 1,
       name: addRoom.name,
       people: addRoom.people
@@ -113,7 +83,7 @@ const Rooms = () => {
     const foundKey = TakeKeys.find((key, index) => TakeRooms[index]?.id?.toString() === chengeId.toString());
 
     if (foundKey) {
-      set(ref(database, `Rooms/${foundKey}`), {
+      setData(`Rooms/${foundKey}`, {
         id: chengeId,
         name: ChengeRoom.name,
         people: ChengeRoom.people
@@ -132,9 +102,7 @@ const Rooms = () => {
   const handleDeleteRoom = () => {
     const foundKey = TakeKeys.find((key, index) => TakeRooms[index]?.id?.toString() === delateId.toString());
 
-    const leadRef = ref(database, `Rooms/${foundKey}`);
-
-    remove(leadRef)
+    deleteData(`Rooms/${foundKey}`)
       .then(() => {
         setOpenModal(false);
       })

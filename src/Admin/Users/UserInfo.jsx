@@ -39,13 +39,13 @@ import { GoPencil } from "react-icons/go";
 import { MdDeleteOutline } from "react-icons/md";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/tabs";
 import { Checkbox } from "../../components/ui/checkbox";
+import { deleteData, onValueData, setData } from "../../FirebaseData"
 
 
 const UserInfo = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [firstTeacher, setfirstTeacher] = useState([]);
-  const [Course, setCourse] = useState([])
   const [TakeGroup, setTakeGroup] = useState([]);
   const [Takestudents, setTakeStudents] = useState([]);
   const [FilterGroup, setFilterGroup] = useState([]);
@@ -73,32 +73,20 @@ const UserInfo = () => {
   });
 
   useEffect(() => {
-    const TeacherRef = ref(database, `Teachers/Teacher${id}`);
-
-    onValue(TeacherRef, (snapshot) => {
-      const data = snapshot.val();
-
+    onValueData(`Teachers/Teacher${id}`, (data) => {
       setfirstTeacher(data);
     });
 
   }, [id]);
 
   useEffect(() => {
-    const GroupRef = ref(database, "Groups");
-
-    onValue(GroupRef, (snapshot) => {
-      const data = snapshot.val()
-
+    onValueData("Groups", (data) => {
       setTakeGroup(Object.values(data || {}));
     })
 
-    const StudentRef = ref(database, "Students");
-    onValue(StudentRef, (snapshot) => {
-      const data = snapshot.val()
-
+    onValueData("Students", (data) => {
       setTakeStudents(Object.values(data || {}));
     })
-
   }, [])
 
   useEffect(() => {
@@ -174,10 +162,7 @@ const UserInfo = () => {
   const getPrice = (course) => {
     let price = 0
     const findCourse = [course].map(item => {
-      const courseRef = ref(database, `Courses/${item}/price`)
-      onValue(courseRef, (snapshot) => {
-        const data = snapshot.val()
-
+      onValueData(`Courses/${item}/price`, (data) => {
         price = new Intl.NumberFormat("uz-UZ").format(data)
       })
     })
@@ -191,7 +176,7 @@ const UserInfo = () => {
       return;
     }
 
-    set(ref(database, `Teachers/Teacher${id}`), {
+    setData(`Teachers/Teacher${id}`, {
       id: firstTeacher.id,
       name: chengeUser.name,
       number: chengeUser.number,
@@ -217,9 +202,7 @@ const UserInfo = () => {
   }
 
   const handleDeleteUser = () => {
-    const leadRef = ref(database, `Teachers/Teacher${id}`);
-
-    remove(leadRef)
+    deleteData(`Teachers/Teacher${id}`)
 
     navigate("/users")
     handleCloseModal()

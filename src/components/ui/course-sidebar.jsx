@@ -1,28 +1,4 @@
 "use client";
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  get
-} from "firebase/database";
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
 
 import { useState, useEffect } from "react";
 import { X, Plus } from "lucide-react";
@@ -41,6 +17,7 @@ import { cn } from "../../lib/utils";
 import SelectReact from "react-select"
 import style from "../../Sidebar.module.css";
 import { AddNotify } from "./Toast";
+import { onValueData, readData, setData } from "../../FirebaseData";
 
 const getCurrentMonth = () => {
   const now = new Date();
@@ -56,7 +33,6 @@ export const CourseSidebar = ({ groupInfo }) => {
   const [Students, setStudents] = useState([])
   const [firstLead, setFirstLead] = useState({})
   const [Course, setCourse] = useState([])
-  const [firstCourse, setFirstCourse] = useState({})
   const [open, setOpen] = useState(false);
   const [AddStudent, setAddStudent] = useState({
     studentName: "",
@@ -65,24 +41,15 @@ export const CourseSidebar = ({ groupInfo }) => {
   })
 
   useEffect(() => {
-    const LeadsRef = ref(database, "leads")
-
-    onValue(LeadsRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("leads", (data) => {
       setLeads(Object.values(data || {}))
     });
 
-    const StudentsRef = ref(database, "Students");
-    onValue(StudentsRef, (snapshot) => {
-      const data = snapshot.val();
-
+    onValueData("Students", (data) => {
       setStudents(Object.values(data || {}));
     });
 
-    const CourseRef = ref(database, "Courses");
-    onValue(CourseRef, (snapshot) => {
-      const data = snapshot.val();
-
+    onValueData("Courses", (data) => {
       setCourse(Object.values(data || {}));
     });
   }, []);
@@ -93,16 +60,8 @@ export const CourseSidebar = ({ groupInfo }) => {
     setFirstLead(lead || {});
   }, [AddStudent.studentName, Leads]);
 
-  useEffect(() => {
-    const course = Course.find(course => course.name === groupInfo?.courses)
-
-    setFirstCourse(course || {});
-  }, [groupInfo?.courses, Course]);
-
   const handleStatusChenge = (name) => {
-    const studentRef = ref(database, `leads/${name}`)
-
-    update(studentRef, { status: "O'qiyabdi" })
+    updateData(`leads/${name}`, { status: "O'qiyabdi" })
   }
 
   const addStudent = () => {
@@ -114,14 +73,13 @@ export const CourseSidebar = ({ groupInfo }) => {
     const date = new Date().toISOString().split("T")[0];
 
     // Guruh ma'lumotlarini olish
-    const groupRef = ref(database, `Groups/${groupInfo?.groupName}`);
-    get(groupRef)
+    readData(`Groups/${groupInfo?.groupName}`)
       .then((groupSnapshot) => {
         if (groupSnapshot.exists()) {
           const currentMonth = getCurrentMonth();
 
           // Studentni Firebase-ga qo'shish
-          set(ref(database, `Students/${AddStudent.studentName}`), {
+          setData(`Students/${AddStudent.studentName}`, {
             attendance: {
               [currentMonth]: {
                 _empty: true,

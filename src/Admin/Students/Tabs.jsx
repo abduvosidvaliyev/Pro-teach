@@ -1,6 +1,5 @@
 "use client"
 
-import React from "react"
 import { Users, MessageSquare, History, StickyNote } from "lucide-react"
 
 export function Tabs({ activeTab, setActiveTab }) {

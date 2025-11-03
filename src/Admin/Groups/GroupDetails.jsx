@@ -1,17 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  remove,
-  get
-} from "firebase/database";
-
 import { useState, useEffect } from "react";
-import { data, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import SelectReact from "react-select";
 import style from "./Group.module.css";
 
@@ -41,25 +29,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { CourseSidebar } from "../../components/ui/course-sidebar";
 import { Modal } from "../../components/ui/modal"
 
-import { cn } from "../../lib/utils";
 import { duration } from "@mui/material";
 import { PiArrowUDownLeftBold } from "react-icons/pi";
 import { ToastContainer } from "react-toastify";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { deleteData, onValueData, readData, setData, updateData } from "../../FirebaseData";
 
 function getLessonTimeRange(startTime, duration) {
   if (!startTime || !duration) return "";
@@ -156,11 +129,9 @@ const GroupDetails = () => {
 
     generateDates();
 
-    
+
   }, [selectedMonth, groupInfo]);
 
-  console.log(selectedMonth)  
-  
   const [open, setOpen] = useState(false);
   const [coursesData, setCoursesData] = useState([]);
   const [teachersData, setTeachersData] = useState([]);
@@ -197,43 +168,30 @@ const GroupDetails = () => {
   const [LessonStartTime, setLessonStartTime] = useState("")
 
   useEffect(() => {
-    const coursesRef = ref(database, "Teachers");
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Teachers", (data) => {
       setTeachersData(Object.values(data || []));
     });
-  }, []);
 
-  useEffect(() => {
-    const coursesRef = ref(database, "Courses");
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
-
+    onValueData("Courses", (data) => {
       setCoursesData(Object.values(data || {}));
     });
-  }, []);
 
-  useEffect(() => {
-    const coursesRef = ref(database, "Rooms");
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Rooms", (data) => {
       setRoomsData(Object.values(data || []));
     });
-  }, []);
 
-  useEffect(() => {
-    const groupsRef = ref(database, "Groups");
-    onValue(groupsRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Groups", (data) => {
       setGroupsData(Object.values(data || []));
+    });
+
+    onValueData("LessonTimes", (data) => {
+      setLessonTime(Object.values(data || {}));
     });
   }, []);
 
   useEffect(() => {
     if (groupInfo) {
-      const studentsRef = ref(database, "Students");
-      onValue(studentsRef, (snapshot) => {
-        const data = snapshot.val();
+      onValueData("Students", (data) => {
         const groupStudents = Object.keys(data)
           .map((key) => data[key])
           .filter((student) => student.group === groupInfo.groupName);
@@ -242,16 +200,6 @@ const GroupDetails = () => {
       });
     }
   }, [groupInfo]); // groupInfo o'zgarganida useEffect qayta ishlaydi
-
-
-  useEffect(() => {
-    const LessonTimeRef = ref(database, "LessonTimes");
-    onValue(LessonTimeRef, (snapshot) => {
-      const data = snapshot.val();
-
-      setLessonTime(Object.values(data || {}));
-    });
-  }, [])
 
   useEffect(() => {
     let selectedDaysValue = groupInfo?.selectedDays;
@@ -327,8 +275,7 @@ const GroupDetails = () => {
 
     students.forEach(async (student) => {
       if (!student.attendance || !student.attendance[currentMonthYear]) {
-        const studentRef = ref(database, `Students/${student.studentName}`);
-        await update(studentRef, {
+        await updateData(`Students/${student.studentName}`, {
           [`attendance/${currentMonthYear}`]: {
             _empty: true
           },
@@ -349,8 +296,7 @@ const GroupDetails = () => {
     newStudents[studentIndex][`attendance`][selectedMonth][date] = status;
 
     // Firebase'da yangilash
-    const studentRef = ref(database, `Students/${student.studentName}`);
-    update(studentRef, {
+    updateData(`Students/${student.studentName}`, {
       [`attendance/${selectedMonth}/${date}`]: status,
     }).catch((error) => {
       console.error("Error updating attendance in Firebase:", error);
@@ -388,8 +334,7 @@ const GroupDetails = () => {
         FindCourse?.duration
       );
 
-      const newGroupRef = ref(database, `Groups/${AddGroup.groupName}`);
-      set(newGroupRef, {
+      setData(`Groups/${AddGroup.groupName}`, {
         ...AddGroup,
         id: groupsData.length + 1,
         duration: lessonTimeRange
@@ -420,9 +365,7 @@ const GroupDetails = () => {
     if (groupData) {
       setGroupInfo(groupData);
       // Fetch students for the selected group
-      const studentsRef = ref(database, "Students");
-      onValue(studentsRef, (snapshot) => {
-        const data = snapshot.val();
+      onValueData("Students", (data) => {
         const groupStudents = Object.keys(data)
           .map((key) => data[key])
           .filter((student) => student.group === groupName);
@@ -494,47 +437,39 @@ const GroupDetails = () => {
       try {
         if (oldKey === newKey) {
           // Faqat qiymatlarni yangilash
-          await update(ref(database, `Groups/${oldKey}`), { ...groupAbout, duration: lessonTimeRange });
+          await updateData(`Groups/${oldKey}`, { ...groupAbout, duration: lessonTimeRange });
         } else if (oldKey !== newKey && !groupsData.find(group => group.groupName === groupChenge.groupName)) {
           // Eski key ostidagi ma'lumotlarni olib, yangi keyga yozish
-          const oldRef = ref(database, `Groups/${oldKey}`);
-          const snapshot = await get(oldRef);
+          const snapshot = await readData(`Groups/${oldKey}`);
 
-          if (!snapshot.exists()) throw new Error("Eski guruh topilmadi");
+          if (!snapshot) throw new Error("Eski guruh topilmadi");
 
-          const newRef = ref(database, `Groups/${newKey}`);
+          // TO'G'RI: "Groups" sifatida yozamiz (avval typo "Grups" edi)
+          await setData(`Groups/${newKey}`, { ...groupAbout, duration: lessonTimeRange, id: groupInfo?.id });
 
-          await set(newRef, { ...groupAbout, duration: lessonTimeRange, id: groupInfo?.id });
-
-          const studentsRef = ref(database, "Students");
-          const studentsSnap = await get(studentsRef);
-          if (studentsSnap.exists()) {
-            const studentsData = studentsSnap.val();
+          // Talabalar (Students) jadvalidagi group qiymatini yangilash
+          const studentsObj = await readData("Students");
+          if (studentsObj) {
             const updates = {};
-            Object.keys(studentsData).forEach((studentKey) => {
-              if (studentsData[studentKey].group === oldKey) {
-                updates[`${studentKey}/group`] = newKey;
+            Object.keys(studentsObj).forEach((studentKey) => {
+              if (studentsObj[studentKey].group === oldKey) {
+                // Root update uchun to'liq path qo'yamiz
+                updates[`Students/${studentKey}/group`] = newKey;
               }
             });
             if (Object.keys(updates).length > 0) {
-              await update(studentsRef, updates);
+              // updateData(updates) rootga bir martalik yangilash yuboradi
+              await updateData(updates);
             }
           }
 
-          await remove(oldRef);
+          await deleteData(`Groups/${oldKey}`);
         }
 
         setIsEditModalOpen(false);
         ChengeNotify({ ChengeTitle: "Ma'lumot o'zgartirildi" });
-        setgroupChenge({
-          groupName: "",
-          course: "",
-          rooms: "",
-          teachers: "",
-          selectedDays: []
-        });
       } catch (error) {
-        console.error("O'quvchi ma'lumotlarini yangilashda xatolik:", error);
+        console.error("Guruh ma'lumotlarini yangilashda xatolik:", error);
       }
     }
     else {
@@ -558,7 +493,7 @@ const GroupDetails = () => {
       setgroupChenge({ ...groupChenge, selectedDays: ["du", "se", "chor", "pay", "ju", "shan", "yak"] });
     } else if (value === "Maxsus kunlar") {
       setgroupChenge({ ...groupChenge, selectedDays: [] });
-      setselectDay(true);
+      setselectDay(false);
     }
   }
 
@@ -597,9 +532,7 @@ const GroupDetails = () => {
 
   const handleDeleteGroup = () => {
     if (groupInfo?.groupName) {
-      const removeGroupRef = ref(database, `Groups/${groupInfo?.groupName}`);
-
-      remove(removeGroupRef)
+      deleteData(`Groups/${groupInfo?.groupName}`)
         .then(() => {
           setDeleteModal(false);
           navigate("/groups");
@@ -683,6 +616,8 @@ const GroupDetails = () => {
         </div>
         <div className={style.groupAbout}>
           <h2>Guruhlar soni: {groupsData.length}</h2>
+
+          {/* Yangi guruh qoshish uchun */}
           <SidebarProvider>
             {open && (
               <div
@@ -694,10 +629,7 @@ const GroupDetails = () => {
               ></div>
             )}
             <Sidebar
-              className={cn(
-                "fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out",
-                open ? "translate-x-0" : "translate-x-full"
-              )}
+              className={`fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out ${open ? "translate-x-0" : "translate-x-full"}`}
               side="right"
               collapsible="none"
             >
@@ -719,6 +651,7 @@ const GroupDetails = () => {
 
               <SidebarContent>
                 <form
+                  onSubmit={(e) => {e.preventDefault(), addGroup()}}
                   className="space-y-6 p-6 text-left "
                 >
                   <div className="space-y-6">
@@ -826,6 +759,8 @@ const GroupDetails = () => {
               </SidebarContent>
             </Sidebar>
           </SidebarProvider>
+          
+          {/* Yangi guruh qoshish uchun madalni ochadi */}
           <Button
             className={style.groupAddButton}
             onClick={() => {
@@ -836,6 +771,7 @@ const GroupDetails = () => {
             Guruh qo'shish
           </Button>
         </div>
+        
         <Card className="col-[1/4] row-[4/11] border-slate-200 rounded-[5px]">
           {groupInfo && (
             <>
@@ -933,21 +869,29 @@ const GroupDetails = () => {
             </SelectTrigger>
             <SelectContent>
               {
-                firstStudent && firstStudent.attendance && Object.keys(firstStudent.attendance).map((month, index) => (
-                  <SelectItem
-                    key={index}
-                    value={month}
-                    className="capitalize"
-                  >
-                    {month}
-                  </SelectItem>
-                ))
+                firstStudent && firstStudent.attendance && Object.keys(firstStudent.attendance) ?
+                  Object.keys(firstStudent.attendance).map((month, index) => (
+                    <SelectItem
+                      key={index}
+                      value={month ? month : currentMonthYear}
+                      className="capitalize"
+                    >
+                      {month !== "" ? month : currentMonthYear}
+                    </SelectItem>
+                  )) : (
+                    <SelectItem
+                      className="capitalize"
+                      value={currentMonthYear}
+                    >
+                      {currentMonthYear}
+                    </SelectItem>
+                  )
               }
             </SelectContent>
           </Select>
 
           <div className={style.attendanceGrid}>
-            <div className={style.header}>
+            <div className={`${style.header} sticky top-0 bg-white z-20 py-5`}>
               <div className={style.nameCol}>Ism</div>
               {dates.map((date, index) => (
                 <div key={index} className={style.dateCol}>
@@ -1010,11 +954,6 @@ const GroupDetails = () => {
                   </div>
 
                   {attendanceByIndex.map((attendance, dateIndex) => {
-                    const currentDate = dates[dateIndex];
-                    const today = `${new Date().getDate()} ${new Date().toLocaleString("en-US", { month: "short", })}`;
-                    const isPastDate = new Date(currentDate) < new Date(today);
-                    const isNotToday = currentDate !== today;
-
                     return (
                       <div key={dateIndex} className={style.attendanceCell}>
                         <div
@@ -1056,11 +995,13 @@ const GroupDetails = () => {
 
         </div>
       </div>
+
+      {/* Tahrirlash bolimi */}
       <div>
         {isEditModalOpen && (
 
           <div
-            className="fixed w-full  h-[100vh] z-30 bg-black/50 inset-0 backdrop-blur-[2px] transition-all duration-900 ease-in-out"
+            className="fixed w-full h-[100vh] z-30 bg-black/50 inset-0 backdrop-blur-[2px] transition-all duration-900 ease-in-out"
             onClick={() => {
               closeEditModal()
             }}
@@ -1069,10 +1010,7 @@ const GroupDetails = () => {
 
         {/* Modalning o'ngdan chiqishi */}
         <Sidebar
-          className={cn(
-            "fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out",
-            isEditModalOpen ? "translate-x-0" : "translate-x-full"
-          )}
+          className={`fixed inset-y-0 right-0 z-50 w-[400px] border-l border-gray-300 bg-white transition-transform duration-300 ease-in-out ${isEditModalOpen ? "translate-x-0" : "translate-x-full"}`}
           side="right"
           collapsible="none"
         >
@@ -1090,7 +1028,7 @@ const GroupDetails = () => {
           </SidebarHeader>
 
           <SidebarContent>
-            <form className="space-y-6 p-6 text-left">
+            <form className="space-y-6 p-6 text-left" onSubmit={(e) => {e.preventDefault(), handleGroupUpdate()}}>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="editGroupName">Guruh nomi</Label>
@@ -1136,7 +1074,7 @@ const GroupDetails = () => {
                 <div>
                   <Label>Dars kunlari</Label>
                   {
-                    !selectDay ? (
+                    selectDay ? (
                       <SelectReact
                         value={getDaysSelectValue(groupChenge.selectedDays)}
                         onChange={e => handleChangeSelectDays(e.value)}
@@ -1146,7 +1084,7 @@ const GroupDetails = () => {
                       <div className="flex flex-col gap-3">
                         <div
                           className="cursor-pointer w-[30px] h-[30px] rounded-full hover:bg-gray-200 flex justify-center items-center"
-                          onClick={() => { setgroupChenge(gc => ({ ...gc, selectedDays: groupInfo?.selectedDays })); setselectDay(false); }}
+                          onClick={() => { setgroupChenge(gc => ({ ...gc, selectedDays: groupInfo?.selectedDays })); setselectDay(true); }}
                         >
                           <PiArrowUDownLeftBold className="text-lg" />
                         </div>
