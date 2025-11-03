@@ -1,24 +1,12 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  remove
-} from "firebase/database";
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { SidebarPanel } from "../../Sidebar";
 import { Card, CardContent, CardHeader } from "../../components/ui/card";
 import { GoPencil } from "react-icons/go";
 import { MdDeleteOutline } from "react-icons/md";
 import SelectReact from "react-select";
 import style from "./Course.module.css";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
-import { GraduationCap, UserPlus, X } from "lucide-react";
+import { GraduationCap, X } from "lucide-react";
 import { Label } from "../../components/ui/UiLabel";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -27,21 +15,7 @@ import { Modal } from "../../components/ui/modal";
 import CardBg1 from "./Images/ChatGPT Image Apr 7, 2025, 02_01_46 PM.png";
 import { Textarea } from "../../components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { deleteData, onValueData, setData } from "../../FirebaseData";
 
 const durationOptions = [
     "30 daqiqa",
@@ -86,23 +60,17 @@ const CourseInfo = () => {
     const [keys, setKeys] = useState({})
 
     useEffect(() => {
-        const courseRef = ref(database, "Courses");
-        onValue(courseRef, (snapshot) => {
-            const data = snapshot.val();
+        onValueData("Courses", (data) => {
             // console.log(Object.keys(data))
             setKeys(Object.keys(data));
             setTakeCourse(Object.values(data || {}));
         });
 
-        const groupRef = ref(database, "Groups");
-        onValue(groupRef, (snapshot) => {
-            const data = snapshot.val();
+        onValueData("Groups", (data) => {
             setGroupData(Object.values(data || {}));
         });
 
-        const studentsRef = ref(database, "Students");
-        onValue(studentsRef, (snapshot) => {
-            const data = snapshot.val();
+        onValue("Students", (data) => {
             setStudentsData(Object.values(data || {}));
         });
 
@@ -158,7 +126,7 @@ const CourseInfo = () => {
 
         if (takeCourses.length > 0) {
             if (firstKey) {
-                set(ref(database, `Courses/${firstKey}`), {
+                setData(`Courses/${firstKey}`, {
                     id: firstCourse.id,
                     name: chengeCourse.name,
                     price: chengeCourse.price,
@@ -189,10 +157,7 @@ const CourseInfo = () => {
     const getPrice = (course) => {
         let price = 0
         const findCourse = [course].map(item => {
-            const courseRef = ref(database, `Courses/${item}/price`)
-            onValue(courseRef, (snapshot) => {
-                const data = snapshot.val()
-
+            onValueData(`Courses/${item}/price`, (data) => {
                 price = new Intl.NumberFormat("uz-UZ").format(data)
             })
         })
@@ -201,9 +166,7 @@ const CourseInfo = () => {
     }
 
     const handleDeleteCourse = () => {
-        const leadRef = ref(database, `Courses/${firstKey}`);
-
-        remove(leadRef)
+        deleteData(`Courses/${firstKey}`)
 
         navigate("/course")
         handleCloseModal()

@@ -1,17 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  push
-} from "firebase/database";
-
 import React, { useState, useEffect } from "react";
 import SelectReact from "react-select";
-import { data, Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import style from "./Group.module.css";
 
 import {
@@ -26,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "../../components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../../components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "../../components/ui/UiLabel";
 import { Checkbox } from "../../components/ui/checkbox";
@@ -36,22 +25,7 @@ import { cn } from "../../lib/utils";
 import { PiArrowUDownLeftBold } from "react-icons/pi";
 import { AddNotify } from "../../components/ui/Toast"
 import { ToastContainer } from "react-toastify";
-
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { onValueData, setData } from "../../FirebaseData"
 
 // Dars vaqtini hisoblash funksiyasi
 function getLessonTimeRange(startTime, duration) {
@@ -128,13 +102,10 @@ function Groups() {
   const [open, setOpen] = useState(false);
   const [openRoom, setOpenRoom] = React.useState(false)
   const [valueRoom, setValueRoom] = React.useState("")
-  const [selectedOptions, setSelectedOptions] = useState([]);
   const [coursesData, setCoursesData] = useState([]);
   const [teachersData, setTeachersData] = useState([]);
   const [roomsData, setRoomsData] = useState([]);
-  const [groupInfo, setGroupInfo] = useState();
   const [groupsData, setGroupsData] = useState([]);
-  const [studentsData, setStudentsData] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedDays, setSelectedDays] = useState([]);
   const [LessonTime, setLessonTime] = useState([])
@@ -150,78 +121,26 @@ function Groups() {
   })
 
   useEffect(() => {
-    const coursesRef = ref(database, "Teachers");
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
-
+    onValueData("Teachers", (data) => {
       setTeachersData(Object.values(data || []));
     });
-  }, []);
 
-  useEffect(() => {
-    const studentsRef = ref(database, "Students");
-    onValue(studentsRef, (snapshot) => {
-      const data = snapshot.val();
-      const studentsWithAttendance = Object.keys(data).map((key) => ({
-        value: key,
-        label: data[key].studentName,
-        attendance: data[key].attendance,
-        studentNumber: data[key].studentNumber,
-        group: data[key].group,
-      }));
-
-      setStudentsData(studentsWithAttendance);
-    });
-  }, []);
-
-  useEffect(() => {
-    const coursesRef = ref(database, "Courses");
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Courses", (data) => {
       setCoursesData(Object.values(data || []));
     });
-  }, []);
 
-  useEffect(() => {
-    const coursesRef = ref(database, "Rooms");
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Rooms", (data) => {
       setRoomsData(Object.values(data || []))
     });
-  }, []);
 
-  useEffect(() => {
-    const groupsRef = ref(database, "Groups");
-    onValue(groupsRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Groups", (data) => {
       setGroupsData(Object.values(data || []));
     });
-  }, []);
 
-  useEffect(() => {
-    const LessonTimeRef = ref(database, "LessonTimes");
-    onValue(LessonTimeRef, (snapshot) => {
-      const data = snapshot.val();
-
+    onValueData("LessonTimes", (data) => {
       setLessonTime(Object.values(data || {}));
     });
   }, [])
-
-
-  const handleAttendance = (studentIndex, dateIndex, student, status) => {
-    const newStudents = [...students, dateIndex];
-    newStudents[studentIndex][`attendance`][months][dateIndex] = status;
-
-    const studentCell = ref(database, `Students/${student.studentName}`);
-
-    update(studentCell, {
-      [`attendance/${months}/${dateIndex}`]: status,
-    }).catch((error) => {
-      console.error("Error adding group to Firebase:", error);
-    });
-
-    setStudents(students);
-  };
 
   const handleDayChange = (day) => {
     // Remove the day if it's already selected
@@ -240,14 +159,14 @@ function Groups() {
     // Check if all odd days are selected
     const selectedOddDays = updatedDays.filter(d => oddDays.includes(d));
     if (selectedOddDays.length === 3 && oddDays.includes(day)) {
-      setSelectedDays([...oddDays, 'toq kunlar']); // Keep odd days selected and add label
+      setSelectedDays([...oddDays, 'Toq kunlar (DCHJ)']); // Keep odd days selected and add label
       return;
     }
 
     // Check if all even days are selected
     const selectedEvenDays = updatedDays.filter(d => evenDays.includes(d));
     if (selectedEvenDays.length === 3 && evenDays.includes(day)) {
-      setSelectedDays([...evenDays, 'juft kunlar']); // Keep even days selected and add label
+      setSelectedDays([...evenDays, 'Juft kunlar (SPSH)']); // Keep even days selected and add label
       return;
     }
 
@@ -255,9 +174,9 @@ function Groups() {
   };
 
   const handleSelectDays = (value) => {
-    value === "JUft kunlar (SPSH)" ? setAddGroup({ ...AddGroup, selectedDays: ["Se", "Pay", "Shan"] }) :
-      value === "Toq kunlar (DCHJ)" ? setAddGroup({ ...AddGroup, selectedDays: ["Du", "Chor", "Ju"] }) :
-        value === "Har kuni" ? setAddGroup({ ...AddGroup, selectedDays: ["Du", "Se", "Chor", "Pay", "Ju", "Shan", "Yak"] }) :
+    value === "Juft kunlar (SPSH)" ? setAddGroup({ ...AddGroup, selectedDays: ["se", "pay", "shan"] }) :
+      value === "Toq kunlar (DCHJ)" ? setAddGroup({ ...AddGroup, selectedDays: ["du", "chor", "ju"] }) :
+        value === "Har kuni" ? setAddGroup({ ...AddGroup, selectedDays: ["du", "se", "chor", "pay", "ju", "shan", "yak"] }) :
           value === "Maxsus kunlar" ? setAddGroup({ ...AddGroup, selectedDays: "Maxsus kunlar" }) : null
   }
 
@@ -273,15 +192,19 @@ function Groups() {
   }, [AddGroup.courses])
 
   const addGroup = () => {
-    if ((AddGroup.groupName && AddGroup.courses && LessonStartTime && AddGroup.rooms && AddGroup.teachers) !== "" && AddGroup.selectedDays != []) {
+    if ((AddGroup.groupName &&
+      AddGroup.courses &&
+      LessonStartTime &&
+      AddGroup.rooms &&
+      AddGroup.teachers) !== "" &&
+      AddGroup.selectedDays != []) {
 
       const lessonTimeRange = getLessonTimeRange(
         LessonStartTime,
         FindCourse?.duration
       );
 
-      const newGroupRef = ref(database, `Groups/${AddGroup.groupName}`);
-      set(newGroupRef, {
+      setData(`Groups/${AddGroup.groupName}`, {
         ...AddGroup,
         id: groupsData.length + 1,
         duration: lessonTimeRange
@@ -310,11 +233,8 @@ function Groups() {
   function handleGroupClick(groupName, id) {
     const groupData = groupsData.find((group) => group.groupName === groupName);
     if (groupData) {
-      setGroupInfo(groupData);
       // Fetch students for the selected group
-      const studentsRef = ref(database, "Students");
-      onValue(studentsRef, (snapshot) => {
-        const data = snapshot.val();
+      onValueData("Students", (data) => {
         const groupStudents = Object.keys(data)
           .map((key) => data[key])
           .filter((student) => student.group === groupName);

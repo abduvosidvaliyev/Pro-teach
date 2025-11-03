@@ -1,86 +1,58 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-    update,
-    get
-} from "firebase/database";
-
 import { useState, useEffect } from 'react';
 import style from './Reg.module.css';
 import { FaEye, FaEyeSlash } from "react-icons/fa"
 
 import bgVideo from '../assets/class.mp4';
 import { useNavigate } from 'react-router-dom';
-
-// Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { onValueData } from "../FirebaseData";
 
 function SignUpForm({ setUserData }) {
     const navigate = useNavigate()
     const [loginName, setLoginName] = useState('');
     const [Logo, setLogo] = useState("")
     const [loginSecretPass, setLoginSecretPass] = useState('');
-    const [loading, setLoading] = useState(false);
     const [GetAdmins, setGetAdmins] = useState([])
     const [GetStudents, setGetStudents] = useState([])
     const [inputType, setinputType] = useState("password")
 
     useEffect(() => {
-        const adminsRef = ref(database, "Admins")
-        onValue(adminsRef, (snapshot) => {
-            const data = snapshot.val()
-
+        onValueData("Admins", (data) => {
             setGetAdmins(Object.values(data || []))
         })
 
-        const studentsRef = ref(database, "Students")
-        onValue(studentsRef, (snapshot) => {
-            const data = snapshot.val()
-
+        onValueData("Students", (data) => {
             setGetStudents(Object.values(data || []))
         })
 
-        const systemRef = ref(database, "System/CompanyInfo/logo")
-        onValue(systemRef, (snapshot) => {
-            const data = snapshot.val()
-
-            setLogo(data)
+        onValueData("System/CompanyInfo/logo", (data) => {
+            setLogo(Object.values(data || []))
         })
     }, [])
 
     const handleLogin = () => {
-        if ((loginName && loginSecretPass) !== "") {
+        // to'g'ri bo'sh-tekshiruv
+        if (loginName && loginSecretPass) {
 
-            if (!GetAdmins.find(admin => admin.parol.toString() !== loginSecretPass || admin.login !== loginName) &&
-                !GetStudents.find(admin => admin.parol.toString() !== loginSecretPass || admin.login !== loginName)
-            ) {
-                alert("Ushbu foydalanuvchi topilmadi!")
-            }
-
+            // Avval foydalanuvchini topamiz (admins va students uchun)
             const Admin = GetAdmins.find((admin) =>
                 typeof admin.login === "string" &&
                 typeof admin.parol !== "undefined" &&
                 admin.login === loginName &&
                 admin.parol.toString() === loginSecretPass
             );
+
+            const Students = GetStudents.find((studet) =>
+                typeof studet.login === "string" &&
+                typeof studet.parol !== "undefined" &&
+                studet.login.toLowerCase() === loginName.toLowerCase() &&
+                studet.parol.toString() === loginSecretPass
+            );
+
+            // Ikkalasidan hech biri topilmasa xato xabarini ko'rsatib tugatamiz
+            if (!Admin && !Students) {
+                alert("Ushbu foydalanuvchi topilmadi!");
+                return;
+            }
 
             if (Admin) {
                 localStorage.setItem("UserData", JSON.stringify({
@@ -97,32 +69,21 @@ function SignUpForm({ setUserData }) {
                 navigate("/panel")
                 setLoginName("")
                 setLoginSecretPass("")
-                setLoading(false)
             }
-            else {
-                const Students = GetStudents.find((studet) =>
-                    typeof studet.login === "string" &&
-                    typeof studet.parol !== "undefined" &&
-                    studet.login.toLowerCase() === loginName.toLowerCase() &&
-                    studet.parol.toString() === loginSecretPass
-                );
-
-                if (Students) {
-                    localStorage.setItem("StudentData", JSON.stringify({
-                        id: Students.id,
-                        login: Students.login,
-                        parol: Students.parol
-                    }))
-                    localStorage.setItem("userData", JSON.stringify({
-                        id: Students.id,
-                        login: Students.login,
-                        parol: Students.parol
-                    }))
-                    navigate(`/studentpages/${Students.id}`)
-                    setLoginName("")
-                    setLoginSecretPass("")
-                    setLoading(false)
-                }
+            else if (Students) {
+                localStorage.setItem("StudentData", JSON.stringify({
+                    id: Students.id,
+                    login: Students.login,
+                    parol: Students.parol
+                }))
+                localStorage.setItem("userData", JSON.stringify({
+                    id: Students.id,
+                    login: Students.login,
+                    parol: Students.parol
+                }))
+                navigate(`/studentpages/${Students.id}`)
+                setLoginName("")
+                setLoginSecretPass("")
             }
         }
         else {
@@ -178,7 +139,6 @@ function SignUpForm({ setUserData }) {
                         }
                     </div>
                     <button onClick={handleLogin}>Tasdiqlash</button>
-                    {loading && <div className={style.loader}>Loading...</div>} {/* Loader */}
                 </div>
             </div>
         </div >

@@ -23,37 +23,11 @@ import {
   SidebarProvider,
 } from "../components/ui/sidebar";
 
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  get,
-  remove
-} from "firebase/database";
-
 import { Modal } from "../components/ui/modal"
-import { data, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { ToastContainer } from "react-toastify"
 import style from "./Panel.module.css"
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
+import { deleteData, onValueData, readData, setData, updateData } from "../FirebaseData"
 
 const StatusColors = {
   Oqiyabdi: "bg-[#2F871C]",
@@ -120,62 +94,32 @@ export default function LeadsPage() {
 
   // read leads from firebase
   useEffect(() => {
-    const takeLeads = ref(database, `leads`)
 
-    onValue(takeLeads, (snapshot) => {
-      const leads = snapshot.val()
-
+    onValueData("leads", (leads) => {
       const formattedLeads = leads ? Object.values(leads) : [];
       const key = [...new Set(formattedLeads.map(x => x.date.slice(0, 7)))];
 
       setMonthKey(key)
       setLeads(formattedLeads);
     })
-  }, [])
 
-  // read students from firebase
-  useEffect(() => {
-    const takeStudents = ref(database, "Students")
-
-    onValue(takeStudents, (snapshot) => {
-      const students = snapshot.val()
-      const formattedStudents = students ? Object.values(students) : [];
-
-      setStudents(formattedStudents)
+    onValueData("Students", (data) => {
+      setStudents(Object.values(data || []))
     })
-  }, [])
 
-  // read groups from firebase
-  useEffect(() => {
-    const coursesRef = ref(database, "Groups");
+    onValueData("Groups", (data) => {
+      setGroupData(Object.values(data || []))
+    })
 
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
-
-      const groupArray = data ? Object.values(data) : [];
-
-      setGroupData(groupArray);
-    });
-  }, []);
-
-  // read teachers from firebase
-  useEffect(() => {
-    const coursesRef = ref(database, "Teachers");
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("groups", (data) => {
       const teacherData = Object.keys(data).map((key) => ({
         value: key,
         label: data[key].name,
       }));
       setTeachersData(teacherData);
     });
-  }, []);
 
-  // read rooms from firebase
-  useEffect(() => {
-    const coursesRef = ref(database, "Rooms");
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Rooms", (data) => {
       const roomData = Object.keys(data).map((key) => ({
         value: key,
         label: data[key].name,
@@ -183,9 +127,7 @@ export default function LeadsPage() {
       setRoomsData(roomData);
     });
 
-    const CourseRef = ref(database, "Courses")
-    onValue(CourseRef, (snapshot) => {
-      const data = snapshot.val()
+    onValueData("Courses", (data) => {
       setGetCourse(Object.values(data || {}))
     })
   }, []);
@@ -244,7 +186,7 @@ export default function LeadsPage() {
     const today = new Date().toISOString().split("T")[0]
 
     // push lead to firebase
-    set(ref(database, `leads/${newLead.name}`), {
+    setData((`leads/${newLead.name}`), {
       id: id,
       name: newLead.name,
       phone: newLead.phone,
@@ -271,9 +213,7 @@ export default function LeadsPage() {
   }
 
   const handleStatusChenge = (name) => {
-    const studentRef = ref(database, `leads/${name}`)
-
-    update(studentRef, { status: "O'qiyabdi" })
+    updateData(`leads/${name}`, { status: "O'qiyabdi" })
   }
 
   const filteredLeads = leads
@@ -283,9 +223,8 @@ export default function LeadsPage() {
   // delate leads
   const handleDeleteLead = (name) => {
 
-    const leadRef = ref(database, `leads/${name}`);
 
-    remove(leadRef)
+    deleteData(`leads/${name}`)
       .then(() => {
         setopenDelateModal(false)
         DelateNotify({ DelateTitle: "Lead o'chirildi!" })
@@ -311,24 +250,23 @@ export default function LeadsPage() {
 
 
   // add to group
+
+
   const handleAddToGroup = () => {
-    if ((selectedOptions.group && selectedOptions.login && selectedOptions.parol) === "") {
+    if ((selectedOptions.group) === "") {
       alert("Iltimos, guruhni tanlang!");
       return;
     }
 
-
     const date = new Date().toISOString().split("T")[0]; // Qo'shilgan sana
 
     // Guruh ma'lumotlarini olish
-    const groupRef = ref(database, `Groups/${selectedOptions.group.label}`);
-    get(groupRef)
+    readData(`Groups/${selectedOptions.group.label}`)
       .then((groupSnapshot) => {
         if (groupSnapshot.exists()) {
-          const groupData = groupSnapshot.val();
 
           // Studentni Firebase-ga qo'shish
-          set(ref(database, `Students/${newUser.name}`), {
+          setData((`Students/${newUser.name}`), {
             attendance: {
               [currentMonth]: {
                 _empty: true,
@@ -430,9 +368,7 @@ export default function LeadsPage() {
   }
 
   const handleChengeStatus = (status, name) => {
-    const chengeLead = ref(database, `leads/${name}/status`)
-
-    set(chengeLead, status)
+    setData(`leads/${name}/status`, status)
       .then(() => {
         console.log("secses")
       })
@@ -442,9 +378,7 @@ export default function LeadsPage() {
   }
 
   const handleChengeCourse = (course, name) => {
-    const chengeLead = ref(database, `leads/${name}/course`)
-
-    set(chengeLead, course)
+    setData(`leads/${name}/course`, course)
       .then(() => {
         console.log("secses")
       })

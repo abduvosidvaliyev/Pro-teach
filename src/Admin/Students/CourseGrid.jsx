@@ -1,32 +1,7 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  get
-} from "firebase/database";
-
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { CourseCard } from './CourseCard';
 import imageGotcha from '../../assets/gotcha.png';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
+import { onValueData } from "../../FirebaseData";
 
 const CourseGrid = ({ student }) => {
   const [courses, setCourses] = useState([]);
@@ -36,9 +11,7 @@ const CourseGrid = ({ student }) => {
   useEffect(() => {
     if (!student?.group) return;
 
-    const groupsRef = ref(database, `Groups/${student.group}`);
-    const unsubscribe = onValue(groupsRef, (snapshot) => {
-      const data = snapshot.val();
+    const unsubscribe = onValueData(`Groups/${student.group}`, (data) => {
       setGroupsData(data);
     });
 
@@ -48,9 +21,7 @@ const CourseGrid = ({ student }) => {
   useEffect(() => {
     if (!groupsData?.courses) return;
 
-    const coursesRef = ref(database, `Courses/${groupsData.courses}`);
-    const unsubscribe = onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
+    const unsubscribe = onValueData(`Courses/${groupsData.courses}`, (data) => {
       setCourseAbout(data);
     });
 

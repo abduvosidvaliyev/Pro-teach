@@ -1,17 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import back from '../assets/bac.mp4';
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-    update,
-    get,
-    push,
-    remove
-} from "firebase/database";
 import BasicNavbar from '../Basic/BasicNavbar';
 import { FaSearch, FaTrash } from "react-icons/fa"
 import { FiUsers } from "react-icons/fi"
@@ -21,25 +9,19 @@ import { X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { MdSend } from "react-icons/md"
 import { GoPencil } from "react-icons/go"
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND"
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { onValueData, pushData, setData, deleteData } from '../FirebaseData';
 
 const Message = () => {
     const messageRef = useRef({})
-    const StudentData = JSON.parse(localStorage.getItem("UserData"))
+    const StudentData = (() => {
+        try {
+            return JSON.parse(localStorage.getItem("UserData")) ||
+                JSON.parse(localStorage.getItem("userData")) ||
+                {};
+        } catch (e) {
+            return {};
+        }
+    })()
     const [Students, setStudents] = useState([])
     const [Groups, setGroups] = useState([])
     const [Message, setMessage] = useState([])
@@ -57,27 +39,23 @@ const Message = () => {
     const [messageKey, setmessageKey] = useState(null)
 
     useEffect(() => {
-        const studentRef = ref(database, "Students")
-
-        onValue(studentRef, (snapshot) => {
-            const data = snapshot.val()
-
+        onValueData("Students", (data) => {
             setStudents(Object.values(data || []))
         })
 
-        const groupRef = ref(database, "Groups")
-
-        onValue(groupRef, (snapshot) => {
-            const data = snapshot.val()
-
+        onValueData("Groups", (data) => {
             setGroups(Object.values(data || []))
         })
     }, [])
 
     useEffect(() => {
-        const student = Students.find(student => student.id === StudentData.id)
+        if (!StudentData || !StudentData.id) {
+            setStudent({})
+            return
+        }
 
-        setStudent(student)
+        const student = Students.find(student => student.id === StudentData.id)
+        setStudent(student || {})
     }, [StudentData, Students])
 
     useEffect(() => {
@@ -93,10 +71,7 @@ const Message = () => {
     }, [Students, Group])
 
     useEffect(() => {
-        const messageRef = ref(database, `messages/${Group?.groupName}`)
-
-        onValue(messageRef, (snapshot) => {
-            const data = snapshot.val()
+        onValueData(`messages/${Group?.groupName}`, (data) => {
             if (!data) {
                 setMessage([]);
                 return;
@@ -111,7 +86,6 @@ const Message = () => {
 
             }))
             setMessage(messages)
-
         })
     }, [Group])
 
@@ -259,9 +233,7 @@ const Message = () => {
                 time: time
             }
 
-            const groupMessageRef = ref(database, `messages/${Group?.groupName}`)
-
-            push(groupMessageRef, message)
+            pushData(`messages/${Group?.groupName}`, message)
                 .then(() => {
                     setMessageText("")
                 })
@@ -297,9 +269,7 @@ const Message = () => {
             return;
         }
 
-        const messageRef = ref(database, `messages/${Group?.groupName}/${messageKey}/text`)
-
-        set(messageRef, MessageText)
+        setData(`messages/${Group?.groupName}/${messageKey}/text`, MessageText)
             .then(() => {
                 setMessageText("")
                 setmessageKey(null)
@@ -317,9 +287,7 @@ const Message = () => {
             return;
         }
 
-        const messageRef = ref(database, `messages/${Group?.groupName}/${messageKey}`)
-
-        remove(messageRef)
+        deleteData(`messages/${Group?.groupName}/${messageKey}`)
             .then(() => {
                 setmessageKey(null)
                 setdelateMessage(false)
@@ -413,8 +381,8 @@ const Message = () => {
                                     <input
                                         type="text"
                                         placeholder="Qidirish"
-                                        className="bg-transparent outline-none text-black placeholder:text-slate-500 w-full"
-                                        onChange={(e) => (handleSearchMessage(), setSearchText(e.target.value))}
+                                        className="bg-transparent outline-none text-black w-full inpPlaceholder"
+                                        onKeyDown={(e) => e.key === "Enter" ? (handleSearchMessage(), setSearchText(e.target.value)) : ""}
                                     />
                                 </div>
                             )}
@@ -445,7 +413,7 @@ const Message = () => {
                                                 <div
                                                     key={messeg.time}
                                                     ref={(el) => messageRef.current[messeg.time] = el}
-                                                    className={`flex justify-start items-end gap-2 w-auto ${highlightedMessageTime === messeg.time ? 'ring-2 ring-yellow-400' : ""}`}
+                                                    className={`flex justify-start items-end gap-2 w-auto act ${highlightedMessageTime === messeg.time ? 'ring-2 ring-yellow-400' : ""} ${style.act}`}
                                                 >
                                                     <div
                                                         className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold"
@@ -478,7 +446,7 @@ const Message = () => {
                                                     </div>
                                                     {
                                                         messeg.id === StudentData.id ? (
-                                                            <div className="flex items-center gap-2 self-center select-none">
+                                                            <div className={`actions flex items-center gap-2 self-center select-none ${style.actions}`}>
                                                                 <span
                                                                     className="p-2 rounded-full hover:bg-blue-500/20 transition-colors duration-200 group cursor-pointer"
                                                                     title="Tahrirlash"

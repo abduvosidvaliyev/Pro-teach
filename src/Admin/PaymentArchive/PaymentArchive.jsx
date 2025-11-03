@@ -1,32 +1,4 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-    update,
-    get
-} from "firebase/database";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-export const database = getDatabase(app);
-
-
 import { CreditCard } from "lucide-react";
-import { SidebarPanel } from "../../Sidebar";
 import { Button } from "../../components/ui/button";
 import { MdOutlinePayments } from "react-icons/md";
 import { Input } from "../../components/ui/input";
@@ -35,11 +7,12 @@ import { Modal } from "../../components/ui/modal";
 import { Card, CardContent, CardTitle } from "../../components/ui/card";
 import imageKnow from "../../assets/dont-know.png";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { PaymentItem } from "../../components/ui/payment-item";
 import style from "./PaymentArchive.module.css"
 import { AddNotify, DelateNotify } from "../../components/ui/Toast"
 import { ToastContainer } from "react-toastify";
+import { onValueData, readData, setData, updateData } from "../../FirebaseData"
 
 const getCurrentDate = () => {
     const today = new Date();
@@ -62,11 +35,7 @@ const PaymentArchive = () => {
 
     // Talabalar ma'lumotlarini olish
     useEffect(() => {
-        const StudentRef = ref(database, "Students");
-
-        onValue(StudentRef, (snapshot) => {
-            const data = snapshot.val();;
-
+        onValueData("Students", (data) => {
             setGetStudents(Object.values(data || {}));
         });
     }, []);
@@ -85,6 +54,22 @@ const PaymentArchive = () => {
 
         setSearchStudens(filteredStudents); // Faqat filtrlangan natijalarni o'rnating
     };
+
+    // useEffect(() => {
+
+    //     readData("Students")
+    //         .then((data) => {
+    //             if (data && typeof data === "object") {
+    //                 Object.values(data).forEach((item) => {
+    //                     setData(`Students/${item.studentName}/paymentHistory`, {});
+    //                 });
+    //             }
+    //         })
+    //         .catch(error => {
+    //             console.error(error)
+    //         })
+    // }, [])
+
 
     // Talabani bosilganda inputga qo'shish funksiyasi
     const handleStudentClick = (studentName) => {
@@ -120,13 +105,12 @@ const PaymentArchive = () => {
             time: new Date().toLocaleTimeString("en-US", { hour12: false }),
         };
 
-        const paymentRef = ref(database, `Students/${PayValue.value2}/paymentHistory`);
-        get(paymentRef)
-            .then((snapshot) => {
-                const existingPayments = snapshot.val() || [];
+        readData(`Students/${PayValue.value2}/paymentHistory`)
+            .then((data) => {
+                const existingPayments = Array.isArray(data) ? data : [];
                 const updatedPayments = [...existingPayments, paymentData];
 
-                return update(ref(database, `Students/${PayValue.value2}`), { paymentHistory: updatedPayments });
+                return updateData(`Students/${PayValue.value2}`, { paymentHistory: updatedPayments });
             })
             .then(() => {
                 setOpenModal(false);
@@ -134,22 +118,20 @@ const PaymentArchive = () => {
                 setSearchStudens([])
                 AddNotify({ AddTitle: "Pul to'landi!" })
 
-                const balanceRef = ref(database, `Students/${PayValue.value2}/balance`);
-                get(balanceRef)
-                    .then((snapshot) => {
-                        const currentBalance = parseFloat(snapshot.val()) || 0;
+                readData(`Students/${PayValue.value2}/balance`)
+                    .then((data) => {
+                        const currentBalance = parseFloat(data) || 0;
                         const newBalance = currentBalance + parseInt(PayValue.value1.replace(/\s/g, ""), 10);
 
-                        return update(ref(database, `Students/${PayValue.value2}`), { balance: newBalance });
+                        return updateData(`Students/${PayValue.value2}`, { balance: newBalance });
                     })
                     .then(() => console.log("Student balance updated successfully"))
                     .catch((error) => console.error("Error updating student balance:", error));
 
-                const allBalanceRef = ref(database, "AllBalance");
-                get(allBalanceRef).then((snapshot) => {
-                    const oldBalance = parseInt(snapshot.val()) || 0;
+                readData("AllBalance").then((data) => {
+                    const oldBalance = parseInt(data) || 0;
                     const payAmount = parseInt(PayValue.value1.replace(/\s/g, ""), 10);
-                    set(allBalanceRef, oldBalance + payAmount);
+                    setData("AllBalance", oldBalance + payAmount);
                 });
             })
             .catch((error) => {
@@ -184,14 +166,10 @@ const PaymentArchive = () => {
             time: new Date().toLocaleTimeString("en-US", { hour12: false }),
         };
 
-        const studentRef = ref(database, `Students/${PayValue.value2}`);
-        const paymentRef = ref(database, `Students/${PayValue.value2}/paymentHistory`);
-
-        get(studentRef)
-            .then((snapshot) => {
-                if (snapshot.exists()) {
-                    const studentData = snapshot.val();
-                    const currentBalance = parseFloat(studentData.balance) || 0;
+        readData(`Students/${PayValue.value2}`)
+            .then((data) => {
+                if (data) {
+                    const currentBalance = parseFloat(data.balance) || 0;
 
                     if (currentBalance < paymentAmount) {
                         alert("Balans yetarli emas!");
@@ -201,15 +179,15 @@ const PaymentArchive = () => {
                     const updatedBalance = currentBalance - paymentAmount;
 
                     // Yangi balansni va paymentHistoryni yangilash
-                    return get(paymentRef).then((paymentSnapshot) => {
-                        const existingPayments = paymentSnapshot.val() || [];
-                        const updatedPayments = [...existingPayments, paymentData];
+                    return readData(`Students/${PayValue.value2}/paymentHistory`)
+                        .then((data) => {
+                            const updatedPayments = [...data, paymentData];
 
-                        return update(studentRef, {
-                            balance: updatedBalance,
-                            paymentHistory: updatedPayments,
+                            return updateData(`Students/${PayValue.value2}`, {
+                                balance: updatedBalance,
+                                paymentHistory: updatedPayments,
+                            });
                         });
-                    });
                 } else {
                     alert("Talaba topilmadi!");
                 }
@@ -232,24 +210,22 @@ const PaymentArchive = () => {
             return;
         }
 
-        const studentRef = ref(database, "Students");
+        readData("Students")
+            .then((data) => {
+                if (!data) {
+                    setGetStudents([]); // Agar ma'lumot bo'lmasa, natijalarni tozalash
+                    return;
+                }
 
-        get(studentRef).then((snapshot) => {
-            const data = snapshot.val();
-            if (!data) {
-                setGetStudents([]); // Agar ma'lumot bo'lmasa, natijalarni tozalash
-                return;
-            }
+                const studentsArray = Object.values(data); // Obyektni massivga aylantirish
+                const filteredStudents = studentsArray.filter((student) =>
+                    student.studentName.toLowerCase().includes(value.toLowerCase()) // Talabaning ismi bo'yicha qidirish
+                );
 
-            const studentsArray = Object.values(data); // Obyektni massivga aylantirish
-            const filteredStudents = studentsArray.filter((student) =>
-                student.studentName.toLowerCase().includes(value.toLowerCase()) // Talabaning ismi bo'yicha qidirish
-            );
-
-            setGetStudents(filteredStudents); // Faqat mos keladigan talabalarni o'rnating
-        }).catch((error) => {
-            console.error("Firebase o'qish xatosi:", error);
-        });
+                setGetStudents(filteredStudents); // Faqat mos keladigan talabalarni o'rnating
+            }).catch((error) => {
+                console.error("Firebase o'qish xatosi:", error);
+            });
     };
 
     return (
@@ -407,13 +383,25 @@ const PaymentArchive = () => {
                                 To'lov qilinganlar
                             </CardTitle>
                             <CardContent className="flex flex-col gap-3 justify-start items-start w-full border-l border-gray-500">
-                                {GetStudents.length > 0 ? (
+                                {GetStudents.some(student => Array.isArray(student.paymentHistory) && student.paymentHistory.length > 0) ? (
                                     GetStudents.map((student) =>
                                         Array.isArray(student.paymentHistory) && student.paymentHistory.length > 0
                                             ? student.paymentHistory
-                                                .filter((payment) => typeof payment.amount === "string" && payment.amount.slice(0, 1) === "+")
+                                                .filter(
+                                                    (payment) =>
+                                                        typeof payment.amount === "string" &&
+                                                        payment.amount.slice(0, 1) === "+"
+                                                )
+                                                .sort(
+                                                    (a, b) =>
+                                                        new Date(b.date.replace(/-/g, "/")) -
+                                                        new Date(a.date.replace(/-/g, "/"))
+                                                )
                                                 .map((filteredPayment, index) => (
-                                                    <div className={`${style.cardStyle} w-full flex flex-col shadow-lg p-3 border-l-2 pt-4 rounded-lg`} key={student.id + '-' + index}>
+                                                    <div
+                                                        className={`${style.cardStyle} w-full flex flex-col shadow-lg p-3 border-l-2 pt-4 rounded-lg`}
+                                                        key={student.id + "-" + index}
+                                                    >
                                                         <h3 className="text-lg font-normal">{student.studentName}</h3>
                                                         <PaymentItem
                                                             date={filteredPayment.date}
@@ -439,13 +427,33 @@ const PaymentArchive = () => {
                                 Pul yechilganlar
                             </CardTitle>
                             <CardContent className="flex flex-col gap-3 justify-start items-start w-full border-l border-gray-500">
-                                {GetStudents.length > 0 ? (
+                                {GetStudents.some(
+                                    (student) =>
+                                        Array.isArray(student.paymentHistory) &&
+                                        student.paymentHistory.some(
+                                            (payment) =>
+                                                typeof payment.amount === "string" &&
+                                                payment.amount.startsWith("-")
+                                        )
+                                ) ? (
                                     GetStudents.map((student) =>
                                         Array.isArray(student.paymentHistory) && student.paymentHistory.length > 0
                                             ? student.paymentHistory
-                                                .filter((payment) => typeof payment.amount === "string" && payment.amount.slice(0, 1) === "-")
+                                                .filter(
+                                                    (payment) =>
+                                                        typeof payment.amount === "string" &&
+                                                        payment.amount.startsWith("-")
+                                                )
+                                                .sort(
+                                                    (a, b) =>
+                                                        new Date(b.date.replace(/-/g, "/")) -
+                                                        new Date(a.date.replace(/-/g, "/"))
+                                                )
                                                 .map((filteredPayment, index) => (
-                                                    <div className={`${style.cardStyle} w-full flex flex-col shadow-lg p-3 border-l-2 pt-4 rounded-lg`} key={student.id + '-' + index}>
+                                                    <div
+                                                        className={`${style.cardStyle} w-full flex flex-col shadow-lg p-3 border-l-2 pt-4 rounded-lg`}
+                                                        key={student.id + "-" + index}
+                                                    >
                                                         <h3 className="text-lg font-normal">{student.studentName}</h3>
                                                         <PaymentItem
                                                             date={filteredPayment.date}

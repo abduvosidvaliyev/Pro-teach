@@ -1,33 +1,9 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-    update,
-    get
-} from "firebase/database";
-
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 import { PaymentItem } from "../../components/ui/payment-item";
 import { HistoryItem } from "../../components/ui/history-item";
 import imageKnow from "../../assets/dont-know.png";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
+import { onValueData } from "../../FirebaseData"
 
 export function StudentHistory({ student }) {
     const [studentData, setStudentData] = useState([]); // Student history uchun
@@ -35,18 +11,14 @@ export function StudentHistory({ student }) {
 
     useEffect(() => {
         // Payment historyni olish
-        const paymentRef = ref(database, `Students/${student.studentName}/paymentHistory`);
-        const unsubscribePayment = onValue(paymentRef, (snapshot) => {
-            const data = snapshot.val();
+        const unsubscribePayment = onValueData(`Students/${student.studentName}/paymentHistory`, (data) => {
             if (data) {
                 setPaymentHistory(data);
             }
         });
 
         // Student historyni olish
-        const historyRef = ref(database, `Students/${student.studentName}/studentHistory`);
-        const unsubscribeHistory = onValue(historyRef, (snapshot) => {
-            const data = snapshot.val();
+        const unsubscribeHistory = onValueData(`Students/${student.studentName}/studentHistory`, (data) => {
             if (data) {
                 setStudentData(data); // studentHistory ma'lumotlarini saqlash
             }

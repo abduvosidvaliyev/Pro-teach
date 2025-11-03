@@ -1,29 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  get
-} from "firebase/database";
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-export const database = getDatabase(app);
 
 import style from "../../Admin/PaymentArchive/PaymentArchive.module.css"
 
@@ -43,8 +19,6 @@ import {
   TableRow,
 } from "./table";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -75,6 +49,7 @@ import { AddNotify } from "./Toast"
 import { ToastContainer } from "react-toastify";
 import ProfileCard from "../../Admin/Profile/ProfileCard";
 import { FaArrowRightLong } from "react-icons/fa6";
+import { onValueData, readData, setData, updateData } from "../../FirebaseData";
 
 const timeSlots = Array.from({ length: 13 }).map((_, i) => ({
   time: `${(i + 8).toString().padStart(2, "0")}:00`,
@@ -164,18 +139,11 @@ export default function Dashboard({ data, setUserData }) {
   })
 
   useEffect(() => {
-    const leadsRef = ref(database, `leads`);
-    onValue(leadsRef, (snapshot) => {
-      const data = snapshot.val();
-      const leadsArray = data ? Object.values(data) : 0;
-      setLeadsData(leadsArray);
+    onValueData("leads", (data) => {
+      setLeadsData(Object.values(data || {}));
     });
-  }, [])
 
-  useEffect(() => {
-    const groupsRef = ref(database, "Groups");
-    onValue(groupsRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Groups", (data) => {
       if (data) {
         const groupsArray = Object.keys(data).map((key) => ({
           id: key,
@@ -187,22 +155,12 @@ export default function Dashboard({ data, setUserData }) {
         console.error("Groups data is empty or undefined.");
       }
     });
-  }, []);
 
-  useEffect(() => {
-    const coursesRef = ref(database, "Courses");
-    const unsubscribe = onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Courses", (data) => {
       setCourseAbout(data ? Object.values(data) : []);
     });
-    return () => unsubscribe();
-  }, []);
 
-
-  useEffect(() => {
-    const roomsRef = ref(database, "Rooms");
-    onValue(roomsRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Rooms", (data) => {
       if (data) {
         const roomData = Object.keys(data).map((key) => ({
           value: key,
@@ -213,27 +171,14 @@ export default function Dashboard({ data, setUserData }) {
         console.error("Room data is empty or undefined.");
       }
     });
-  }, []);
 
-  useEffect(() => {
-    const StudentRef = ref(database, "Students");
-
-    const unsubscribe = onValue(StudentRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Students", (data) => {
       const studentsArray = data ? Object.values(data) : [];
 
       setTakeStudents(studentsArray);
     });
 
-    return () => unsubscribe(); // Kuzatuvni tozalash
-  }, []);
-
-  useEffect(() => {
-    const allBalanceRef = ref(database, "AllBalance")
-
-    onValue(allBalanceRef, (snapshot) => {
-      const data = snapshot.val()
-
+    onValueData("AllBalance", (data) => {
       setbalance(data)
     })
   }, [])
@@ -260,10 +205,6 @@ export default function Dashboard({ data, setUserData }) {
     return schedule;
   }).filter(Boolean); // Filter out null values
 
-
-
-
-
   // Populate time slots with courses
   courseScheduleData.forEach((course) => {
     const slotIndex = course.startHour - 8;
@@ -271,8 +212,6 @@ export default function Dashboard({ data, setUserData }) {
       timeSlots[slotIndex].courses.push(course);
     }
   });
-
-
 
   const revenueData = [
     { month: "Yan", revenue: 450000 },
@@ -321,13 +260,6 @@ export default function Dashboard({ data, setUserData }) {
       growth: "+18%",
     },
   ];
-
-
-
-
-
-
-
 
   const [currentTime, setCurrentTime] = useState(getCurrentTimeSlot());
 
@@ -464,7 +396,6 @@ export default function Dashboard({ data, setUserData }) {
     setSearchStudens(filteredStudents); // Faqat filtrlangan natijalarni o'rnating
   };
 
-
   // Talabani bosilganda inputga qo'shish funksiyasi
   const handleStudentClick = (studentName) => {
     if (PayValue.value2) {
@@ -500,13 +431,12 @@ export default function Dashboard({ data, setUserData }) {
         time: new Date().toLocaleTimeString("en-US", { hour12: false }),
       };
 
-      const paymentRef = ref(database, `Students/${PayValue.value2}/paymentHistory`);
-      get(paymentRef)
+      readData(`Students/${PayValue.value2}/paymentHistory`)
         .then((snapshot) => {
           const existingPayments = snapshot.val() || [];
           const updatedPayments = [...existingPayments, paymentData];
 
-          return update(ref(database, `Students/${PayValue.value2}`), { paymentHistory: updatedPayments });
+          return updateData(`Students/${PayValue.value2}`, { paymentHistory: updatedPayments });
         })
         .then(() => {
           setPayValue({ value1: "", value2: "" });
@@ -514,21 +444,20 @@ export default function Dashboard({ data, setUserData }) {
           AddNotify({ AddTitle: "Pul to'landi!" })
 
           const balanceRef = ref(database, `Students/${PayValue.value2}/balance`);
-          get(balanceRef)
+          readData(`Students/${PayValue.value2}/balance`)
             .then((snapshot) => {
               const currentBalance = parseFloat(snapshot.val()) || 0;
               const newBalance = currentBalance + parseInt(PayValue.value1.replace(/\s/g, ""), 10);
 
-              return update(ref(database, `Students/${PayValue.value2}`), { balance: newBalance });
+              return updateData(`Students/${PayValue.value2}`, { balance: newBalance });
             })
             .then(() => console.log("Student balance updated successfully"))
             .catch((error) => console.error("Error updating student balance:", error));
 
-          const allBalanceRef = ref(database, "AllBalance");
-          get(allBalanceRef).then((snapshot) => {
+          readData("AllBalance").then((snapshot) => {
             const oldBalance = parseInt(snapshot.val()) || 0;
             const payAmount = parseInt(PayValue.value1.replace(/\s/g, ""), 10);
-            set(allBalanceRef, oldBalance + payAmount);
+            setData("AllBalance", oldBalance + payAmount);
           });
         })
         .catch((error) => {

@@ -1,21 +1,9 @@
 import { supabase } from '../../supabaseClient';
 import { uploadImage } from '../../uploadImage';
 import { useState, useEffect } from "react";
-import { useNavigate, useParams, useLocation, data } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import style from "./StudentDetail.module.css";
 import SelectReact from "react-select";
-
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  get,
-  remove
-} from "firebase/database";
 
 import { MessageSquare, PenSquare, Plus, Calendar, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -27,35 +15,14 @@ import { Comments } from "./Comments";
 import { StudentHistory } from "./StudentHistory";
 import { Textarea } from "../../components/ui/textarea";
 import { Modal } from "../../components/ui/modal";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
 
 import { FaArrowLeft, FaCamera, FaRegTrashAlt } from "react-icons/fa"
 import { DelateNotify, ChengeNotify, AddNotify } from "../../components/ui/Toast"
 import { ToastContainer } from "react-toastify";
-import { FiDownload, FiMinusCircle, FiUpload } from "react-icons/fi";
+import { FiDownload, FiMinusCircle } from "react-icons/fi";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
 import { Label } from "../../components/ui/UiLabel";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { deleteData, onValueData, readData, updateData } from '../../FirebaseData';
 
 const getCurrentMonth = () => {
   const now = new Date();
@@ -76,10 +43,8 @@ const StudentDetail = () => {
 
   const { id } = useParams();
   const navigate = useNavigate();
-  const [students, setStudents] = useState(courseData);
   const [student, setStudent] = useState([])
   const [studentsData, setStudentsData] = useState([]);
-  const [editingStudent, setEditingStudent] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [activeTab, setActiveTab] = useState("groups");
   const [date, setDate] = useState("30.01.2025");
@@ -102,15 +67,11 @@ const StudentDetail = () => {
   })
 
   useEffect(() => {
-    const studentRef = ref(database, `Students`);
-    onValue(studentRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData(`Students`, (data) => {
       setStudentsData(Object.values(data || {}));
     });
 
-    const groupsRef = ref(database, "Groups");
-    onValue(groupsRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Groups", (data) => {
       setGroupsData(data ? Object.keys(data) : []);
     });
   }, []);
@@ -121,155 +82,116 @@ const StudentDetail = () => {
     setStudent(student)
   }, [studentsData])
 
-  useEffect(() => {
-    if (student) {
-      const paymentsRef = ref(
-        database,
-        `Payments/${currentMonth}/${student.studentName}/studentPayment`
-      );
-      const unsubscribe = onValue(paymentsRef, (snapshot) => {
-        const data = snapshot.val();
-        setPayments(data ? Object.values(data) : []);
-      });
-      return () => unsubscribe();
-    }
-  }, [student, currentMonth]);
 
+
+  // O'quvchiga tolov qilish
   const handlePayment = () => {
-    if (!paymentAmount || isNaN(paymentAmount)) {
+    if (!paymentAmount) {
       alert("To'lov miqdorini to'g'ri kiriting!");
       return;
     }
 
-
+    const cleanAmount = parseFloat(paymentAmount.toString().replace(/\s/g, ""));
     const formattedPaymentAmount = new Intl.NumberFormat("uz-UZ", {
-      style: "decimal", // Faqat raqamlarni formatlash
+      style: "decimal",
       minimumFractionDigits: 0,
-    }).format(parseFloat(paymentAmount)); // Formatlash
+    }).format(cleanAmount);
 
-    const paymentDate = getCurrentDate(); // Hozirgi sanani olish
-    const paymentTime = new Date().toLocaleTimeString("en-US", { hour12: false }); // To'lov vaqti
+    const paymentDate = getCurrentDate();
+    const paymentTime = new Date().toLocaleTimeString("en-US", { hour12: false });
+
     const paymentData = {
       date: paymentDate,
-      amount: `+ ${formattedPaymentAmount}`, // Formatlangan miqdor
+      amount: `+ ${formattedPaymentAmount}`,
       description: "To'lov qabul qilindi",
       status: "To'langan",
       time: paymentTime,
     };
 
+    // ✅ Eski tarixni studentdan olamiz, readData emas
+    const existingPayments = student.paymentHistory || [];
+    const updatedPayments = [...existingPayments, paymentData];
 
-    // To'lovni Firebase ma'lumotlar bazasiga yozish
-    const paymentRef = ref(database, `Students/${student.studentName}/paymentHistory`);
-    get(paymentRef)
-      .then((snapshot) => {
-        const existingPayments = snapshot.val() || []; // Mavjud to'lovlarni olish
-        const updatedPayments = [...existingPayments, paymentData]; // Yangi to'lovni qo'shish
+    const newBalance = (parseFloat(student.balance) || 0) + cleanAmount; // ✅ Eski snapshot emas, state-dan
 
-        return update(ref(database, `Students/${student.studentName}`), { paymentHistory: updatedPayments }); // To'lov tarixini yangilash
-      })
+    updateData(`Students/${student.studentName}`, {
+      paymentHistory: updatedPayments,
+      balance: newBalance,
+    })
       .then(() => {
+        AddNotify({ AddTitle: "To'landi!" });
         setIsPaymentModalOpen(false);
-        setPaymentAmount(""); // To'lov miqdorini tozalash
+        setPaymentAmount("");
 
-        // Studentning balansini yangilash
-        const balanceRef = ref(database, `Students/${student.studentName}/balance`);
-        get(balanceRef)
-          .then((snapshot) => {
-            const currentBalance = parseFloat(snapshot.val()) || 0; // Hozirgi balansni olish yoki 0 ga o'rnatish
-            const newBalance = currentBalance + parseFloat(paymentAmount); // To'g'ri hisoblash
-            update(ref(database, `Students/${student.studentName}`), { balance: newBalance }) // Balansni yangilash
-              .then(() => {
-                AddNotify({ AddTitle: "To'landi!" })
-              })
-              .catch((error) => console.error("Error updating student balance:", error));
-          })
-          .catch((error) => console.error("Error fetching student balance:", error));
-        const allBalanceRef = ref(database, "AllBalance");
-        get(allBalanceRef).then((snapshot) => {
-          const oldBalance = parseInt(snapshot.val()) || 0;
-          const payment = parseInt(paymentAmount.toString().replace(/\s/g, ""), 10) || 0;
-          set(allBalanceRef, oldBalance + payment);
+        // ✅ Umumiy balansni yangilash
+        readData("AllBalance").then((data) => {
+          const oldBalance = parseFloat(data) || 0;
+          setDate("AllBalance", oldBalance + cleanAmount);
         });
       })
-      .catch((error) => {
-        console.error("To'lovni amalga oshirishda xatolik yuz berdi:", error);
-      });
+      .catch((error) => console.error("Xatolik to'lovda:", error));
   };
 
+
+
+  // Oquvchiga pul qaytarish
   const handleRefund = () => {
-    if (!refundAmount || isNaN(refundAmount)) {
+    if (!refundAmount) {
       alert("Qaytariladigan miqdorni to'g'ri kiriting!");
       return;
     }
 
+    const cleanAmount = parseFloat(refundAmount.toString().replace(/\s/g, ""));
     const formattedRefundAmount = new Intl.NumberFormat("uz-UZ", {
-      style: "decimal", // Faqat raqamlarni formatlash
-      minimumFractionDigits: 0, // Qoldiqsiz ko'rsatish
-    }).format(refundAmount); // Salbiy miqdor
+      style: "decimal",
+      minimumFractionDigits: 0,
+    }).format(cleanAmount);
 
-    const refundDate = getCurrentDate(); // Hozirgi sanani olish
-    const refundTime = new Date().toLocaleTimeString("en-US", { hour12: false }); // Qaytarish vaqti
+    const refundDate = getCurrentDate();
+    const refundTime = new Date().toLocaleTimeString("en-US", { hour12: false });
     const refundData = {
       date: refundDate,
-      amount: `- ${formattedRefundAmount}`, // Formatlangan miqdor
+      amount: `- ${formattedRefundAmount}`,
       description: "Pul qaytarildi",
       status: "Qaytarildi",
       time: refundTime,
     };
 
-    // To'lov tarixini yangilash
-    const paymentRef = ref(database, `Students/${student.studentName}/paymentHistory`);
-    get(paymentRef)
-      .then((snapshot) => {
-        const existingPayments = snapshot.val() || []; // Mavjud to'lovlarni olish
-        const updatedPayments = [...existingPayments, refundData]; // Yangi yozuvni qo'shish
+    // ✅ Eski tarixni studentdan olamiz
+    const existingPayments = student.paymentHistory || [];
+    const updatedPayments = [...existingPayments, refundData];
 
-        return update(ref(database, `Students/${student.studentName}`), { paymentHistory: updatedPayments }); // To'lov tarixini yangilash
-      })
+    const newBalance = (parseFloat(student.balance) || 0) - cleanAmount;
+
+    updateData(`Students/${student.studentName}`, {
+      paymentHistory: updatedPayments,
+      balance: newBalance,
+    })
       .then(() => {
+        DelateNotify({ DelateTitle: "Yechildi!", Icon: FiMinusCircle });
         setIsRefundModalOpen(false);
-        setRefundAmount(""); // Qaytarish miqdorini tozalash
+        setRefundAmount("");
 
-        // Studentning balansini yangilash
-        const balanceRef = ref(database, `Students/${student.studentName}/balance`);
-        get(balanceRef)
-          .then((snapshot) => {
-            const currentBalance = parseFloat(snapshot.val()) || 0; // Hozirgi balansni olish yoki 0 ga o'rnatish
-            const newBalance = currentBalance - Math.abs(parseFloat(refundAmount)); // Yangi balansni hisoblash
-            update(ref(database, `Students/${student.studentName}`), { balance: newBalance }) // Balansni yangilash
-              .then(() => {
-                DelateNotify({ DelateTitle: "Yechildi!", Icon: FiMinusCircle })
-              })
-              .catch((error) => console.error("Error updating student balance:", error));
-          })
-          .catch((error) => console.error("Error fetching student balance:", error));
-        const allBalanceRef = ref(database, "AllBalance");
-        get(allBalanceRef).then((snapshot) => {
-          const oldBalance = parseInt(snapshot.val()) || 0;
-          const refund = parseInt(refundAmount.toString().replace(/\s/g, ""), 10) || 0;
-          set(allBalanceRef, oldBalance - refund);
+        // ✅ Umumiy balansni yangilash
+        readData("AllBalance").then((data) => {
+          const oldBalance = parseFloat(data) || 0;
+          setDate("AllBalance", oldBalance - cleanAmount);
         });
       })
-      .catch((error) => {
-        console.error("Pulni qaytarishda xatolik yuz berdi:", error);
-      });
+      .catch((error) => console.error("Xatolik refundda:", error));
   };
 
+  // studentni boshqa guruhga qoshish
   const addStudentToGroup = () => {
     // Guruhdagi kunlarni olish
-    const groupRef = ref(database, `Groups/${groupName}`);
-    onValue(groupRef, (snapshot) => {
-      const groupData = snapshot.val();
-      if (!groupData) {
+    onValueData(`Groups/${groupName}`, (data) => {
+      if (!data) {
         alert("Guruh ma'lumotlari topilmadi!");
         return;
       }
 
       // Talabaning mavjud ma'lumotlarini olish
-      const userRef = ref(database, `Students/${student.studentName}`);
-      get(userRef).then((studentSnapshot) => {
-        const studentData = studentSnapshot.val() || {};
-
+      readData(`Students/${student.studentName}`).then((studentData) => {
         // Talaba uchun yangi ma'lumotlar
         const newStudentData = {
           ...studentData,
@@ -291,13 +213,8 @@ const StudentDetail = () => {
           : [newHistoryEntry];
 
         // Firebase ma'lumotlar bazasiga yozish
-        update(userRef, { ...newStudentData, studentHistory: updatedHistory })
+        updateData(`Students/${student.studentName}`, { ...newStudentData, studentHistory: updatedHistory })
           .then(() => {
-            setStudents((prevStudents) => ({
-              ...prevStudents,
-              ...newStudentData,
-              studentHistory: updatedHistory,
-            }));
             ChengeNotify()
           })
           .catch((error) => {
@@ -311,19 +228,16 @@ const StudentDetail = () => {
 
   const CloseDelateModal = () => setOpenDelateModal(false)
 
+  // studentni ochirish
   const handleDelateStudent = () => {
     const student = studentsData.find((student) => student.id === Number(id))
 
-    const findStudentRef = ref(database, `Students/${student.studentName}`)
-
-    remove(findStudentRef)
+    deleteData(`Students/${student.studentName}`)
       .then(() => {
-        get(ref(database, "Students")).then(snapshot => {
-          const data = snapshot.val() || [];
+        readData("Students").then(data => {
           const studentsArr = Object.values(data);
           studentsArr.forEach((student, i) => {
-            const studentIdRef = ref(database, `Students/${student.studentName}`);
-            update(studentIdRef, { id: i + 1 });
+            updateData(`Students/${student.studentName}`, { id: i + 1 });
           });
           setOpenDelateModal(false);
           DelateNotify({ DelateTitle: "O'quvchi o'chirildi!" });
@@ -335,6 +249,7 @@ const StudentDetail = () => {
       });
   }
 
+  // tel raqamni formatlash
   const formatPhoneNumber = (value) => {
     const onlyDigits = value.replace(/\D/g, "").slice(0, 12); // faqat raqamlar va 12 ta belgigacha
 
@@ -364,19 +279,17 @@ const StudentDetail = () => {
     try {
       if (oldKey === newKey) {
         // Faqat qiymatlarni yangilash
-        await update(ref(database, `Students/${oldKey}`), updatedData);
+        await updateData(`Students/${oldKey}`, updatedData);
       } else {
         // Eski key ostidagi ma'lumotlarni olib, yangi keyga yozish
-        const oldRef = ref(database, `Students/${oldKey}`);
-        const snapshot = await get(oldRef);
+        const snapshot = await readData(`Students/${oldKey}`);
 
-        if (!snapshot.exists()) throw new Error("Eski o'quvchi topilmadi");
+        if (!snapshot) throw new Error("Eski o'quvchi topilmadi");
 
-        const oldData = snapshot.val();
-        const newRef = ref(database, `Students/${newKey}`);
+        const oldData = snapshot;
 
-        await set(newRef, { ...oldData, ...updatedData });
-        await remove(oldRef);
+        await setDate(`Students/${newKey}`, { ...oldData, ...updatedData });
+        await deleteData(`Students/${oldKey}`);
       }
 
       ChengeNotify({ ChengeTitle: "Ma'lumot o'zgartirildi" });
@@ -395,8 +308,7 @@ const StudentDetail = () => {
       const imageUrl = await uploadImage(file);
 
       // Firebase Realtime Database'dagi studentga rasm linkini yozamiz
-      const studentRef = ref(database, `Students/${student.studentName}`);
-      await update(studentRef, { image: imageUrl })
+      await updateData(`Students/${student.studentName}`, { image: imageUrl })
         .then(() => {
           AddNotify({ AddTitle: "Rasm yuklandi!" })
         })
@@ -414,11 +326,9 @@ const StudentDetail = () => {
     if (!file) return;
 
     try {
-      const studentRef = ref(database, `Students/${student.studentName}`);
-
       // 1. Firebase'dan eski rasm URL ni olamiz
-      const snapshot = await get(studentRef);
-      const oldImageUrl = snapshot.val()?.image;
+      const snapshot = await readData(`Students/${student.studentName}`);
+      const oldImageUrl = snapshot?.image;
 
       // 2. Agar eski rasm Supabase'dan bo‘lsa — o‘chirib tashlaymiz
       if (oldImageUrl?.includes('supabase.co')) {
@@ -430,7 +340,7 @@ const StudentDetail = () => {
       const newImageUrl = await uploadImage(file);
 
       // 4. Firebasega yangi rasm linkini yozamiz
-      await update(studentRef, { image: newImageUrl })
+      await updateData(`Students/${student.studentName}`, { image: newImageUrl })
         .then(() => {
           AddNotify({ AddTitle: "Rasm yangilandi!" })
         })
@@ -456,7 +366,7 @@ const StudentDetail = () => {
         OpenDelateModal ? <Modal
           isOpen={OpenDelateModal}
           onClose={CloseDelateModal}
-          title={"O'quvchi rostanham o'chirilsinmi?"}
+          title={"O'quvchi rostdan ham o'chirilsinmi?"}
           positionTop="top-[40%]"
           children={
             <div className="flex justify-center items-center gap-5">
@@ -719,7 +629,6 @@ const StudentDetail = () => {
                       variant="outline"
                       className="w-full hover:bg-[#6365f11f] hover:border-[#393cf6] border-[#9193f5]"
                       onClick={() => {
-                        setEditingStudent(student);
                         setchengeStudentInfo({
                           name: student.studentName || "",
                           birthday: student.birthday || "",
@@ -767,7 +676,7 @@ const StudentDetail = () => {
               <SelectReact
                 options={groupsData.map((group) => ({
                   value: group,
-                  label: `[${group}]-Frontend-(Umarxon Muxtorov)`,
+                  label: `${group}  `,
                 }))}
                 onChange={(selectedOption) => setGroupName(selectedOption.value)}
                 placeholder="Guruh tanlang"
@@ -775,7 +684,7 @@ const StudentDetail = () => {
                   groupsData.length > 0
                     ? {
                       value: groupsData[0],
-                      label: `[${groupsData[0]}]-Frontend-(Umarxon Muxtorov)`,
+                      label: `${groupsData[0]}`,
                     }
                     : null
                 }

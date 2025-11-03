@@ -4,26 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import style from "./Students.module.css";
 
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  push,
-  remove,
-  get
-} from "firebase/database";
-
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -38,7 +19,6 @@ import {
   FileSpreadsheet,
   MessageSquare,
   Plus,
-  ChevronDown,
   X,
 } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
@@ -49,21 +29,7 @@ import { AddNotify } from "../../components/ui/Toast"
 import ReactPaginate from "react-paginate";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-  authDomain: "project-pro-7f7ef.firebaseapp.com",
-  databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-  projectId: "project-pro-7f7ef",
-  storageBucket: "project-pro-7f7ef.firebasestorage.app",
-  messagingSenderId: "782106516432",
-  appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-  measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { onValueData, readData, setData, updateData } from "../../FirebaseData"
 
 const pages = [
   { value: 5, label: 5 },
@@ -98,13 +64,10 @@ function Students() {
   // }, [])
 
   const [isAdd, setIsAdd] = useState(true);
-  const [studentInfo, setStudentInfo] = useState("");
   const [studentsData, setStudentsData] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [groupsData, setGroupsData] = useState([]);
-  const [paymentHistory, setPaymentHistory] = useState([]);
   const [teachersData, setTeachersData] = useState([]);
-  const [Group, setGroup] = useState([])
   const [GetLeads, setGetLeads] = useState([])
   const [courses, setCourses] = useState([]);
   const [AddStudent, setAddStudent] = useState({
@@ -129,47 +92,23 @@ function Students() {
 
 
   useEffect(() => {
-    const studentsRef = ref(database, "Students");
-    onValue(studentsRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData("Students", (data) => {
       setStudentsData(Object.values(data || []));
     });
-  }, []);
 
-  useEffect(() => {
-    const studentsRef = ref(database, `Payments/${currentMonth}`);
-    onValue(studentsRef, (snapshot) => {
-      const data = snapshot.val();
-      setPaymentHistory(data ? Object.values(data) : []);
-    });
-  }, []);
-
-  useEffect(() => {
-    const groupsRef = ref(database, `Groups`);
-    onValue(groupsRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData(`Groups`, (data) => {
       setGroupsData(Object.values(data || {}))
     });
-  }, []);
 
-  useEffect(() => {
-    const teachersRef = ref(database, `Teachers`);
-    onValue(teachersRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData(`Teachers`, (data) => {
       setTeachersData(data);
     });
-  }, []);
 
-  useEffect(() => {
-    const coursesRef = ref(database, `Courses`);
-    onValue(coursesRef, (snapshot) => {
-      const data = snapshot.val();
+    onValueData(`Courses`, (data) => {
       setCourses(Object.values(data || []));
     });
 
-    const LeadsRef = ref(database, "leads")
-    onValue(LeadsRef, (snapshot) => {
-      const data = snapshot.val()
+    onValueData("leads", (data) => {
       setGetLeads(Object.values(data || {}))
     })
   }, []);
@@ -184,9 +123,7 @@ function Students() {
   }, [AddStudent.name])
 
   const handleStatusChenge = (name) => {
-    const studentRef = ref(database, `leads/${name}`)
-
-    update(studentRef, { status: "O'qiyabdi" })
+    updateData(`leads/${name}`, { status: "O'qiyabdi" })
   }
 
   const addStudent = () => {
@@ -197,13 +134,12 @@ function Students() {
     const date = new Date().toISOString().split("T")[0]; // Qo'shilgan sana
 
     // Guruh ma'lumotlarini olish
-    const groupRef = ref(database, `Groups/${AddStudent.group}`);
-    get(groupRef)
-      .then((groupSnapshot) => {
-        if (groupSnapshot.exists()) {
+    readData(`Groups/${AddStudent.group}`)
+      .then((data) => {
+        if (data) {
 
           // Studentni Firebase-ga qo'shish
-          set(ref(database, `Students/${AddStudent.name}`), {
+          setData(`Students/${AddStudent.name}`, {
             attendance: {
               [currentMonth]: {
                 _empty: true,
@@ -253,19 +189,9 @@ function Students() {
   }
 
   const handleLinkClick = (event, student, studentId, studentName) => {
-    console.log(student);
     event.stopPropagation();
-    setStudentInfo(studentName);
     navigate(`/student/${studentId}`, { state: { student: student } });
   };
-
-  useEffect(() => {
-    studentsData.map((student) => {
-      const group = groupsData.find((item) => item.groupName.toLowerCase() === student.group.toLowerCase())
-
-      setGroup([group])
-    })
-  }, [studentsData, groupsData])
 
   const filterStudents = (value) => {
     if (value === "") {

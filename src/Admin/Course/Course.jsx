@@ -1,14 +1,3 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  onValue,
-  set,
-  update,
-  get
-} from "firebase/database";
-
 import { useEffect, useState } from "react";
 import style from './Course.module.css';
 import { Card, CardContent, CardHeader } from "../../components/ui/card";
@@ -22,23 +11,8 @@ import { Label } from "../../components/ui/UiLabel";
 import { Input } from "../../components/ui/input";
 import SelectReact from "react-select";
 import { Textarea } from "../../components/ui/textarea";
+import { onValueData, setData } from "../../FirebaseData";
 
-
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
 
 const Course = () => {
     const navigate = useNavigate();
@@ -54,11 +28,8 @@ const Course = () => {
     const durationOptions = [30, 60, 90, 120, 150]; // Dars davomiyligi uchun variantlar
 
     useEffect(() => {
-        const courseRef = ref(database, 'Courses');
-        onValue(courseRef, (snapshot) => {
-            const data = snapshot.val();
-            const courseArray = Object.values(data || {});
-            setCourseData(courseArray);
+        onValueData("Courses", (data) => {
+            setCourseData(Object.values(data || {}));
         });
     }, []);
 
@@ -77,7 +48,7 @@ const Course = () => {
             return;
         }
 
-        set(ref(database, `Courses/${addCourse.name}`), {
+        setData(`Courses/${addCourse.name}`, {
             id: CourseData.length + 1,
             name: addCourse.name,
             price: addCourse.price,

@@ -1,44 +1,18 @@
 import style from "./App.module.css"
 import back from '../assets/bac.mp4'
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-    update,
-    get
-} from "firebase/database";
+
 import BasicNavbar from "./BasicNavbar";
 import { useEffect, useState } from "react";
 import ProfileCard from "./StudentProfile/ProfileCard";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND"
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+import { onValueData } from "../FirebaseData";
 
 function App() {
     const StudentData = JSON.parse(localStorage.getItem("StudentData"))
     const [Students, setStudents] = useState([])
 
     useEffect(() => {
-        const studentRef = ref(database, "Students")
-        onValue(studentRef, (snapshot) => {
-            const data = snapshot.val()
-
+        onValueData("Students", (data) => {
             setStudents(Object.values(data || []))
         })
 

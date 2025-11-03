@@ -1,34 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-    update,
-    get,
-    remove
-} from "firebase/database";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
-
-
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { GrMoney } from "react-icons/gr";
-import { SidebarPanel } from "../../Sidebar";
 import { Card, CardContent } from "../../components/ui/card"
 import { Label } from "../../components/ui/UiLabel";
 import { Input } from "../../components/ui/input";
@@ -48,6 +19,7 @@ import { X } from "lucide-react";
 import { ToastContainer } from "react-toastify";
 import { DelateNotify, AddNotify, ChengeNotify } from "../../components/ui/Toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+import { deleteData, onValueData, setData, updateData } from "../../FirebaseData";
 
 const getCurrentDate = () => {
     const today = new Date();
@@ -65,7 +37,6 @@ const Expenses = () => {
     };
     const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
     const [GetExpenses, setGetExpenses] = useState([])
-    const [date, setDate] = React.useState(getCurrentDate());
     const [Expenses, setExpenses] = useState("")
     const [checked, setchecked] = useState("")
     const [isOpen, setisOpen] = useState(false)
@@ -89,40 +60,29 @@ const Expenses = () => {
 
     const CloseModal = () => setIsOpen(false)
 
-    useEffect(() => {
-        const TeacherRef = ref(database, "Teachers");
-        onValue(TeacherRef, (snapshot) => {
-            const data = snapshot.val();
-            setGetTeacher(Object.values(data || []));
-        });
-    }, []);
-
     // Oylik select uchun barcha mavjud oylarni olish
     const [availableMonths, setAvailableMonths] = useState([getCurrentMonth()]);
 
     useEffect(() => {
-        const ExpensesRef = ref(database, "Expenses");
-        onValue(ExpensesRef, (snapshot) => {
-            const data = snapshot.val();
+        onValueData("Teachers", (data) => {
+            setGetTeacher(Object.values(data || []));
+        });
+
+        onValueData("Expenses", (data) => {
             if (data) {
                 setAvailableMonths(Object.keys(data));
             }
         });
 
-        const allBalanceRef = ref(database, "AllBalance")
-        onValue(allBalanceRef, (snapshot) => {
-            const data = snapshot.val()
-
+        onValueData("AllBalance", (data) => {
             setBalance(data)
         })
     }, []);
 
     //  Tanlangan oy uchun xarajatlarni olish
     useEffect(() => {
-        const ExpensesRef = ref(database, `Expenses/${selectedMonth}`);
-        onValue(ExpensesRef, (snapshot) => {
-            const data = snapshot.val();
-            setGetExpenses(Object.values(data || []));
+        onValueData("Expenses", (data) => {
+            setGetExpenses(Object.values(data[selectedMonth] || []));
             // Jami xarajatni ham shu yerda hisoblang
             setExpenses(
                 data
@@ -176,12 +136,14 @@ const Expenses = () => {
         console.log(object)
 
         if (object.expenseName && object.amount && object.date && object.recipient && object.paymentType) {
-            const updates = {};
-            updates[`/Expenses/${selectedMonth}/Expense${object.id}`] = {
-                ...object
-            };
-            update(ref(database), updates)
+            updateData(`/Expenses/${selectedMonth}/Expense${object.id}`, {
+                ...object,
+                amount: Number(String(object.amount).replace(/\s/g, '')) || 0,
+            })
                 .then(() => {
+                    if (ChengeExpense?.amount != object.amount) {
+                        setData("AllBalance", Number(Balance) + (Number(ChengeExpense?.amount || 0) - Number(String(object.amount).replace(/\s/g, '')) || 0))
+                    }
                     setOpen(false);
                     setisOpen(false);
                     ChengeNotify({ ChengeTitle: "Ma'lumot o'zgartirildi!" })
@@ -208,15 +170,15 @@ const Expenses = () => {
             AddExpense.date <= getCurrentDate()
         ) {
             const monthKey = selectedMonth;
-            const newExpenseRef = ref(database, `Expenses/${monthKey}/Expense${GetExpenses.length + 1}`);
-            set(newExpenseRef, {
+            setData(`Expenses/${monthKey}/Expense${GetExpenses.length + 1}`, {
                 ...AddExpense,
+                amount: Number(String(AddExpense.amount).replace(/\s/g, '')) || 0,
                 id: GetExpenses.length + 1
             })
                 .then(() => {
-                    const NewBalance = Number(Balance) - Number(AddExpense.amount)
-                    const BalanceRef = ref(database, "AllBalance")
-                    set(BalanceRef, NewBalance)
+                    const cleanAmount = Number(String(AddExpense.amount).replace(/\s/g, '')) || 0;
+                    const NewBalance = Number(Balance) - cleanAmount;
+                    setData("AllBalance", NewBalance)
 
                     setAddExpense({
                         expenseName: "",
@@ -226,7 +188,6 @@ const Expenses = () => {
                         paymentType: ""
                     });
                     setchecked("");
-                    setDate(getCurrentDate());
                     AddNotify({ AddTitle: "Xarajat qo'shildi!" });
                 })
                 .catch((error) => {
@@ -245,13 +206,10 @@ const Expenses = () => {
     // Delate Expense
     const handleDelateExpense = () => {
         if (ExpenseId) {
-            const expenseRef = ref(database, `Expenses/${selectedMonth}/Expense${ExpenseId}`);
-            remove(expenseRef)
+            deleteData(`Expenses/${selectedMonth}/Expense${ExpenseId}`)
                 .then(() => {
                     // O‘chirgandan keyin shu oydagi chiqimlar qolgan-qolmaganini tekshir
-                    const ExpensesRef = ref(database, `Expenses/${selectedMonth}`);
-                    onValue(ExpensesRef, (snapshot) => {
-                        const data = snapshot.val();
+                    onValueData(`Expenses/${selectedMonth}`, (data) => {
                         if (!data || Object.keys(data).length === 0) {
                             // Agar bu oyda chiqim qolmasa va bu oy hozirgi oy bo‘lmasa, hozirgi oyni tanla
                             const currentMonth = getCurrentMonth();
@@ -288,9 +246,7 @@ const Expenses = () => {
         setGetExpenses(filteredExpenses);
 
         if (value === "") {
-            const ExpensesRef = ref(database, "Expenses")
-            onValue(ExpensesRef, (snapshot) => {
-                const data = snapshot.val()
+            onValueData("Expenses", (data) => {
                 setGetExpenses(Object.values(data || {}))
             })
         }
@@ -530,7 +486,7 @@ const Expenses = () => {
 
                             <Select
                                 value={selectedMonth ? selectedMonth : getCurrentMonth()}
-                                onValueChange={e => setSelectedMonth(e)}
+                                onValueChange={e => (setSelectedMonth(e), console.log(e))}
                             >
                                 <SelectTrigger className="w-[150px]">
                                     <SelectValue placeholder="Oyni tanlash" />
@@ -548,9 +504,11 @@ const Expenses = () => {
                         </div>
                         <h3 className="text-lg">
                             Balans:
-                            {
-                                ` ${new Intl.NumberFormat("uz-UZ").format(parseInt(Balance, 10))} so'm`
-                            }
+                            <span className={`${Balance < 0 ? "text-red-600" : ""}`}>
+                                {
+                                    ` ${new Intl.NumberFormat("uz-UZ").format(parseInt(Balance, 10))} so'm`
+                                }
+                            </span>
                         </h3>
                     </nav>
 
@@ -776,7 +734,11 @@ const Expenses = () => {
                                                 </TableRow>
                                             ))}
                                         </TableBody>
-                                    ) : ""
+                                    ) : <TableRow>
+                                        <TableCell colSpan={7} className="text-center py-4">
+                                            Xarajatlar mavjud emas.
+                                        </TableCell>
+                                    </TableRow>
                                 }
                             </Table>
                         </CardContent>
