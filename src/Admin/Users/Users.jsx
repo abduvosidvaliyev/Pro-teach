@@ -5,38 +5,13 @@ import { Card } from '../../components/ui/card';
 import { useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa";
 
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import {
-    getDatabase,
-    ref,
-    onValue,
-    set,
-    update,
-    get
-} from "firebase/database";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC94X37bt_vhaq5sFVOB_ANhZPuE6219Vo",
-    authDomain: "project-pro-7f7ef.firebaseapp.com",
-    databaseURL: "https://project-pro-7f7ef-default-rtdb.firebaseio.com",
-    projectId: "project-pro-7f7ef",
-    storageBucket: "project-pro-7f7ef.firebasestorage.app",
-    messagingSenderId: "782106516432",
-    appId: "1:782106516432:web:d4cd4fb8dec8572d2bb7d5",
-    measurementId: "G-WV8HFBFPND",
-};
-
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
-
 import UserPng from "../../assets/Avatar.png"
 import { useNavigate } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "../../components/ui/sidebar";
 import { Label } from "../../components/ui/UiLabel";
 import { X } from "lucide-react";
 import { Checkbox } from "../../components/ui/checkbox";
+import { onValueData, setData } from '../../FirebaseData';
 
 const Users = () => {
     const navigate = useNavigate();
@@ -66,10 +41,7 @@ const Users = () => {
     });
 
     useEffect(() => {
-        const teacherRef = ref(database, "Teachers");
-        onValue(teacherRef, (snapshot) => {
-            const data = snapshot.val();
-
+        onValueData("Teachers", (data) => {
             setTakeTeacher(Object.values(data || {}));
         });
     }, []);
@@ -97,9 +69,7 @@ const Users = () => {
 
 
     const handleSearchUser = (value) => {
-        const teacherRef = ref(database, "Teachers");
-        onValue(teacherRef, (snapshot) => {
-            const data = snapshot.val();
+        onValueData("Teachers", (data) => {
             const filteredData = Object.values(data || {}).filter((teacher) =>
                 teacher.name.toLowerCase().includes(value.toLowerCase()) || teacher.number.toLowerCase().includes(value.toLowerCase())
             );
@@ -113,7 +83,7 @@ const Users = () => {
             return;
         }
 
-        set(ref(database, `Teachers/Teacher${takeTeacher.length + 1}`), {
+        setData(`Teachers/Teacher${takeTeacher.length + 1}`, {
             id: takeTeacher.length + 1,
             young: addUser.young,
             name: addUser.name,

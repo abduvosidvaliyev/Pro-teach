@@ -593,6 +593,7 @@ const GroupDetails = () => {
       }
 
       <ToastContainer />
+      
       <div
         className={style.main}
         style={{
@@ -614,6 +615,7 @@ const GroupDetails = () => {
             ))}
           </div>
         </div>
+
         <div className={style.groupAbout}>
           <h2>Guruhlar soni: {groupsData.length}</h2>
 
@@ -651,7 +653,7 @@ const GroupDetails = () => {
 
               <SidebarContent>
                 <form
-                  onSubmit={(e) => {e.preventDefault(), addGroup()}}
+                  onSubmit={(e) => { e.preventDefault(), addGroup() }}
                   className="space-y-6 p-6 text-left "
                 >
                   <div className="space-y-6">
@@ -732,7 +734,12 @@ const GroupDetails = () => {
                       placeholder="Dars vaqti tanlang"
                       className="w-full"
                       onChange={(e) => setLessonStartTime(e.value)}
-                      options={LessonTime.map((time) => ({ value: time, label: time }))}
+                      options={LessonTime
+                        .sort((a, b) => {
+                          return a.localeCompare(b);
+                        })
+                        .map((time) => ({ value: time, label: time }))
+                      }
                     />
                   </div>
 
@@ -759,7 +766,7 @@ const GroupDetails = () => {
               </SidebarContent>
             </Sidebar>
           </SidebarProvider>
-          
+
           {/* Yangi guruh qoshish uchun madalni ochadi */}
           <Button
             className={style.groupAddButton}
@@ -771,7 +778,7 @@ const GroupDetails = () => {
             Guruh qo'shish
           </Button>
         </div>
-        
+
         <Card className="col-[1/4] row-[4/11] border-slate-200 rounded-[5px]">
           {groupInfo && (
             <>
@@ -1028,7 +1035,7 @@ const GroupDetails = () => {
           </SidebarHeader>
 
           <SidebarContent>
-            <form className="space-y-6 p-6 text-left" onSubmit={(e) => {e.preventDefault(), handleGroupUpdate()}}>
+            <form className="space-y-6 p-6 text-left" onSubmit={(e) => { e.preventDefault(), handleGroupUpdate() }}>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="editGroupName">Guruh nomi</Label>
@@ -1068,7 +1075,12 @@ const GroupDetails = () => {
                   <SelectReact
                     value={groupChenge.duration}
                     onChange={e => setgroupChenge(gc => ({ ...gc, duration: e }))}
-                    options={LessonTime.map(time => ({ value: time, label: time }))}
+                    options={LessonTime
+                      .sort((a, b) => {
+                        return a.localeCompare(b);
+                      })
+                      .map((time) => ({ value: time, label: time }))
+                    }
                   />
                 </div>
                 <div>

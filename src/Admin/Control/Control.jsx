@@ -9,8 +9,9 @@ import { IoInformationCircleOutline, IoSettingsOutline } from "react-icons/io5";
 import { GrSchedule } from "react-icons/gr"
 import { TbLockPassword } from "react-icons/tb"
 import { ToastContainer } from "react-toastify";
-import Schedule from "./components/schedule";
+import Schedule from "./components/Schedule";
 import Info from "./components/Info";
+import Permissions from "./components/Permissions";
 
 function Control() {
   const [TabsValue, setTabsValue] = useState("info")
@@ -56,10 +57,10 @@ function Control() {
                 Ish tartibi
               </TabsTrigger>
               <TabsTrigger
-                value="permission"
-                className={`w-full font-medium cursor-pointer hover:bg-slate-100 rounded-md text-gray-700 py-4 text-start flex items-center gap-2 text-lg ${TabsValue === "permission" ? "px-6 bg-slate-100" : "px-4"}`}
+                value="permissions"
+                className={`w-full font-medium cursor-pointer hover:bg-slate-100 rounded-md text-gray-700 py-4 text-start flex items-center gap-2 text-lg ${TabsValue === "permissions" ? "px-6 bg-slate-100" : "px-4"}`}
               >
-                <IoSettingsOutline size={25} className="text-gray-400" color={TabsValue === "permission" ? "#02029e" : ""} />
+                <IoSettingsOutline size={25} className="text-gray-400" color={TabsValue === "permissions" ? "#02029e" : ""} />
                 Ruxsatlar
               </TabsTrigger>
               <TabsTrigger
@@ -71,12 +72,15 @@ function Control() {
               </TabsTrigger>
             </TabsList>
           </Card>
-          <Card className="h-[85vh] w-[75%] p-5">
+          <Card className="h-[85vh] w-[75%] p-5 py-6">
             <TabsContent value="info" className="w-full h-full flex flex-col gap-6 ">
               <Info />
             </TabsContent>
-            <TabsContent value="schedule" className="w-full h-full flex flex-col gap-6">
+            <TabsContent value="schedule" className="w-full h-full flex flex-col gap-6 overflow-y-scroll">
               <Schedule />
+            </TabsContent>
+            <TabsContent value="permissions" className="w-full h-full flex flex-col gap-6 overflow-y-auto">
+              <Permissions />
             </TabsContent>
           </Card>
         </Tabs>

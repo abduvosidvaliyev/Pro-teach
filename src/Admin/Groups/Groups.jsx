@@ -106,7 +106,6 @@ function Groups() {
   const [teachersData, setTeachersData] = useState([]);
   const [roomsData, setRoomsData] = useState([]);
   const [groupsData, setGroupsData] = useState([]);
-  const [students, setStudents] = useState([]);
   const [selectedDays, setSelectedDays] = useState([]);
   const [LessonTime, setLessonTime] = useState([])
   const [FindCourse, setFindCourse] = useState({})
@@ -230,20 +229,8 @@ function Groups() {
     }
   };
 
-  function handleGroupClick(groupName, id) {
-    const groupData = groupsData.find((group) => group.groupName === groupName);
-    if (groupData) {
-      // Fetch students for the selected group
-      onValueData("Students", (data) => {
-        const groupStudents = Object.keys(data)
-          .map((key) => data[key])
-          .filter((student) => student.group === groupName);
-
-        setStudents(groupStudents);
-      });
-
-      navigate(`/group/${id}`); // Yangi sahifaga o'tish
-    }
+  const handleGroupClick = (id) => {
+    navigate(`/group/${id}`);
   }
 
   return (
@@ -375,7 +362,12 @@ function Groups() {
                 <SelectReact
                   placeholder="Dars vaqti tanlang"
                   className="w-full"
-                  options={LessonTime.map((time) => ({ value: time, label: time }))}
+                  options={LessonTime
+                    .sort((a, b) => {
+                      return a.localeCompare(b);
+                    })
+                    .map((time) => ({ value: time, label: time }))
+                  }
                   onChange={(e) => setLessonStartTime(e.value)}
                   value={
                     LessonStartTime
@@ -430,7 +422,7 @@ function Groups() {
               {groupsData.map((group, index) => (
                 <span
                   key={index}
-                  onClick={() => handleGroupClick(group.groupName, group.id)}
+                  onClick={() => handleGroupClick(group.id)}
                 >
                   {group.groupName}
                 </span>
